@@ -6,9 +6,10 @@ Bottom: Log panel
 Full engine integration with QThread.
 """
 
+import json
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
 from app.ui.actions_panel import ActionsPanel
 from app.ui.assets_panel import AssetsPanel
 from app.ui.capture_tool import CaptureTool
+from app.ui.coordinates_panel import CoordinatesPanel
 from app.ui.engine_worker import EngineWorker
 from app.ui.log_panel import LogPanel
 from app.ui.properties_panel import PropertiesPanel
@@ -58,6 +60,7 @@ class MainWindow(QMainWindow):
         # Engine worker (QThread)
         self.engine = EngineWorker()
         self._project_path: Path | None = None
+        self._draft_path = Path.home() / ".retroauto" / "draft.json"
 
         self._init_ui()
         self._connect_engine_signals()
@@ -65,6 +68,14 @@ class MainWindow(QMainWindow):
         # Create new empty script on start
         self.engine.new_script()
         self._update_title()
+
+        # Load draft if exists
+        self._load_draft()
+
+        # Auto-save timer (every 30 seconds)
+        self._auto_save_timer = QTimer(self)
+        self._auto_save_timer.timeout.connect(self._save_draft)
+        self._auto_save_timer.start(30000)  # 30 seconds
 
         logger.info("MainWindow initialized")
 
@@ -89,13 +100,16 @@ class MainWindow(QMainWindow):
         self.assets_panel = AssetsPanel()
         self.actions_panel = ActionsPanel()
         self.properties_panel = PropertiesPanel()
+        self.coordinates_panel = CoordinatesPanel()
 
         hsplitter.addWidget(self.assets_panel)
         hsplitter.addWidget(self.actions_panel)
         hsplitter.addWidget(self.properties_panel)
+        hsplitter.addWidget(self.coordinates_panel)
         hsplitter.setStretchFactor(0, 1)  # Assets: 1
         hsplitter.setStretchFactor(1, 2)  # Actions: 2
         hsplitter.setStretchFactor(2, 1)  # Properties: 1
+        hsplitter.setStretchFactor(3, 1)  # Coordinates: 1
 
         # Bottom: Log panel
         self.log_panel = LogPanel()
@@ -149,6 +163,9 @@ class MainWindow(QMainWindow):
 
         # When properties changed, update action
         self.properties_panel.properties_changed.connect(self.actions_panel.update_action)
+
+        # When coordinate click added to script
+        self.coordinates_panel.add_to_script.connect(self._on_add_click_to_script)
 
         # Run step from actions panel
         # self.actions_panel.run_step_requested.connect(self._on_run_step)
@@ -285,6 +302,17 @@ class MainWindow(QMainWindow):
         # Highlight current step in actions panel
         self.actions_panel.highlight_step(idx)
 
+    def _on_add_click_to_script(self, x: int, y: int, button: str, clicks: int) -> None:
+        """Add a click action from coordinates panel to script."""
+        from core.models import Click
+        
+        click_action = Click(x=x, y=y, button=button, clicks=clicks)
+        self.actions_panel._actions.append(click_action)
+        self.actions_panel._refresh_list()
+        
+        logger.info(f"Added Click({x}, {y}, {button}, {clicks}) to script")
+        self.status_bar.showMessage(f"Added: Click({x}, {y}) - {button}")
+
     def _on_flow_completed(self, flow: str, success: bool) -> None:
         """Handle flow completion."""
         if success:
@@ -338,8 +366,80 @@ class MainWindow(QMainWindow):
         self.ide_window.show()
         logger.info("Opened IDE window")
 
+    def _save_draft(self) -> None:
+        """Auto-save actions draft to file."""
+        try:
+            # Ensure directory exists
+            self._draft_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Serialize actions
+            actions = self.actions_panel.get_actions()
+            draft_data = {
+                "version": 1,
+                "actions": [action.model_dump() for action in actions],
+                "coordinates": self.coordinates_panel.get_coordinates(),
+            }
+            
+            with open(self._draft_path, "w", encoding="utf-8") as f:
+                json.dump(draft_data, f, indent=2, default=str)
+            
+            logger.debug(f"Auto-saved draft: {len(actions)} actions")
+        except Exception as e:
+            logger.warning(f"Failed to save draft: {e}")
+
+    def _load_draft(self) -> None:
+        """Load actions draft from file on startup."""
+        try:
+            if not self._draft_path.exists():
+                return
+            
+            with open(self._draft_path, "r", encoding="utf-8") as f:
+                draft_data = json.load(f)
+            
+            if draft_data.get("version") != 1:
+                return
+            
+            # Load actions
+            from core.models import (
+                Click, WaitImage, IfImage, Hotkey, TypeText,
+                Label, Goto, RunFlow, Delay
+            )
+            
+            action_map = {
+                "Click": Click,
+                "WaitImage": WaitImage,
+                "IfImage": IfImage,
+                "Hotkey": Hotkey,
+                "TypeText": TypeText,
+                "Label": Label,
+                "Goto": Goto,
+                "RunFlow": RunFlow,
+                "Delay": Delay,
+            }
+            
+            actions = []
+            for action_data in draft_data.get("actions", []):
+                action_type = action_data.get("action")
+                if action_type in action_map:
+                    try:
+                        actions.append(action_map[action_type](**action_data))
+                    except Exception:
+                        pass
+            
+            if actions:
+                self.actions_panel._actions = actions
+                self.actions_panel._refresh_list()
+                logger.info(f"Loaded draft: {len(actions)} actions")
+                self.status_bar.showMessage(f"Loaded draft: {len(actions)} actions")
+                
+        except Exception as e:
+            logger.warning(f"Failed to load draft: {e}")
+
     def closeEvent(self, event) -> None:  # type: ignore
         """Handle window close."""
+        # Save draft before closing
+        self._save_draft()
+        
         if self.engine.isRunning():
             self.engine.stop()
             self.engine.wait(2000)

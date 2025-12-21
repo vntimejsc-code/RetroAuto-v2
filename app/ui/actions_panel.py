@@ -5,7 +5,7 @@ Manages the list of actions in a flow.
 """
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
@@ -88,8 +88,9 @@ class ActionsPanel(QWidget):
         group = QGroupBox("Actions")
         group_layout = QVBoxLayout(group)
 
-        # Action list
+        # Action list with extended selection
         self.action_list = QListWidget()
+        self.action_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.action_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.action_list.currentItemChanged.connect(self._on_selection_changed)
         self.action_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -106,6 +107,9 @@ class ActionsPanel(QWidget):
         self.btn_delete.clicked.connect(self._on_delete)
         self.btn_delete.setEnabled(False)
 
+        self.btn_clear = QPushButton("Clear All")
+        self.btn_clear.clicked.connect(self._on_clear_all)
+
         self.btn_up = QPushButton("▲")
         self.btn_up.setFixedWidth(30)
         self.btn_up.clicked.connect(self._on_move_up)
@@ -118,12 +122,26 @@ class ActionsPanel(QWidget):
 
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_delete)
+        btn_layout.addWidget(self.btn_clear)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_up)
         btn_layout.addWidget(self.btn_down)
         group_layout.addLayout(btn_layout)
 
         layout.addWidget(group)
+
+        # Setup keyboard shortcuts
+        self._setup_shortcuts()
+
+    def _setup_shortcuts(self) -> None:
+        """Setup keyboard shortcuts."""
+        # Delete key
+        self.del_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self.action_list)
+        self.del_shortcut.activated.connect(self._on_delete)
+        
+        # Ctrl+A to select all
+        self.select_all_shortcut = QShortcut(QKeySequence.StandardKey.SelectAll, self.action_list)
+        self.select_all_shortcut.activated.connect(self.action_list.selectAll)
 
     def load_actions(self, actions: list[Action]) -> None:
         """Load actions from script flow."""
@@ -156,11 +174,22 @@ class ActionsPanel(QWidget):
         if isinstance(action, WaitImage):
             return action.asset_id or "?"
         elif isinstance(action, Click):
+            # Show specific click type
+            click_type = ""
+            if action.clicks == 2:
+                click_type = "Double "
+            elif action.button == "right":
+                click_type = "Right "
+            elif action.button == "middle":
+                click_type = "Middle "
+            else:
+                click_type = "Left "
+            
             if action.use_match:
-                return "at match"
+                return f"{click_type}@ match"
             elif action.x is not None:
-                return f"({action.x}, {action.y})"
-            return ""
+                return f"{click_type}({action.x}, {action.y})"
+            return click_type.strip()
         elif isinstance(action, IfImage):
             return action.asset_id or "?"
         elif isinstance(action, Hotkey):
@@ -234,13 +263,27 @@ class ActionsPanel(QWidget):
             logger.info("Added action: %s", action_type)
 
     def _on_delete(self) -> None:
-        """Delete selected action."""
-        row = self.action_list.currentRow()
-        if 0 <= row < len(self._actions):
-            del self._actions[row]
-            self._refresh_list()
-            self.action_changed.emit()
-            logger.info("Deleted action at row %d", row)
+        """Delete selected actions."""
+        selected = self.action_list.selectedItems()
+        if not selected:
+            return
+        
+        # Get indices in reverse order to delete from end
+        rows = sorted([self.action_list.row(item) for item in selected], reverse=True)
+        for row in rows:
+            if 0 <= row < len(self._actions):
+                del self._actions[row]
+        
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Deleted %d actions", len(rows))
+
+    def _on_clear_all(self) -> None:
+        """Clear all actions."""
+        self._actions.clear()
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Cleared all actions")
 
     def _on_move_up(self) -> None:
         """Move selected action up."""
