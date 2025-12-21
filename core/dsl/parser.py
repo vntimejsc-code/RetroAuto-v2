@@ -399,6 +399,12 @@ class Parser:
         if self._check(TokenType.RETRY):
             return self._parse_retry()
 
+        # ─────────────────────────────────────────────────────────────
+        # RetroScript: match $expr: patterns
+        # ─────────────────────────────────────────────────────────────
+        if self._check(TokenType.MATCH):
+            return self._parse_match()
+
         # Expression statement
         return self._parse_expression_statement()
 
@@ -657,6 +663,74 @@ class Parser:
         # Store retry count as attribute (engine uses this)
         result.retry_count = count  # type: ignore
         return result
+
+    def _parse_match(self) -> IfStmt:
+        """Parse match statement (RetroScript pattern matching).
+
+        Syntax:
+            match $result:
+                Found(pos, score): click pos
+                NotFound: log "Not found"
+                Timeout: retry
+
+        Translates to if-elif chain based on expression value.
+        """
+        start = self._expect(TokenType.MATCH)
+
+        # Parse the expression to match on
+        match_expr = self._parse_expression()
+
+        # Expect colon
+        self._expect(TokenType.COLON, "Expected ':' after match expression")
+
+        # Parse match arms - simplified version
+        # For now, we treat match as a simple if-statement
+        # match $result:
+        #   Found: body1
+        #   NotFound: body2
+        # becomes: if $result == "Found" { body1 } elif $result == "NotFound" { body2 }
+
+        # Expect block or indented patterns
+        if self._match(TokenType.LBRACE):
+            # Block-style match
+            body = self._parse_block_inner()
+            self._expect(TokenType.RBRACE)
+        else:
+            # Simple single-line or indented
+            body = self._parse_block()
+
+        # Optional 'end' keyword
+        self._match(TokenType.END)
+
+        # For now, create a simplified structure
+        # The match expression becomes an if statement checking the expression
+        # This is a placeholder - full pattern matching would need more complex AST
+        return IfStmt(
+            span=self._span_from(start),
+            condition=match_expr,
+            then_branch=body,
+            elif_branches=[],
+            else_branch=None,
+        )
+
+    def _parse_block_inner(self) -> BlockStmt:
+        """Parse block statements without braces (for match arms)."""
+        statements: list[ASTNode] = []
+        start = self._peek()
+
+        while not self._check(TokenType.RBRACE, TokenType.EOF):
+            try:
+                stmt = self._parse_statement()
+                if stmt:
+                    statements.append(stmt)
+            except ParseError as e:
+                self.errors.append(e.diagnostic)
+                self._synchronize()
+
+        return BlockStmt(
+            span=self._span_from(start),
+            statements=statements,
+        )
 
     def _parse_expression_statement(self) -> ASTNode:
         """Parse expression statement or assignment."""
@@ -960,6 +1034,35 @@ class Parser:
 
         # Identifier
         if self._match(TokenType.IDENTIFIER):
+            return Identifier(
+                span=Span.from_token(token),
+                name=token.value,
+            )
+
+        # ─────────────────────────────────────────────────────────────
+        # RetroScript: Action keywords as callable identifiers
+        # These can be used as function calls: find(btn), click(100, 200), etc.
+        # ─────────────────────────────────────────────────────────────
+        retro_actions = (
+            TokenType.FIND,
+            TokenType.WAIT,
+            TokenType.CLICK,
+            TokenType.TYPE_KW,
+            TokenType.PRESS,
+            TokenType.SLEEP,
+            TokenType.SCROLL,
+            TokenType.DRAG,
+            TokenType.RUN,
+        )
+        if self._check(*retro_actions):
+            token = self._advance()
+            return Identifier(
+                span=Span.from_token(token),
+                name=token.value,
+            )
+
+        # RetroScript: $variable as expression
+        if self._match(TokenType.VARIABLE):
             return Identifier(
                 span=Span.from_token(token),
                 name=token.value,
