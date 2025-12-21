@@ -20,39 +20,34 @@ Layout:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
-from PySide6.QtCore import Qt, QSettings
-from PySide6.QtGui import QAction, QKeySequence, QCloseEvent
+from PySide6.QtCore import QSettings, Qt
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
 from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSplitter,
-    QMenuBar,
-    QMenu,
-    QToolBar,
-    QStatusBar,
-    QLabel,
     QFileDialog,
+    QLabel,
+    QMainWindow,
     QMessageBox,
+    QSplitter,
+    QStatusBar,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
 )
 
 from app.ui.code_editor import DSLCodeEditor
-from app.ui.project_explorer import ProjectExplorer
-from app.ui.output_panel import OutputPanel
 from app.ui.inspector_panel import InspectorPanel
-from app.ui.win95_style import apply_win95_style
+from app.ui.output_panel import OutputPanel
+from app.ui.project_explorer import ProjectExplorer
+from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
-from core.dsl.formatter import format_code
 
 
 class IDEMainWindow(QMainWindow):
     """
     MacroIDE 95 - Main IDE Window.
-    
+
     Features:
     - Project explorer with folder navigation
     - DSL code editor with syntax highlighting
@@ -127,31 +122,31 @@ class IDEMainWindow(QMainWindow):
 
         # File menu
         file_menu = menubar.addMenu("&File")
-        
+
         new_action = QAction("&New Project", self)
         new_action.setShortcut(QKeySequence.StandardKey.New)
         new_action.triggered.connect(self._new_project)
         file_menu.addAction(new_action)
-        
+
         open_action = QAction("&Open Project...", self)
         open_action.setShortcut(QKeySequence.StandardKey.Open)
         open_action.triggered.connect(self._open_project)
         file_menu.addAction(open_action)
-        
+
         file_menu.addSeparator()
-        
+
         save_action = QAction("&Save", self)
         save_action.setShortcut(QKeySequence.StandardKey.Save)
         save_action.triggered.connect(self._save_file)
         file_menu.addAction(save_action)
-        
+
         save_as_action = QAction("Save &As...", self)
         save_as_action.setShortcut(QKeySequence("Ctrl+Shift+S"))
         save_as_action.triggered.connect(self._save_file_as)
         file_menu.addAction(save_as_action)
-        
+
         file_menu.addSeparator()
-        
+
         exit_action = QAction("E&xit", self)
         exit_action.setShortcut(QKeySequence("Alt+F4"))
         exit_action.triggered.connect(self.close)
@@ -159,36 +154,36 @@ class IDEMainWindow(QMainWindow):
 
         # Edit menu
         edit_menu = menubar.addMenu("&Edit")
-        
+
         undo_action = QAction("&Undo", self)
         undo_action.setShortcut(QKeySequence.StandardKey.Undo)
         undo_action.triggered.connect(self.editor.undo)
         edit_menu.addAction(undo_action)
-        
+
         redo_action = QAction("&Redo", self)
         redo_action.setShortcut(QKeySequence.StandardKey.Redo)
         redo_action.triggered.connect(self.editor.redo)
         edit_menu.addAction(redo_action)
-        
+
         edit_menu.addSeparator()
-        
+
         cut_action = QAction("Cu&t", self)
         cut_action.setShortcut(QKeySequence.StandardKey.Cut)
         cut_action.triggered.connect(self.editor.cut)
         edit_menu.addAction(cut_action)
-        
+
         copy_action = QAction("&Copy", self)
         copy_action.setShortcut(QKeySequence.StandardKey.Copy)
         copy_action.triggered.connect(self.editor.copy)
         edit_menu.addAction(copy_action)
-        
+
         paste_action = QAction("&Paste", self)
         paste_action.setShortcut(QKeySequence.StandardKey.Paste)
         paste_action.triggered.connect(self.editor.paste)
         edit_menu.addAction(paste_action)
-        
+
         edit_menu.addSeparator()
-        
+
         format_action = QAction("&Format Document", self)
         format_action.setShortcut(QKeySequence("Ctrl+Shift+F"))
         format_action.triggered.connect(self._format_document)
@@ -196,19 +191,19 @@ class IDEMainWindow(QMainWindow):
 
         # Run menu
         run_menu = menubar.addMenu("&Run")
-        
+
         run_action = QAction("▶ &Run", self)
         run_action.setShortcut(QKeySequence("F5"))
         run_action.triggered.connect(self._run_script)
         run_menu.addAction(run_action)
-        
+
         stop_action = QAction("■ &Stop", self)
         stop_action.setShortcut(QKeySequence("F6"))
         stop_action.triggered.connect(self._stop_script)
         run_menu.addAction(stop_action)
-        
+
         run_menu.addSeparator()
-        
+
         check_action = QAction("✓ &Check Syntax", self)
         check_action.setShortcut(QKeySequence("Ctrl+Shift+C"))
         check_action.triggered.connect(self._check_syntax)
@@ -216,7 +211,7 @@ class IDEMainWindow(QMainWindow):
 
         # Help menu
         help_menu = menubar.addMenu("&Help")
-        
+
         about_action = QAction("&About MacroIDE 95", self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
@@ -302,11 +297,11 @@ class IDEMainWindow(QMainWindow):
     def _restore_state(self) -> None:
         """Restore window state from settings."""
         settings = QSettings("RetroAuto", "MacroIDE95")
-        
+
         geometry = settings.value("geometry")
         if geometry:
             self.restoreGeometry(geometry)
-        
+
         last_project = settings.value("last_project")
         if last_project and Path(last_project).exists():
             self.explorer.load_project(Path(last_project))
@@ -318,9 +313,9 @@ class IDEMainWindow(QMainWindow):
                 self,
                 "Unsaved Changes",
                 "Save changes before closing?",
-                QMessageBox.StandardButton.Save |
-                QMessageBox.StandardButton.Discard |
-                QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
             )
             if reply == QMessageBox.StandardButton.Save:
                 self._save_file()
@@ -331,7 +326,7 @@ class IDEMainWindow(QMainWindow):
         # Save state
         settings = QSettings("RetroAuto", "MacroIDE95")
         settings.setValue("geometry", self.saveGeometry())
-        
+
         event.accept()
 
     # ─────────────────────────────────────────────────────────────
@@ -340,42 +335,38 @@ class IDEMainWindow(QMainWindow):
 
     def _new_project(self) -> None:
         """Create a new project."""
-        folder = QFileDialog.getExistingDirectory(
-            self, "Select Project Folder"
-        )
+        folder = QFileDialog.getExistingDirectory(self, "Select Project Folder")
         if folder:
             path = Path(folder)
             # Create standard structure
             (path / "assets").mkdir(exist_ok=True)
             (path / "scripts").mkdir(exist_ok=True)
             (path / "flows").mkdir(exist_ok=True)
-            
+
             # Create main.dsl
             main_dsl = path / "scripts" / "main.dsl"
             if not main_dsl.exists():
                 main_dsl.write_text(
                     '// main.dsl\n\nhotkeys {\n  start = "F5"\n  stop = "F6"\n}\n\n'
-                    'flow main {\n  // TODO: Add your automation\n}\n',
-                    encoding="utf-8"
+                    "flow main {\n  // TODO: Add your automation\n}\n",
+                    encoding="utf-8",
                 )
-            
+
             self.explorer.load_project(path)
             self._open_file(str(main_dsl), "script")
             self.output.log_success(f"Created new project: {path.name}")
 
     def _open_project(self) -> None:
         """Open an existing project folder."""
-        folder = QFileDialog.getExistingDirectory(
-            self, "Open Project Folder"
-        )
+        folder = QFileDialog.getExistingDirectory(self, "Open Project Folder")
         if folder:
             path = Path(folder)
             self.explorer.load_project(path)
-            
+
             # Save as last project
             settings = QSettings("RetroAuto", "MacroIDE95")
             settings.setValue("last_project", str(path))
-            
+
             self.output.log_info(f"Opened project: {path.name}")
 
     def _open_file(self, file_path: str, file_type: str) -> None:
@@ -385,9 +376,9 @@ class IDEMainWindow(QMainWindow):
                 self,
                 "Unsaved Changes",
                 "Save changes before opening another file?",
-                QMessageBox.StandardButton.Save |
-                QMessageBox.StandardButton.Discard |
-                QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
             )
             if reply == QMessageBox.StandardButton.Save:
                 self._save_file()
@@ -403,7 +394,7 @@ class IDEMainWindow(QMainWindow):
                 self._is_modified = False
                 self._update_title()
                 self.output.log_info(f"Opened: {path.name}")
-                
+
                 # Check syntax on open
                 self._check_syntax()
             except Exception as e:
@@ -458,19 +449,19 @@ class IDEMainWindow(QMainWindow):
         code = self.editor.get_code()
         parser = Parser(code)
         program = parser.parse()
-        
+
         # Get parse errors
         diagnostics = list(parser.errors)
-        
+
         # Add semantic errors
         if not parser.errors:
             # TODO: Get known assets from project
             semantic_errors = analyze(program, known_assets=[])
             diagnostics.extend(semantic_errors)
-        
+
         file_name = self._current_file.name if self._current_file else "untitled"
         self.output.set_diagnostics(diagnostics, file_name)
-        
+
         if diagnostics:
             errors = sum(1 for d in diagnostics if d.severity.value == "error")
             warnings = len(diagnostics) - errors
@@ -530,5 +521,5 @@ class IDEMainWindow(QMainWindow):
             "MacroIDE 95\nVersion 1.0\n\n"
             "A Windows automation IDE with\n"
             "classic Win95/98 styling.\n\n"
-            "© 2024 RetroAuto"
+            "© 2024 RetroAuto",
         )

@@ -137,10 +137,12 @@ class ActionsPanel(QWidget):
         """Setup keyboard shortcuts."""
         # Delete key
         self.del_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self.action_list)
+        self.del_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         self.del_shortcut.activated.connect(self._on_delete)
-        
+
         # Ctrl+A to select all
         self.select_all_shortcut = QShortcut(QKeySequence.StandardKey.SelectAll, self.action_list)
+        self.select_all_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.select_all_shortcut.activated.connect(self.action_list.selectAll)
 
     def load_actions(self, actions: list[Action]) -> None:
@@ -184,7 +186,7 @@ class ActionsPanel(QWidget):
                 click_type = "Middle "
             else:
                 click_type = "Left "
-            
+
             if action.use_match:
                 return f"{click_type}@ match"
             elif action.x is not None:
@@ -222,11 +224,15 @@ class ActionsPanel(QWidget):
                 item.setBackground(QColor(255, 255, 200))  # Light yellow
                 self.action_list.scrollToItem(item)
 
-    def _on_selection_changed(self, current: QListWidgetItem | None, _: QListWidgetItem | None) -> None:
+    def _on_selection_changed(
+        self, current: QListWidgetItem | None, _: QListWidgetItem | None
+    ) -> None:
         has_selection = current is not None
         self.btn_delete.setEnabled(has_selection)
         self.btn_up.setEnabled(has_selection and self.action_list.currentRow() > 0)
-        self.btn_down.setEnabled(has_selection and self.action_list.currentRow() < self.action_list.count() - 1)
+        self.btn_down.setEnabled(
+            has_selection and self.action_list.currentRow() < self.action_list.count() - 1
+        )
 
         if current:
             idx = self.action_list.row(current)
@@ -267,13 +273,13 @@ class ActionsPanel(QWidget):
         selected = self.action_list.selectedItems()
         if not selected:
             return
-        
+
         # Get indices in reverse order to delete from end
         rows = sorted([self.action_list.row(item) for item in selected], reverse=True)
         for row in rows:
             if 0 <= row < len(self._actions):
                 del self._actions[row]
-        
+
         self._refresh_list()
         self.action_changed.emit()
         logger.info("Deleted %d actions", len(rows))

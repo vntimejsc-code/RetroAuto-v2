@@ -14,9 +14,9 @@ Rules:
 from __future__ import annotations
 
 from core.dsl.ast import (
-    ASTNode,
     ArrayExpr,
     AssignStmt,
+    ASTNode,
     BinaryExpr,
     BlockStmt,
     BreakStmt,

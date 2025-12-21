@@ -8,15 +8,14 @@ from pathlib import Path
 import pytest
 
 from core.models import (
+    ROI,
     AssetImage,
     Click,
     Delay,
     Flow,
     Goto,
     Hotkey,
-    IfImage,
     Label,
-    ROI,
     RunFlow,
     Script,
     TypeText,
@@ -146,7 +145,7 @@ class TestScriptIO:
             # Reload (use dict loading to skip reference validation)
             from ruamel.yaml import YAML
             yaml = YAML()
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = yaml.load(f)
             reloaded = Script.model_validate(data)
 

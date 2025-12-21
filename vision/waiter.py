@@ -5,11 +5,11 @@ Wait for image to appear or disappear with polling and timeout.
 """
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable
 
-from core.models import Match, ROI
+from core.models import ROI, Match
 from infra import get_logger
 from vision.matcher import Matcher
 
@@ -167,7 +167,9 @@ class ImageWaiter:
             if appear:
                 # Waiting for image to appear
                 if match is not None:
-                    logger.info("Found %s after %dms (conf=%.2f)", asset_id, elapsed, match.confidence)
+                    logger.info(
+                        "Found %s after %dms (conf=%.2f)", asset_id, elapsed, match.confidence
+                    )
                     return WaitOutcome(result=WaitResult.SUCCESS, match=match, elapsed_ms=elapsed)
                 consecutive_misses += 1
             else:

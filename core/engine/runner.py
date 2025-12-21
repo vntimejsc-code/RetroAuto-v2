@@ -5,7 +5,7 @@ Execute flows with Label/Goto support and action dispatch.
 """
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from core.engine.context import EngineState, ExecutionContext
 from core.models import (
@@ -18,7 +18,6 @@ from core.models import (
     IfImage,
     Label,
     RunFlow,
-    Script,
     TypeText,
     WaitImage,
 )
@@ -203,7 +202,12 @@ class Runner:
 
     def _exec_wait_image(self, action: WaitImage) -> bool | None:
         """Execute WaitImage action."""
-        logger.info("WaitImage: %s (appear=%s, timeout=%dms)", action.asset_id, action.appear, action.timeout_ms)
+        logger.info(
+            "WaitImage: %s (appear=%s, timeout=%dms)",
+            action.asset_id,
+            action.appear,
+            action.timeout_ms,
+        )
 
         if action.appear:
             outcome = self._ctx.waiter.wait_appear(
@@ -281,7 +285,11 @@ class Runner:
 
     def _exec_type_text(self, action: TypeText) -> None:
         """Execute TypeText action."""
-        logger.info("TypeText: '%s...' (paste=%s)", action.text[:20] if len(action.text) > 20 else action.text, action.paste_mode)
+        logger.info(
+            "TypeText: '%s...' (paste=%s)",
+            action.text[:20] if len(action.text) > 20 else action.text,
+            action.paste_mode,
+        )
         self._ctx.keyboard.type_text(action.text, action.paste_mode, action.enter)
         return None
 

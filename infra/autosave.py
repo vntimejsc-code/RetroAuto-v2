@@ -6,8 +6,8 @@ Automatic backup saves with configurable interval.
 
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from infra.logging import get_logger
 
@@ -128,6 +128,7 @@ class AutosaveManager:
         script_path = self._backup_dir / "script.yaml"
         if script_path.exists():
             import shutil
+
             backup_path = backup_dir / backup_name
             shutil.copy(script_path, backup_path)
             logger.debug("Created backup: %s", backup_name)

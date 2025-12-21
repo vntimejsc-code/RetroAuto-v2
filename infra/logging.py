@@ -6,10 +6,10 @@ Logging infrastructure with rotating file handler and GUI integration.
 
 import logging
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Callable
 
 # Default log directory
 LOG_DIR = Path.home() / ".retroauto" / "logs"

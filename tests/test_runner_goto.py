@@ -15,7 +15,6 @@ from core.models import (
     Label,
     Script,
     TypeText,
-    WaitImage,
 )
 from core.templates import TemplateStore
 
@@ -44,8 +43,8 @@ class MockWaiter:
         self.success = True
 
     def wait_appear(self, asset_id, **kwargs):  # type: ignore
-        from vision.waiter import WaitOutcome, WaitResult
         from core.models import Match
+        from vision.waiter import WaitOutcome, WaitResult
 
         if self.success:
             return WaitOutcome(
@@ -95,7 +94,6 @@ class TestRunner:
         """Create runner with mocks."""
         from core.engine.context import ExecutionContext
         from core.engine.runner import Runner
-        from core.templates import TemplateStore
 
         script = Script(
             name="Test",

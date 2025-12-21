@@ -8,9 +8,9 @@ Produces AST with precise span tracking.
 from __future__ import annotations
 
 from core.dsl.ast import (
-    ASTNode,
     ArrayExpr,
     AssignStmt,
+    ASTNode,
     BinaryExpr,
     BlockStmt,
     BreakStmt,
@@ -149,9 +149,7 @@ class Parser:
             msg = message
         else:
             msg = f"Expected {expected_name}"
-        raise ParseError(
-            expected_token(expected_name, current.value, Span.from_token(current))
-        )
+        raise ParseError(expected_token(expected_name, current.value, Span.from_token(current)))
 
     def _span_from(self, start_token: Token) -> Span:
         """Create span from start token to current position."""
@@ -215,9 +213,7 @@ class Parser:
                 else:
                     # Try to parse as statement for better error
                     token = self._peek()
-                    self.errors.append(
-                        unexpected_token(token.value, Span.from_token(token))
-                    )
+                    self.errors.append(unexpected_token(token.value, Span.from_token(token)))
                     self._synchronize()
             except ParseError as e:
                 self.errors.append(e.diagnostic)
@@ -731,10 +727,7 @@ class Parser:
         if not self._check(TokenType.RPAREN):
             while True:
                 # Check for keyword argument
-                if (
-                    self._check(TokenType.IDENTIFIER)
-                    and self._peek(1).type == TokenType.ASSIGN
-                ):
+                if self._check(TokenType.IDENTIFIER) and self._peek(1).type == TokenType.ASSIGN:
                     name = self._advance().value
                     self._advance()  # =
                     value = self._parse_expression()
@@ -842,6 +835,4 @@ class Parser:
             return expr
 
         # Error
-        raise ParseError(
-            unexpected_token(token.value, Span.from_token(token))
-        )
+        raise ParseError(unexpected_token(token.value, Span.from_token(token)))

@@ -7,7 +7,7 @@ OpenCV template matching with ROI optimization.
 import cv2
 import numpy as np
 
-from core.models import AssetImage, Match, MatchMethod, ROI
+from core.models import ROI, AssetImage, Match, MatchMethod
 from core.templates import TemplateStore
 from infra import get_logger
 from vision.capture import ScreenCapture, get_capture
@@ -93,7 +93,9 @@ class Matcher:
 
         # Check threshold
         if confidence < asset.threshold:
-            logger.debug("Match below threshold: %s (%.2f < %.2f)", asset_id, confidence, asset.threshold)
+            logger.debug(
+                "Match below threshold: %s (%.2f < %.2f)", asset_id, confidence, asset.threshold
+            )
             return None
 
         # Create match with absolute coordinates

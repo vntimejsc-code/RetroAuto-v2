@@ -2,23 +2,19 @@
 Tests for DSL Parser.
 """
 
-import pytest
 
-from core.dsl.parser import Parser
 from core.dsl.ast import (
-    FlowDecl,
-    BlockStmt,
+    BinaryExpr,
     CallExpr,
-    LabelStmt,
+    ExprStmt,
+    ForStmt,
     GotoStmt,
     IfStmt,
-    WhileStmt,
-    ForStmt,
+    LabelStmt,
     LetStmt,
-    Literal,
-    BinaryExpr,
-    ExprStmt,
+    WhileStmt,
 )
+from core.dsl.parser import Parser
 
 
 class TestParserBasics:

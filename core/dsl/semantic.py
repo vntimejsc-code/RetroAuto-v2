@@ -14,9 +14,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from core.dsl.ast import (
-    ASTNode,
     ArrayExpr,
     AssignStmt,
+    ASTNode,
     BinaryExpr,
     BlockStmt,
     CallExpr,
@@ -27,7 +27,6 @@ from core.dsl.ast import (
     GotoStmt,
     Identifier,
     IfStmt,
-    InterruptDecl,
     LabelStmt,
     LetStmt,
     Literal,
@@ -40,10 +39,8 @@ from core.dsl.ast import (
 )
 from core.dsl.diagnostics import (
     Diagnostic,
-    Severity,
     duplicate_flow,
     duplicate_label,
-    invalid_argument,
     missing_argument,
     unknown_asset,
     unknown_flow,
@@ -253,9 +250,7 @@ class SemanticAnalyzer:
         for flow in program.flows:
             if flow.name in self.symbols.flows:
                 original = self.symbols.flows[flow.name]
-                self.diagnostics.append(
-                    duplicate_flow(flow.name, flow.span, original.span)
-                )
+                self.diagnostics.append(duplicate_flow(flow.name, flow.span, original.span))
             else:
                 self.symbols.flows[flow.name] = flow
 
@@ -266,9 +261,7 @@ class SemanticAnalyzer:
         # Collect interrupt assets
         for interrupt in program.interrupts:
             if interrupt.when_asset and interrupt.when_asset not in self.known_assets:
-                self.diagnostics.append(
-                    unknown_asset(interrupt.when_asset, interrupt.span)
-                )
+                self.diagnostics.append(unknown_asset(interrupt.when_asset, interrupt.span))
 
     def _collect_labels(self, flow_name: str, block: BlockStmt) -> None:
         """Collect labels in a block."""
@@ -277,9 +270,7 @@ class SemanticAnalyzer:
                 labels = self.symbols.labels[flow_name]
                 if stmt.name in labels:
                     original = labels[stmt.name]
-                    self.diagnostics.append(
-                        duplicate_label(stmt.name, stmt.span, original.span)
-                    )
+                    self.diagnostics.append(duplicate_label(stmt.name, stmt.span, original.span))
                 else:
                     labels[stmt.name] = stmt
 
@@ -371,9 +362,7 @@ class SemanticAnalyzer:
             return
         labels = self.symbols.labels[self.current_flow]
         if stmt.target not in labels:
-            self.diagnostics.append(
-                unknown_label(stmt.target, stmt.span)
-            )
+            self.diagnostics.append(unknown_label(stmt.target, stmt.span))
 
     def _validate_expression(self, expr: ASTNode) -> None:
         """Validate an expression."""
@@ -407,9 +396,7 @@ class SemanticAnalyzer:
                 if isinstance(flow_arg, Literal) and flow_arg.literal_type == "string":
                     flow_name = flow_arg.value
                     if flow_name not in self.symbols.flows:
-                        self.diagnostics.append(
-                            unknown_flow(flow_name, call.span)
-                        )
+                        self.diagnostics.append(unknown_flow(flow_name, call.span))
 
         elif call.callee in ("wait_image", "find_image", "image_exists"):
             # Validate asset reference
@@ -418,9 +405,7 @@ class SemanticAnalyzer:
                 if isinstance(asset_arg, Literal) and asset_arg.literal_type == "string":
                     asset_id = asset_arg.value
                     if asset_id not in self.known_assets:
-                        self.diagnostics.append(
-                            unknown_asset(asset_id, call.span)
-                        )
+                        self.diagnostics.append(unknown_asset(asset_id, call.span))
 
         elif call.callee == "wait_any":
             # Validate asset list
@@ -430,9 +415,7 @@ class SemanticAnalyzer:
                     for elem in list_arg.elements:
                         if isinstance(elem, Literal) and elem.literal_type == "string":
                             if elem.value not in self.known_assets:
-                                self.diagnostics.append(
-                                    unknown_asset(elem.value, elem.span)
-                                )
+                                self.diagnostics.append(unknown_asset(elem.value, elem.span))
 
         # Validate argument count for known functions
         if sig:
@@ -444,9 +427,7 @@ class SemanticAnalyzer:
                     if i >= len(call.args) and arg_name not in call.kwargs:
                         missing.append(arg_name)
                 for arg_name in missing:
-                    self.diagnostics.append(
-                        missing_argument(call.callee, arg_name, call.span)
-                    )
+                    self.diagnostics.append(missing_argument(call.callee, arg_name, call.span))
 
         # Validate all argument expressions
         for arg in call.args:

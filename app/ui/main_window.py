@@ -12,7 +12,6 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QFileDialog,
-    QHBoxLayout,
     QMainWindow,
     QMessageBox,
     QSplitter,
@@ -276,7 +275,9 @@ class MainWindow(QMainWindow):
 
     def _on_capture_complete(self, asset, roi) -> None:  # type: ignore
         """Handle capture completion."""
-        logger.info("Captured asset: %s with ROI (%d, %d, %d, %d)", asset.id, roi.x, roi.y, roi.w, roi.h)
+        logger.info(
+            "Captured asset: %s with ROI (%d, %d, %d, %d)", asset.id, roi.x, roi.y, roi.w, roi.h
+        )
 
         # Add asset with ROI to panel
         asset.roi = roi
@@ -305,11 +306,11 @@ class MainWindow(QMainWindow):
     def _on_add_click_to_script(self, x: int, y: int, button: str, clicks: int) -> None:
         """Add a click action from coordinates panel to script."""
         from core.models import Click
-        
+
         click_action = Click(x=x, y=y, button=button, clicks=clicks)
         self.actions_panel._actions.append(click_action)
         self.actions_panel._refresh_list()
-        
+
         logger.info(f"Added Click({x}, {y}, {button}, {clicks}) to script")
         self.status_bar.showMessage(f"Added: Click({x}, {y}) - {button}")
 
@@ -360,7 +361,7 @@ class MainWindow(QMainWindow):
         """Open the DSL IDE window."""
         from app.ui.ide_main_window import IDEMainWindow
         from app.ui.win95_style import generate_stylesheet
-        
+
         self.ide_window = IDEMainWindow()
         self.ide_window.setStyleSheet(generate_stylesheet())
         self.ide_window.show()
@@ -371,7 +372,7 @@ class MainWindow(QMainWindow):
         try:
             # Ensure directory exists
             self._draft_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Serialize actions
             actions = self.actions_panel.get_actions()
             draft_data = {
@@ -379,10 +380,10 @@ class MainWindow(QMainWindow):
                 "actions": [action.model_dump() for action in actions],
                 "coordinates": self.coordinates_panel.get_coordinates(),
             }
-            
+
             with open(self._draft_path, "w", encoding="utf-8") as f:
                 json.dump(draft_data, f, indent=2, default=str)
-            
+
             logger.debug(f"Auto-saved draft: {len(actions)} actions")
         except Exception as e:
             logger.warning(f"Failed to save draft: {e}")
@@ -392,19 +393,26 @@ class MainWindow(QMainWindow):
         try:
             if not self._draft_path.exists():
                 return
-            
-            with open(self._draft_path, "r", encoding="utf-8") as f:
+
+            with open(self._draft_path, encoding="utf-8") as f:
                 draft_data = json.load(f)
-            
+
             if draft_data.get("version") != 1:
                 return
-            
+
             # Load actions
             from core.models import (
-                Click, WaitImage, IfImage, Hotkey, TypeText,
-                Label, Goto, RunFlow, Delay
+                Click,
+                Delay,
+                Goto,
+                Hotkey,
+                IfImage,
+                Label,
+                RunFlow,
+                TypeText,
+                WaitImage,
             )
-            
+
             action_map = {
                 "Click": Click,
                 "WaitImage": WaitImage,
@@ -416,7 +424,7 @@ class MainWindow(QMainWindow):
                 "RunFlow": RunFlow,
                 "Delay": Delay,
             }
-            
+
             actions = []
             for action_data in draft_data.get("actions", []):
                 action_type = action_data.get("action")
@@ -425,13 +433,13 @@ class MainWindow(QMainWindow):
                         actions.append(action_map[action_type](**action_data))
                     except Exception:
                         pass
-            
+
             if actions:
                 self.actions_panel._actions = actions
                 self.actions_panel._refresh_list()
                 logger.info(f"Loaded draft: {len(actions)} actions")
                 self.status_bar.showMessage(f"Loaded draft: {len(actions)} actions")
-                
+
         except Exception as e:
             logger.warning(f"Failed to load draft: {e}")
 
@@ -439,7 +447,7 @@ class MainWindow(QMainWindow):
         """Handle window close."""
         # Save draft before closing
         self._save_draft()
-        
+
         if self.engine.isRunning():
             self.engine.stop()
             self.engine.wait(2000)

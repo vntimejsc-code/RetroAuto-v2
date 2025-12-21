@@ -10,20 +10,19 @@ Win95-style output/log panel with tabs for:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QTextCharFormat, QFont
+from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
+    QComboBox,
     QHBoxLayout,
-    QTabWidget,
     QPlainTextEdit,
+    QPushButton,
+    QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
-    QPushButton,
-    QComboBox,
+    QVBoxLayout,
+    QWidget,
 )
 
 from core.dsl.diagnostics import Diagnostic, Severity
@@ -32,11 +31,11 @@ from core.dsl.diagnostics import Diagnostic, Severity
 class OutputPanel(QWidget):
     """
     Output panel with Win95 tab styling.
-    
+
     Tabs:
     - Output: Execution logs with color-coded levels
     - Problems: DSL diagnostics (errors, warnings)
-    
+
     Signals:
         diagnostic_clicked: Emitted when a problem is double-clicked
     """
@@ -77,18 +76,18 @@ class OutputPanel(QWidget):
 
         # Toolbar
         toolbar = QHBoxLayout()
-        
+
         self.log_level_combo = QComboBox()
         self.log_level_combo.addItems(["All", "Info", "Warning", "Error"])
         self.log_level_combo.currentTextChanged.connect(self._filter_logs)
         toolbar.addWidget(self.log_level_combo)
-        
+
         toolbar.addStretch()
-        
+
         clear_btn = QPushButton("Clear")
         clear_btn.clicked.connect(self._clear_output)
         toolbar.addWidget(clear_btn)
-        
+
         layout.addLayout(toolbar)
 
         # Log output
@@ -164,7 +163,7 @@ class OutputPanel(QWidget):
     def log(self, message: str, level: str = "info") -> None:
         """Add a log message to output."""
         timestamp = datetime.now().strftime("%H:%M:%S")
-        
+
         # Color based on level
         color_map = {
             "debug": "#808080",
@@ -174,7 +173,7 @@ class OutputPanel(QWidget):
             "success": "#008000",
         }
         color = color_map.get(level.lower(), "#000000")
-        
+
         # Add formatted message
         prefix = f"[{level.upper():7}]"
         html = f'<span style="color:{color}">{timestamp} {prefix} {message}</span>'
@@ -212,31 +211,35 @@ class OutputPanel(QWidget):
     def set_diagnostics(self, diagnostics: list[Diagnostic], file_path: str = "") -> None:
         """Update the problems list with diagnostics."""
         self.problems_tree.clear()
-        
+
         for diag in diagnostics:
             icon = "❌" if diag.severity == Severity.ERROR else "⚠️"
             location = f"{file_path}:{diag.span.start_line}:{diag.span.start_col}"
-            
+
             item = QTreeWidgetItem([icon, diag.message, location])
-            item.setData(0, Qt.ItemDataRole.UserRole, {
-                "file": file_path,
-                "line": diag.span.start_line,
-                "col": diag.span.start_col,
-                "diagnostic": diag,
-            })
-            
+            item.setData(
+                0,
+                Qt.ItemDataRole.UserRole,
+                {
+                    "file": file_path,
+                    "line": diag.span.start_line,
+                    "col": diag.span.start_col,
+                    "diagnostic": diag,
+                },
+            )
+
             # Color based on severity
             if diag.severity == Severity.ERROR:
                 item.setForeground(1, QColor("#CC0000"))
             elif diag.severity == Severity.WARNING:
                 item.setForeground(1, QColor("#806600"))
-            
+
             self.problems_tree.addTopLevelItem(item)
-        
+
         # Update tab title with count
         error_count = sum(1 for d in diagnostics if d.severity == Severity.ERROR)
         warning_count = sum(1 for d in diagnostics if d.severity == Severity.WARNING)
-        
+
         if error_count or warning_count:
             self.tabs.setTabText(1, f"Problems ({error_count}E, {warning_count}W)")
         else:

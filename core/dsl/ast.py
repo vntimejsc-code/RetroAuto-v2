@@ -37,13 +37,13 @@ class Span:
         """Merge two spans to cover both ranges."""
         return Span(
             min(self.start_line, other.start_line),
-            min(self.start_col, other.start_col) if self.start_line == other.start_line else (
-                self.start_col if self.start_line < other.start_line else other.start_col
-            ),
+            min(self.start_col, other.start_col)
+            if self.start_line == other.start_line
+            else (self.start_col if self.start_line < other.start_line else other.start_col),
             max(self.end_line, other.end_line),
-            max(self.end_col, other.end_col) if self.end_line == other.end_line else (
-                self.end_col if self.end_line > other.end_line else other.end_col
-            ),
+            max(self.end_col, other.end_col)
+            if self.end_line == other.end_line
+            else (self.end_col if self.end_line > other.end_line else other.end_col),
         )
 
 

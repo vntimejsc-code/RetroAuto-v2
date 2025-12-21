@@ -17,8 +17,8 @@ import time
 from pathlib import Path
 
 try:
+    from watchdog.events import FileModifiedEvent, FileSystemEventHandler
     from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 except ImportError:
     print("❌ watchdog not installed. Run: pip install watchdog")
     sys.exit(1)

@@ -54,7 +54,7 @@ def load_script(path: Path | str) -> Script:
         raise ScriptLoadError(f"File not found: {path}")
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = yaml.load(f)
     except Exception as e:
         raise ScriptLoadError(f"Invalid YAML: {e}")
@@ -77,7 +77,9 @@ def load_script(path: Path | str) -> Script:
     if ref_errors:
         raise ScriptLoadError("Invalid references", ref_errors)
 
-    logger.info("Loaded script: %s (%d assets, %d flows)", path.name, len(script.assets), len(script.flows))
+    logger.info(
+        "Loaded script: %s (%d assets, %d flows)", path.name, len(script.assets), len(script.flows)
+    )
     return script
 
 

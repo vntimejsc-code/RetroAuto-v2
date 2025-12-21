@@ -8,11 +8,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
-from typing import Annotated, Literal, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
-
 
 # ─────────────────────────────────────────────────────────────
 # Basic Types
@@ -168,7 +166,7 @@ class Delay(ActionBase):
 
 # Discriminated union type
 Action = Annotated[
-    Union[WaitImage, Click, IfImage, Hotkey, TypeText, Label, Goto, RunFlow, Delay],
+    WaitImage | Click | IfImage | Hotkey | TypeText | Label | Goto | RunFlow | Delay,
     Field(discriminator="action"),
 ]
 

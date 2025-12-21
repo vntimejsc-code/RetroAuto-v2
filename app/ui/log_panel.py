@@ -4,7 +4,6 @@ RetroAuto v2 - Log Panel
 Displays application logs with filtering.
 """
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QGroupBox,

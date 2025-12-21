@@ -120,7 +120,12 @@ class InterruptWatcher:
             if match is None:
                 continue
 
-            logger.info("Interrupt triggered: %s (priority=%d, conf=%.2f)", rule.when_image, rule.priority, match.confidence)
+            logger.info(
+                "Interrupt triggered: %s (priority=%d, conf=%.2f)",
+                rule.when_image,
+                rule.priority,
+                match.confidence,
+            )
 
             # Update cooldown
             self._triggered_cooldown[cooldown_key] = time.time()
@@ -181,7 +186,7 @@ class InterruptManager:
 
     def __init__(self, ctx: ExecutionContext) -> None:
         self._ctx = ctx
-        self._runner: "Runner | None" = None
+        self._runner: Runner | None = None
         self._watcher: InterruptWatcher | None = None
 
     def set_runner(self, runner: "Runner") -> None:

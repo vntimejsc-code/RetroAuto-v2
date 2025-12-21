@@ -13,22 +13,21 @@ Features:
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QRect, QSize, Signal
+from PySide6.QtCore import QRect, QSize, Qt, Signal
 from PySide6.QtGui import (
+    QBrush,
     QColor,
     QFont,
-    QPainter,
-    QTextFormat,
     QKeyEvent,
-    QTextCursor,
     QMouseEvent,
-    QBrush,
+    QPainter,
+    QTextCursor,
+    QTextFormat,
 )
-from PySide6.QtWidgets import QPlainTextEdit, QWidget, QTextEdit
+from PySide6.QtWidgets import QPlainTextEdit, QTextEdit, QWidget
 
 from app.ui.syntax_highlighter import DSLHighlighter
-from app.ui.win95_style import COLORS, FONTS
-
+from app.ui.win95_style import COLORS
 
 # ─────────────────────────────────────────────────────────────
 # Line Number Area (with breakpoint gutter)
@@ -40,7 +39,7 @@ class LineNumberArea(QWidget):
 
     BREAKPOINT_MARGIN = 16  # Width for breakpoint markers
 
-    def __init__(self, editor: "DSLCodeEditor") -> None:
+    def __init__(self, editor: DSLCodeEditor) -> None:
         super().__init__(editor)
         self.editor = editor
 
@@ -58,21 +57,23 @@ class LineNumberArea(QWidget):
             if event.position().x() < self.BREAKPOINT_MARGIN:
                 # Find which line was clicked
                 block = self.editor.firstVisibleBlock()
-                top = int(self.editor.blockBoundingGeometry(block).translated(
-                    self.editor.contentOffset()
-                ).top())
-                
+                top = int(
+                    self.editor.blockBoundingGeometry(block)
+                    .translated(self.editor.contentOffset())
+                    .top()
+                )
+
                 while block.isValid():
                     if block.isVisible():
                         block_top = top
                         block_bottom = top + int(self.editor.blockBoundingRect(block).height())
-                        
+
                         if block_top <= event.position().y() < block_bottom:
                             line = block.blockNumber() + 1
                             self.editor.toggle_breakpoint(line)
                             self.update()
                             return
-                    
+
                     top += int(self.editor.blockBoundingRect(block).height())
                     block = block.next()
 
@@ -85,7 +86,7 @@ class LineNumberArea(QWidget):
 class DSLCodeEditor(QPlainTextEdit):
     """
     DSL code editor with Win95/98 styling.
-    
+
     Features:
     - Line numbers with classic styling
     - Syntax highlighting for DSL
@@ -94,7 +95,7 @@ class DSLCodeEditor(QPlainTextEdit):
     - Tab to 2-space conversion
     - Breakpoint markers
     - Debug line highlighting
-    
+
     Signals:
         content_changed: Emitted when content changes
         cursor_position_changed: Emitted with (line, col)
@@ -123,24 +124,24 @@ class DSLCodeEditor(QPlainTextEdit):
         font.setStyleHint(QFont.StyleHint.Monospace)
         font.setFixedPitch(True)
         self.setFont(font)
-        
+
         # Tab width
         self.setTabStopDistance(self.fontMetrics().horizontalAdvance(" ") * self.TAB_SIZE)
-        
+
         # Colors
         self.setStyleSheet(f"""
             QPlainTextEdit {{
-                background-color: {COLORS['editor_bg']};
-                color: {COLORS['window_text']};
-                border: 2px inset {COLORS['shadow_dark']};
-                selection-background-color: {COLORS['highlight']};
-                selection-color: {COLORS['highlight_text']};
+                background-color: {COLORS["editor_bg"]};
+                color: {COLORS["window_text"]};
+                border: 2px inset {COLORS["shadow_dark"]};
+                selection-background-color: {COLORS["highlight"]};
+                selection-color: {COLORS["highlight_text"]};
             }}
         """)
-        
+
         # Current line highlight color
         self.current_line_color = QColor("#FFFFCC")  # Light yellow
-        self.debug_line_color = QColor("#FFFF00")    # Bright yellow for debug
+        self.debug_line_color = QColor("#FFFF00")  # Bright yellow for debug
 
     def _init_line_numbers(self) -> None:
         """Set up line number gutter."""
@@ -194,34 +195,36 @@ class DSLCodeEditor(QPlainTextEdit):
     def line_number_area_paint_event(self, event) -> None:  # type: ignore
         """Paint the line number gutter with breakpoint markers."""
         painter = QPainter(self.line_number_area)
-        
+
         # Background (Win95 gray)
         painter.fillRect(event.rect(), QColor(COLORS["gutter_bg"]))
-        
+
         # Border line
         painter.setPen(QColor(COLORS["border"]))
         painter.drawLine(
-            self.line_number_area.width() - 1, event.rect().top(),
-            self.line_number_area.width() - 1, event.rect().bottom()
+            self.line_number_area.width() - 1,
+            event.rect().top(),
+            self.line_number_area.width() - 1,
+            event.rect().bottom(),
         )
-        
+
         # Draw line numbers and breakpoints
         block = self.firstVisibleBlock()
         block_number = block.blockNumber()
         top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
         bottom = top + int(self.blockBoundingRect(block).height())
-        
+
         while block.isValid() and top <= event.rect().bottom():
             if block.isVisible() and bottom >= event.rect().top():
                 line = block_number + 1
-                
+
                 # Draw breakpoint marker (red circle)
                 if line in self._breakpoints:
                     circle_y = top + (self.fontMetrics().height() - 12) // 2
                     painter.setBrush(QBrush(QColor("#CC0000")))  # Dark red
                     painter.setPen(QColor("#800000"))
                     painter.drawEllipse(2, circle_y, 12, 12)
-                
+
                 # Draw debug arrow (yellow arrow on current debug line)
                 if self._debug_line == line:
                     arrow_y = top + (self.fontMetrics().height() - 8) // 2
@@ -231,17 +234,18 @@ class DSLCodeEditor(QPlainTextEdit):
                     painter.drawRect(2, arrow_y + 2, 8, 4)
                     painter.drawLine(10, arrow_y, 14, arrow_y + 4)
                     painter.drawLine(10, arrow_y + 8, 14, arrow_y + 4)
-                
+
                 # Draw line number
                 painter.setPen(QColor(COLORS["line_number"]))
                 painter.drawText(
-                    0, top,
+                    0,
+                    top,
                     self.line_number_area.width() - 4,
                     self.fontMetrics().height(),
                     Qt.AlignmentFlag.AlignRight,
-                    str(line)
+                    str(line),
                 )
-            
+
             block = block.next()
             top = bottom
             bottom = top + int(self.blockBoundingRect(block).height())
@@ -254,7 +258,7 @@ class DSLCodeEditor(QPlainTextEdit):
     def _highlight_current_line(self) -> None:
         """Highlight the current line."""
         extra_selections: list[QTextEdit.ExtraSelection] = []
-        
+
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
             selection.format.setBackground(self.current_line_color)
@@ -262,7 +266,7 @@ class DSLCodeEditor(QPlainTextEdit):
             selection.cursor = self.textCursor()
             selection.cursor.clearSelection()
             extra_selections.append(selection)
-        
+
         self.setExtraSelections(extra_selections)
 
     # ─────────────────────────────────────────────────────────────
@@ -278,17 +282,17 @@ class DSLCodeEditor(QPlainTextEdit):
             else:
                 self._insert_spaces()
             return
-        
+
         # Enter -> auto-indent
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self._insert_newline_with_indent()
             return
-        
+
         # Backspace -> smart unindent
         if event.key() == Qt.Key.Key_Backspace:
             if self._smart_backspace():
                 return
-        
+
         super().keyPressEvent(event)
 
     def _insert_spaces(self) -> None:
@@ -302,11 +306,13 @@ class DSLCodeEditor(QPlainTextEdit):
         cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
         cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
         line = cursor.selectedText()
-        
+
         # Remove leading spaces
         if line.startswith(" " * self.TAB_SIZE):
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
-            cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor, self.TAB_SIZE)
+            cursor.movePosition(
+                QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor, self.TAB_SIZE
+            )
             cursor.removeSelectedText()
         elif line.startswith("\t"):
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
@@ -316,12 +322,12 @@ class DSLCodeEditor(QPlainTextEdit):
     def _insert_newline_with_indent(self) -> None:
         """Insert newline and match previous line's indentation."""
         cursor = self.textCursor()
-        
+
         # Get current line's indentation
         cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
         cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
         current_line = cursor.selectedText()
-        
+
         # Calculate indent
         indent = ""
         for char in current_line:
@@ -331,12 +337,12 @@ class DSLCodeEditor(QPlainTextEdit):
                 indent += " " * self.TAB_SIZE
             else:
                 break
-        
+
         # Check if we should increase indent (line ends with {)
         stripped = current_line.rstrip()
         if stripped.endswith("{"):
             indent += " " * self.TAB_SIZE
-        
+
         # Insert newline with indent
         cursor = self.textCursor()
         cursor.insertText("\n" + indent)
@@ -344,31 +350,31 @@ class DSLCodeEditor(QPlainTextEdit):
     def _smart_backspace(self) -> bool:
         """Smart backspace to remove indent levels."""
         cursor = self.textCursor()
-        
+
         # Only at start of non-empty indent
         if cursor.positionInBlock() == 0:
             return False
-        
+
         # Get text before cursor on current line
         cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
         cursor.movePosition(
             QTextCursor.MoveOperation.Right,
             QTextCursor.MoveMode.KeepAnchor,
-            self.textCursor().positionInBlock()
+            self.textCursor().positionInBlock(),
         )
         before = cursor.selectedText()
-        
+
         # If only spaces before cursor, remove indent level
         if before and before.strip() == "":
             spaces_to_remove = len(before) % self.TAB_SIZE
             if spaces_to_remove == 0:
                 spaces_to_remove = self.TAB_SIZE
-            
+
             cursor = self.textCursor()
             for _ in range(spaces_to_remove):
                 cursor.deletePreviousChar()
             return True
-        
+
         return False
 
     # ─────────────────────────────────────────────────────────────
@@ -472,4 +478,3 @@ class DSLCodeEditor(QPlainTextEdit):
         """Clear debug line highlighting."""
         self._debug_line = None
         self._highlight_current_line()
-

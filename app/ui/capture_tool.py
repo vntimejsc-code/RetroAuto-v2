@@ -4,15 +4,14 @@ RetroAuto v2 - Screen Capture Tool
 Full-screen overlay for region selection.
 """
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
-import numpy as np
 from PySide6.QtCore import QPoint, QRect, Qt, Signal
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import QApplication, QLabel, QWidget
+from PySide6.QtWidgets import QWidget
 
-from core.models import AssetImage, ROI
+from core.models import ROI, AssetImage
 from infra import get_logger
 
 logger = get_logger("CaptureTool")

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
-from core.engine import EngineState, ExecutionContext, InterruptManager, Runner
+from core.engine import ExecutionContext, InterruptManager, Runner
 from core.models import Script
 from core.script.io import create_empty_script, load_script, save_script
 from core.templates import TemplateStore

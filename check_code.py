@@ -4,7 +4,7 @@ RetroAuto v2 - Code Check Script
 
 Runs all code quality checks:
 - Syntax check
-- Import check  
+- Import check
 - Ruff linting
 - Mypy type checking
 - Pytest tests with coverage
@@ -46,22 +46,22 @@ def run_cmd(cmd: list[str], check: bool = True) -> tuple[int, str]:
 def check_syntax() -> bool:
     """Check Python syntax."""
     print("\n🔍 [1/5] Checking Python syntax...")
-    
+
     errors = []
     for dir_name in CHECK_DIRS:
         dir_path = PROJECT_ROOT / dir_name
         if not dir_path.exists():
             continue
-            
+
         for py_file in dir_path.rglob("*.py"):
             code, output = run_cmd([sys.executable, "-m", "py_compile", str(py_file)])
             if code != 0:
                 errors.append(f"  ❌ {py_file.relative_to(PROJECT_ROOT)}")
-    
+
     if errors:
         print("\n".join(errors))
         return False
-    
+
     print("  ✅ Syntax OK")
     return True
 
@@ -69,7 +69,7 @@ def check_syntax() -> bool:
 def check_imports() -> bool:
     """Check that all modules can be imported."""
     print("\n🔍 [2/5] Checking imports...")
-    
+
     errors = []
     modules = [
         "app.main",
@@ -79,16 +79,16 @@ def check_imports() -> bool:
         "vision.capture",
         "input.mouse",
     ]
-    
+
     for module in modules:
         code, output = run_cmd([sys.executable, "-c", f"import {module}"])
         if code != 0:
             errors.append(f"  ❌ {module}: {output.strip()[:100]}")
-    
+
     if errors:
         print("\n".join(errors))
         return False
-    
+
     print("  ✅ Imports OK")
     return True
 
@@ -96,13 +96,13 @@ def check_imports() -> bool:
 def check_ruff(fix: bool = False) -> bool:
     """Run Ruff linter."""
     print("\n🔍 [3/5] Running Ruff linter...")
-    
+
     cmd = [sys.executable, "-m", "ruff", "check", "."]
     if fix:
         cmd.append("--fix")
-    
+
     code, output = run_cmd(cmd)
-    
+
     if code != 0:
         # Filter to show only first 15 issues
         lines = output.strip().split("\n")
@@ -112,7 +112,7 @@ def check_ruff(fix: bool = False) -> bool:
         else:
             print(output)
         return False
-    
+
     print("  ✅ Ruff OK")
     return True
 
@@ -120,16 +120,19 @@ def check_ruff(fix: bool = False) -> bool:
 def check_mypy() -> bool:
     """Run Mypy type checker."""
     print("\n🔍 [4/5] Running Mypy type check...")
-    
+
     cmd = [
-        sys.executable, "-m", "mypy",
-        "app", "core",
+        sys.executable,
+        "-m",
+        "mypy",
+        "app",
+        "core",
         "--ignore-missing-imports",
         "--no-error-summary",
     ]
-    
+
     code, output = run_cmd(cmd)
-    
+
     if code != 0:
         # Filter to show only errors (not notes)
         lines = [l for l in output.strip().split("\n") if ": error:" in l]
@@ -143,7 +146,7 @@ def check_mypy() -> bool:
             print("  ✅ Mypy OK (with warnings)")
             return True
         return False
-    
+
     print("  ✅ Mypy OK")
     return True
 
@@ -151,30 +154,35 @@ def check_mypy() -> bool:
 def check_tests(full: bool = False, coverage: bool = False) -> bool:
     """Run pytest tests."""
     print("\n🔍 [5/5] Running tests...")
-    
+
     cmd = [sys.executable, "-m", "pytest", "tests/", "-q", "--tb=short"]
-    
+
     if coverage:
-        cmd.extend([
-            "--cov=app", "--cov=core", "--cov=vision", "--cov=input",
-            "--cov-report=term-missing",
-            "--cov-fail-under=30",
-        ])
-    
+        cmd.extend(
+            [
+                "--cov=app",
+                "--cov=core",
+                "--cov=vision",
+                "--cov=input",
+                "--cov-report=term-missing",
+                "--cov-fail-under=30",
+            ]
+        )
+
     if not full:
         cmd.extend(["-x"])  # Stop on first failure for quick check
-    
+
     code, output = run_cmd(cmd)
-    
+
     # Show relevant output
     lines = output.strip().split("\n")
     # Show last 20 lines (summary + coverage)
     relevant = lines[-20:] if len(lines) > 20 else lines
     print("\n".join(relevant))
-    
+
     if code != 0:
         return False
-    
+
     print("  ✅ Tests OK")
     return True
 
@@ -185,11 +193,11 @@ def main() -> int:
     parser.add_argument("--fix", action="store_true", help="Auto-fix issues")
     parser.add_argument("--cov", action="store_true", help="Show coverage report")
     args = parser.parse_args()
-    
+
     print("=" * 60)
     print("  RetroAuto v2 - Code Quality Check")
     print("=" * 60)
-    
+
     results = {
         "Syntax": check_syntax(),
         "Imports": check_imports(),
@@ -197,18 +205,18 @@ def main() -> int:
         "Mypy": check_mypy(),
         "Tests": check_tests(full=args.full, coverage=args.cov),
     }
-    
+
     print("\n" + "=" * 60)
     print("  Summary")
     print("=" * 60)
-    
+
     all_passed = True
     for name, passed in results.items():
         status = "✅ PASS" if passed else "❌ FAIL"
         print(f"  {name:10s} {status}")
         if not passed:
             all_passed = False
-    
+
     print()
     if all_passed:
         print("  🎉 All checks passed! Ready to commit.")

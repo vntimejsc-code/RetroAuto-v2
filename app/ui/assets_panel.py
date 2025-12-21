@@ -106,7 +106,9 @@ class AssetsPanel(QWidget):
         self.asset_list.addItem(item)
         self.assets_changed.emit()
 
-    def _on_selection_changed(self, current: QListWidgetItem | None, _: QListWidgetItem | None) -> None:
+    def _on_selection_changed(
+        self, current: QListWidgetItem | None, _: QListWidgetItem | None
+    ) -> None:
         has_selection = current is not None
         self.btn_delete.setEnabled(has_selection)
         self.btn_test.setEnabled(has_selection)

@@ -2,10 +2,9 @@
 Tests for DSL Formatter.
 """
 
-import pytest
 
+from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
-from core.dsl.formatter import Formatter, format_code
 
 
 class TestFormatterIdempotent:

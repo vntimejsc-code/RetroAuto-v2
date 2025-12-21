@@ -7,10 +7,10 @@ CPU profiling utilities for optimization.
 import cProfile
 import pstats
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from io import StringIO
-from typing import Generator
 
 from infra.logging import get_logger
 

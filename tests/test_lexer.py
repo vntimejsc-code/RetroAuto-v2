@@ -2,7 +2,6 @@
 Tests for DSL Lexer.
 """
 
-import pytest
 
 from core.dsl.lexer import Lexer
 from core.dsl.tokens import TokenType

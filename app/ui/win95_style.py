@@ -12,7 +12,6 @@ Colors and styling based on classic Windows:
 
 from __future__ import annotations
 
-
 # ─────────────────────────────────────────────────────────────
 # Color Palette (Win95/98)
 # ─────────────────────────────────────────────────────────────
@@ -22,24 +21,19 @@ COLORS = {
     "window": "#C0C0C0",  # Window/ButtonFace/Menu background
     "window_dark": "#808080",  # Darker variant
     "window_text": "#000000",  # Text color
-    
     # Selection
     "highlight": "#000080",  # Navy blue selection
     "highlight_text": "#FFFFFF",  # White text on selection
-    
     # Borders (3D effect)
     "shadow_dark": "#404040",  # Bottom/Right shadow
     "shadow_light": "#FFFFFF",  # Top/Left highlight
     "border": "#808080",  # Normal border
-    
     # Disabled state
     "gray_text": "#808080",  # Disabled text
-    
     # Editor
     "editor_bg": "#FFFFFF",  # White editor background
     "gutter_bg": "#E0E0E0",  # Gutter background
     "line_number": "#808080",  # Line number color
-    
     # Syntax highlighting (minimal, classic)
     "keyword": "#00007F",  # Dark blue for keywords
     "string": "#7F0000",  # Dark red for strings
@@ -68,7 +62,7 @@ FONTS = {
 
 def generate_stylesheet() -> str:
     """Generate complete Qt stylesheet for Win95/98 look."""
-    
+
     return f"""
 /* ═══════════════════════════════════════════════════════════════
    Win95/98 Classic Theme
@@ -76,13 +70,13 @@ def generate_stylesheet() -> str:
 
 /* Global */
 * {{
-    font-family: {FONTS['ui']};
-    font-size: {FONTS['ui_size']};
+    font-family: {FONTS["ui"]};
+    font-size: {FONTS["ui_size"]};
 }}
 
 QWidget {{
-    background-color: {COLORS['window']};
-    color: {COLORS['window_text']};
+    background-color: {COLORS["window"]};
+    color: {COLORS["window_text"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -90,11 +84,11 @@ QWidget {{
    ───────────────────────────────────────────────────────────── */
 
 QMainWindow {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
 }}
 
 QMainWindow::separator {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
     width: 4px;
     height: 4px;
 }}
@@ -104,8 +98,8 @@ QMainWindow::separator {{
    ───────────────────────────────────────────────────────────── */
 
 QMenuBar {{
-    background-color: {COLORS['window']};
-    border-bottom: 1px solid {COLORS['shadow_dark']};
+    background-color: {COLORS["window"]};
+    border-bottom: 1px solid {COLORS["shadow_dark"]};
     padding: 2px;
 }}
 
@@ -115,13 +109,13 @@ QMenuBar::item {{
 }}
 
 QMenuBar::item:selected {{
-    background-color: {COLORS['highlight']};
-    color: {COLORS['highlight_text']};
+    background-color: {COLORS["highlight"]};
+    color: {COLORS["highlight_text"]};
 }}
 
 QMenu {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
 }}
 
 QMenu::item {{
@@ -129,13 +123,13 @@ QMenu::item {{
 }}
 
 QMenu::item:selected {{
-    background-color: {COLORS['highlight']};
-    color: {COLORS['highlight_text']};
+    background-color: {COLORS["highlight"]};
+    color: {COLORS["highlight_text"]};
 }}
 
 QMenu::separator {{
     height: 1px;
-    background-color: {COLORS['shadow_dark']};
+    background-color: {COLORS["shadow_dark"]};
     margin: 4px 2px;
 }}
 
@@ -144,7 +138,7 @@ QMenu::separator {{
    ───────────────────────────────────────────────────────────── */
 
 QToolBar {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
     border: none;
     padding: 2px;
     spacing: 2px;
@@ -156,8 +150,8 @@ QToolBar::separator {{
 }}
 
 QToolButton {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     padding: 4px 8px;
     min-width: 20px;
 }}
@@ -167,12 +161,12 @@ QToolButton:hover {{
 }}
 
 QToolButton:pressed {{
-    border: 2px inset {COLORS['shadow_light']};
+    border: 2px inset {COLORS["shadow_light"]};
     background-color: #B0B0B0;
 }}
 
 QToolButton:disabled {{
-    color: {COLORS['gray_text']};
+    color: {COLORS["gray_text"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -180,8 +174,8 @@ QToolButton:disabled {{
    ───────────────────────────────────────────────────────────── */
 
 QPushButton {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     padding: 4px 12px;
     min-width: 60px;
 }}
@@ -191,17 +185,17 @@ QPushButton:hover {{
 }}
 
 QPushButton:pressed {{
-    border: 2px inset {COLORS['shadow_light']};
+    border: 2px inset {COLORS["shadow_light"]};
     background-color: #B0B0B0;
 }}
 
 QPushButton:disabled {{
-    color: {COLORS['gray_text']};
+    color: {COLORS["gray_text"]};
 }}
 
 QPushButton:default {{
-    border: 2px outset {COLORS['shadow_light']};
-    border-color: {COLORS['window_text']};
+    border: 2px outset {COLORS["shadow_light"]};
+    border-color: {COLORS["window_text"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -209,7 +203,7 @@ QPushButton:default {{
    ───────────────────────────────────────────────────────────── */
 
 QGroupBox {{
-    border: 2px groove {COLORS['shadow_light']};
+    border: 2px groove {COLORS["shadow_light"]};
     margin-top: 8px;
     padding-top: 8px;
 }}
@@ -218,7 +212,7 @@ QGroupBox::title {{
     subcontrol-origin: margin;
     subcontrol-position: top left;
     padding: 0 4px;
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -226,16 +220,16 @@ QGroupBox::title {{
    ───────────────────────────────────────────────────────────── */
 
 QLineEdit, QTextEdit, QPlainTextEdit {{
-    background-color: {COLORS['editor_bg']};
-    border: 2px inset {COLORS['shadow_dark']};
+    background-color: {COLORS["editor_bg"]};
+    border: 2px inset {COLORS["shadow_dark"]};
     padding: 2px;
-    selection-background-color: {COLORS['highlight']};
-    selection-color: {COLORS['highlight_text']};
+    selection-background-color: {COLORS["highlight"]};
+    selection-color: {COLORS["highlight_text"]};
 }}
 
 QLineEdit:disabled, QTextEdit:disabled {{
-    background-color: {COLORS['window']};
-    color: {COLORS['gray_text']};
+    background-color: {COLORS["window"]};
+    color: {COLORS["gray_text"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -243,8 +237,8 @@ QLineEdit:disabled, QTextEdit:disabled {{
    ───────────────────────────────────────────────────────────── */
 
 QComboBox {{
-    background-color: {COLORS['editor_bg']};
-    border: 2px inset {COLORS['shadow_dark']};
+    background-color: {COLORS["editor_bg"]};
+    border: 2px inset {COLORS["shadow_dark"]};
     padding: 2px 4px;
     min-height: 18px;
 }}
@@ -258,14 +252,14 @@ QComboBox::down-arrow {{
     image: none;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-top: 6px solid {COLORS['window_text']};
+    border-top: 6px solid {COLORS["window_text"]};
 }}
 
 QComboBox QAbstractItemView {{
-    background-color: {COLORS['editor_bg']};
-    border: 1px solid {COLORS['shadow_dark']};
-    selection-background-color: {COLORS['highlight']};
-    selection-color: {COLORS['highlight_text']};
+    background-color: {COLORS["editor_bg"]};
+    border: 1px solid {COLORS["shadow_dark"]};
+    selection-background-color: {COLORS["highlight"]};
+    selection-color: {COLORS["highlight_text"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -273,8 +267,8 @@ QComboBox QAbstractItemView {{
    ───────────────────────────────────────────────────────────── */
 
 QSpinBox {{
-    background-color: {COLORS['editor_bg']};
-    border: 2px inset {COLORS['shadow_dark']};
+    background-color: {COLORS["editor_bg"]};
+    border: 2px inset {COLORS["shadow_dark"]};
     padding: 2px;
 }}
 
@@ -289,12 +283,12 @@ QCheckBox {{
 QCheckBox::indicator {{
     width: 13px;
     height: 13px;
-    border: 2px inset {COLORS['shadow_dark']};
-    background-color: {COLORS['editor_bg']};
+    border: 2px inset {COLORS["shadow_dark"]};
+    background-color: {COLORS["editor_bg"]};
 }}
 
 QCheckBox::indicator:checked {{
-    background-color: {COLORS['editor_bg']};
+    background-color: {COLORS["editor_bg"]};
     image: none;
 }}
 
@@ -307,10 +301,10 @@ QCheckBox::indicator:checked::after {{
    ───────────────────────────────────────────────────────────── */
 
 QListWidget, QTreeWidget, QListView, QTreeView {{
-    background-color: {COLORS['editor_bg']};
-    border: 2px inset {COLORS['shadow_dark']};
-    selection-background-color: {COLORS['highlight']};
-    selection-color: {COLORS['highlight_text']};
+    background-color: {COLORS["editor_bg"]};
+    border: 2px inset {COLORS["shadow_dark"]};
+    selection-background-color: {COLORS["highlight"]};
+    selection-color: {COLORS["highlight_text"]};
 }}
 
 QListWidget::item, QTreeWidget::item {{
@@ -319,14 +313,14 @@ QListWidget::item, QTreeWidget::item {{
 }}
 
 QListWidget::item:selected, QTreeWidget::item:selected {{
-    background-color: {COLORS['highlight']};
-    color: {COLORS['highlight_text']};
+    background-color: {COLORS["highlight"]};
+    color: {COLORS["highlight_text"]};
 }}
 
 QHeaderView::section {{
-    background-color: {COLORS['window']};
-    border: 1px solid {COLORS['shadow_dark']};
-    border-bottom: 1px solid {COLORS['shadow_dark']};
+    background-color: {COLORS["window"]};
+    border: 1px solid {COLORS["shadow_dark"]};
+    border-bottom: 1px solid {COLORS["shadow_dark"]};
     padding: 2px 4px;
 }}
 
@@ -335,26 +329,26 @@ QHeaderView::section {{
    ───────────────────────────────────────────────────────────── */
 
 QTabWidget::pane {{
-    border: 2px inset {COLORS['shadow_dark']};
-    background-color: {COLORS['window']};
+    border: 2px inset {COLORS["shadow_dark"]};
+    background-color: {COLORS["window"]};
 }}
 
 QTabBar::tab {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     border-bottom: none;
     padding: 4px 12px;
     margin-right: 2px;
 }}
 
 QTabBar::tab:selected {{
-    background-color: {COLORS['window']};
-    border-bottom: 2px solid {COLORS['window']};
+    background-color: {COLORS["window"]};
+    border-bottom: 2px solid {COLORS["window"]};
     margin-bottom: -2px;
 }}
 
 QTabBar::tab:!selected {{
-    background-color: {COLORS['window_dark']};
+    background-color: {COLORS["window_dark"]};
     margin-top: 2px;
 }}
 
@@ -363,38 +357,38 @@ QTabBar::tab:!selected {{
    ───────────────────────────────────────────────────────────── */
 
 QScrollBar:vertical {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
     width: 16px;
-    border: 1px solid {COLORS['shadow_dark']};
+    border: 1px solid {COLORS["shadow_dark"]};
 }}
 
 QScrollBar::handle:vertical {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     min-height: 20px;
 }}
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     height: 16px;
 }}
 
 QScrollBar:horizontal {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
     height: 16px;
-    border: 1px solid {COLORS['shadow_dark']};
+    border: 1px solid {COLORS["shadow_dark"]};
 }}
 
 QScrollBar::handle:horizontal {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     min-width: 20px;
 }}
 
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-    background-color: {COLORS['window']};
-    border: 2px outset {COLORS['shadow_light']};
+    background-color: {COLORS["window"]};
+    border: 2px outset {COLORS["shadow_light"]};
     width: 16px;
 }}
 
@@ -403,7 +397,7 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
    ───────────────────────────────────────────────────────────── */
 
 QSplitter::handle {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
 }}
 
 QSplitter::handle:horizontal {{
@@ -419,8 +413,8 @@ QSplitter::handle:vertical {{
    ───────────────────────────────────────────────────────────── */
 
 QStatusBar {{
-    background-color: {COLORS['window']};
-    border-top: 1px solid {COLORS['shadow_dark']};
+    background-color: {COLORS["window"]};
+    border-top: 1px solid {COLORS["shadow_dark"]};
 }}
 
 QStatusBar::item {{
@@ -432,7 +426,7 @@ QStatusBar::item {{
    ───────────────────────────────────────────────────────────── */
 
 QDialog {{
-    background-color: {COLORS['window']};
+    background-color: {COLORS["window"]};
 }}
 
 QDialogButtonBox {{
@@ -444,13 +438,13 @@ QDialogButtonBox {{
    ───────────────────────────────────────────────────────────── */
 
 QProgressBar {{
-    background-color: {COLORS['editor_bg']};
-    border: 2px inset {COLORS['shadow_dark']};
+    background-color: {COLORS["editor_bg"]};
+    border: 2px inset {COLORS["shadow_dark"]};
     text-align: center;
 }}
 
 QProgressBar::chunk {{
-    background-color: {COLORS['highlight']};
+    background-color: {COLORS["highlight"]};
 }}
 
 /* ─────────────────────────────────────────────────────────────
@@ -459,8 +453,8 @@ QProgressBar::chunk {{
 
 QToolTip {{
     background-color: #FFFFE1;
-    color: {COLORS['window_text']};
-    border: 1px solid {COLORS['window_text']};
+    color: {COLORS["window_text"]};
+    border: 1px solid {COLORS["window_text"]};
     padding: 2px;
 }}
 """

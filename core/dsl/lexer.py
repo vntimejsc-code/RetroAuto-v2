@@ -94,9 +94,7 @@ class Lexer:
         start_col: int,
     ) -> None:
         """Add a token to the list."""
-        self.tokens.append(
-            Token(token_type, value, start_line, start_col, self.line, self.column)
-        )
+        self.tokens.append(Token(token_type, value, start_line, start_col, self.line, self.column))
 
     def _skip_whitespace(self) -> None:
         """Skip spaces and tabs (not newlines)."""
@@ -136,7 +134,7 @@ class Lexer:
         # ─────────────────────────────────────────────────────────────
         # Strings
         # ─────────────────────────────────────────────────────────────
-        if char in '"\'':
+        if char in "\"'":
             self._scan_string(start_line, start_col)
             return
 
@@ -183,9 +181,7 @@ class Lexer:
                 return
             self._advance()
         # Unterminated block comment
-        self.errors.append(
-            LexerError("Unterminated block comment", start_line, start_col)
-        )
+        self.errors.append(LexerError("Unterminated block comment", start_line, start_col))
         value = "/*" + self.source[start : self.pos]
         self._add_token(TokenType.ERROR, value, start_line, start_col)
 
@@ -196,9 +192,7 @@ class Lexer:
 
         while not self._at_end() and self._peek() != quote:
             if self._peek() == "\n":
-                self.errors.append(
-                    LexerError("Unterminated string", start_line, start_col)
-                )
+                self.errors.append(LexerError("Unterminated string", start_line, start_col))
                 self._add_token(TokenType.ERROR, quote + "".join(chars), start_line, start_col)
                 return
             if self._peek() == "\\":
@@ -210,9 +204,7 @@ class Lexer:
                 chars.append(self._advance())
 
         if self._at_end():
-            self.errors.append(
-                LexerError("Unterminated string", start_line, start_col)
-            )
+            self.errors.append(LexerError("Unterminated string", start_line, start_col))
             self._add_token(TokenType.ERROR, quote + "".join(chars), start_line, start_col)
             return
 
@@ -317,7 +309,5 @@ class Lexer:
             self._add_token(single_char_ops[char], char, start_line, start_col)
         else:
             # Unknown character
-            self.errors.append(
-                LexerError(f"Unexpected character '{char}'", start_line, start_col)
-            )
+            self.errors.append(LexerError(f"Unexpected character '{char}'", start_line, start_col))
             self._add_token(TokenType.ERROR, char, start_line, start_col)

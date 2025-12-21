@@ -2,14 +2,13 @@
 Test matcher with ROI optimization.
 """
 
-import tempfile
 from pathlib import Path
 
 import cv2
 import numpy as np
 import pytest
 
-from core.models import AssetImage, ROI
+from core.models import ROI, AssetImage
 from core.templates import TemplateStore
 from vision.capture import ScreenCapture
 from vision.matcher import Matcher

@@ -1,4 +1,3 @@
-# -*- mode: python ; coding: utf-8 -*-
 """
 RetroAuto v2 - PyInstaller Spec File
 
@@ -6,7 +5,6 @@ Build: pyinstaller packaging/pyinstaller_spec.py
 Output: dist/RetroAuto/
 """
 
-import sys
 from pathlib import Path
 
 project_root = Path(SPECPATH).parent

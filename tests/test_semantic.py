@@ -2,11 +2,10 @@
 Tests for DSL Semantic Analyzer.
 """
 
-import pytest
 
-from core.dsl.parser import Parser
-from core.dsl.semantic import SemanticAnalyzer, analyze
 from core.dsl.diagnostics import Severity
+from core.dsl.parser import Parser
+from core.dsl.semantic import analyze
 
 
 class TestSemanticAssets:
