@@ -210,6 +210,11 @@ class Parser:
                     interrupts.append(self._parse_interrupt())
                 elif self._check(TokenType.CONST):
                     constants.append(self._parse_const())
+                # ─────────────────────────────────────────────────────
+                # RetroScript Phase 2: @decorator blocks
+                # ─────────────────────────────────────────────────────
+                elif self._check(TokenType.AT_SIGN):
+                    self._parse_decorator_block()
                 else:
                     # Try to parse as statement for better error
                     token = self._peek()
@@ -731,6 +736,91 @@ class Parser:
             span=self._span_from(start),
             statements=statements,
         )
+
+    def _parse_decorator_block(self) -> None:
+        """Parse @decorator blocks (RetroScript Phase 2).
+
+        Handles:
+        - @test "name": block
+        - @config: block
+        - @permissions: block
+        - @meta: block
+        """
+        start = self._expect(TokenType.AT_SIGN)
+
+        # Check what decorator type
+        if self._check(TokenType.TEST):
+            self._parse_test_block(start)
+        elif self._check(TokenType.CONFIG):
+            self._parse_config_block(start)
+        elif self._check(TokenType.PERMISSIONS):
+            self._parse_permissions_block(start)
+        elif self._check(TokenType.META):
+            self._parse_meta_block(start)
+        else:
+            # Unknown decorator - skip to next line
+            token = self._peek()
+            self.errors.append(unexpected_token(token.value, Span.from_token(token)))
+            self._synchronize()
+
+    def _parse_test_block(self, start: Token) -> None:
+        """Parse @test 'name': block."""
+        self._expect(TokenType.TEST)
+
+        # Parse optional test name
+        test_name = "unnamed"
+        if self._check(TokenType.STRING):
+            test_name = self._advance().value
+
+        # Parse block
+        if not self._match(TokenType.COLON):
+            self._expect(TokenType.LBRACE)
+            self.pos -= 1
+
+        body = self._parse_block()
+        self._match(TokenType.END)
+
+        # Store test - for now just log it (engine will handle tests)
+        # TODO: Add tests to Program structure
+
+    def _parse_config_block(self, start: Token) -> None:
+        """Parse @config: block with key=value pairs."""
+        self._expect(TokenType.CONFIG)
+
+        if not self._match(TokenType.COLON):
+            self._expect(TokenType.LBRACE)
+            self.pos -= 1
+
+        body = self._parse_block()
+        self._match(TokenType.END)
+
+        # Store config - TODO: Add config to Program structure
+
+    def _parse_permissions_block(self, start: Token) -> None:
+        """Parse @permissions: block."""
+        self._expect(TokenType.PERMISSIONS)
+
+        if not self._match(TokenType.COLON):
+            self._expect(TokenType.LBRACE)
+            self.pos -= 1
+
+        body = self._parse_block()
+        self._match(TokenType.END)
+
+        # Store permissions - TODO: Add to Program structure
+
+    def _parse_meta_block(self, start: Token) -> None:
+        """Parse @meta: block."""
+        self._expect(TokenType.META)
+
+        if not self._match(TokenType.COLON):
+            self._expect(TokenType.LBRACE)
+            self.pos -= 1
+
+        body = self._parse_block()
+        self._match(TokenType.END)
+
+        # Store meta - TODO: Add to Program structure
 
     def _parse_expression_statement(self) -> ASTNode:
         """Parse expression statement or assignment."""

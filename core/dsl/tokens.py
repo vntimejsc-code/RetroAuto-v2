@@ -77,9 +77,22 @@ class TokenType(Enum):
     NOT_KW = auto()  # not (word form)
 
     # ─────────────────────────────────────────────────────────────
+    # RetroScript Phase 2: Testing & Config
+    # ─────────────────────────────────────────────────────────────
+    TEST = auto()  # test
+    MOCK = auto()  # mock
+    ASSERT = auto()  # assert
+    PERMISSIONS = auto()  # permissions
+    CONFIG = auto()  # config
+    META = auto()  # meta
+    IMPORT = auto()  # import
+    AS = auto()  # as (import ... as ...)
+
+    # ─────────────────────────────────────────────────────────────
     # RetroScript Variable
     # ─────────────────────────────────────────────────────────────
     VARIABLE = auto()  # $varname
+    AT_SIGN = auto()  # @ (for @test, @config, etc.)
 
     # ─────────────────────────────────────────────────────────────
     # Operators
@@ -175,6 +188,15 @@ KEYWORDS: dict[str, TokenType] = {
     "and": TokenType.AND_KW,
     "or": TokenType.OR_KW,
     "not": TokenType.NOT_KW,
+    # Phase 2: Testing & Config
+    "test": TokenType.TEST,
+    "mock": TokenType.MOCK,
+    "assert": TokenType.ASSERT,
+    "permissions": TokenType.PERMISSIONS,
+    "config": TokenType.CONFIG,
+    "meta": TokenType.META,
+    "import": TokenType.IMPORT,
+    "as": TokenType.AS,
 }
 
 

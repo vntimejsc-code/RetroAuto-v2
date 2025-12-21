@@ -158,6 +158,13 @@ class Lexer:
             return
 
         # ─────────────────────────────────────────────────────────────
+        # RetroScript Phase 2: @ decorator (@test, @config, etc.)
+        # ─────────────────────────────────────────────────────────────
+        if char == "@":
+            self._scan_at_decorator(start_line, start_col)
+            return
+
+        # ─────────────────────────────────────────────────────────────
         # Identifiers and Keywords
         # ─────────────────────────────────────────────────────────────
         if char.isalpha() or char == "_":
@@ -203,6 +210,20 @@ class Lexer:
 
         value = "$" + self.source[start : self.pos]
         self._add_token(TokenType.VARIABLE, value, start_line, start_col)
+
+    def _scan_at_decorator(self, start_line: int, start_col: int) -> None:
+        """Scan @decorator (RetroScript Phase 2).
+
+        @test, @config, @permissions, @meta -> AT_SIGN token followed by keyword
+        """
+        self._advance()  # @
+        self._add_token(TokenType.AT_SIGN, "@", start_line, start_col)
+
+        # Now scan the identifier that follows
+        if self._peek().isalpha() or self._peek() == "_":
+            ident_start_line = self.line
+            ident_start_col = self.column
+            self._scan_identifier(ident_start_line, ident_start_col)
 
     def _scan_block_comment(self, start_line: int, start_col: int) -> None:
         """Scan /* block comment */."""
