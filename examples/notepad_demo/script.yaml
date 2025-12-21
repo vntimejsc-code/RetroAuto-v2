@@ -1,0 +1,88 @@
+# Demo Project - Notepad Automation
+# This script demonstrates basic RetroAuto features
+
+name: Demo - Notepad Automation
+version: "1.0"
+author: RetroAuto
+description: Example script that opens Notepad, types text, and saves
+
+hotkeys:
+  start: F5
+  stop: F6
+  pause: F7
+
+assets: []
+# Note: Assets would be created using the Capture tool
+# Example:
+# - id: notepad_icon
+#   path: assets/notepad_icon.png
+#   threshold: 0.8
+
+flows:
+  - name: main
+    actions:
+      # Open Notepad using Run dialog
+      - action: Hotkey
+        keys: [WIN, R]
+        comment: Open Run dialog
+
+      - action: Delay
+        ms: 500
+        comment: Wait for dialog
+
+      - action: TypeText
+        text: notepad
+        paste_mode: true
+        enter: true
+        comment: Type notepad and press Enter
+
+      - action: Delay
+        ms: 1000
+        comment: Wait for Notepad to open
+
+      # Type some text
+      - action: TypeText
+        text: "Hello from RetroAuto!\n\nThis text was typed automatically.\nVietnamese: Xin chào thế giới!"
+        paste_mode: true
+        comment: Type demo text with Vietnamese
+
+      - action: Delay
+        ms: 500
+
+      # Save file
+      - action: Hotkey
+        keys: [CTRL, S]
+        comment: Open Save dialog
+
+      - action: Delay
+        ms: 500
+
+      - action: TypeText
+        text: retroauto_demo.txt
+        paste_mode: true
+        enter: false
+        comment: Type filename
+
+      - action: Delay
+        ms: 300
+
+      # Press Enter to save
+      - action: Hotkey
+        keys: [RETURN]
+        comment: Confirm save
+
+      - action: Delay
+        ms: 500
+
+      # Close Notepad
+      - action: Hotkey
+        keys: [ALT, F4]
+        comment: Close Notepad
+
+      - action: Label
+        name: end
+        comment: Script completed
+
+interrupts: []
+
+main_flow: main

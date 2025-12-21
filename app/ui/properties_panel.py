@@ -1,0 +1,263 @@
+"""
+RetroAuto v2 - Properties Panel
+
+Dynamic form for editing action properties.
+"""
+
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
+from core.models import (
+    Click,
+    Delay,
+    Goto,
+    Hotkey,
+    IfImage,
+    Label,
+    RunFlow,
+    TypeText,
+    WaitImage,
+)
+from infra import get_logger
+
+logger = get_logger("PropertiesPanel")
+
+
+class PropertiesPanel(QWidget):
+    """
+    Panel for editing action properties.
+
+    Dynamically generates form fields based on action type.
+    """
+
+    properties_changed = Signal(dict)  # Updated action data
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._current_data: dict | None = None
+        self._fields: dict = {}
+        self._init_ui()
+
+    def _init_ui(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+
+        # Group box
+        self.group = QGroupBox("Properties")
+        self.form_layout = QFormLayout(self.group)
+
+        # Placeholder
+        self.placeholder = QLabel("Select an action to edit")
+        self.form_layout.addRow(self.placeholder)
+
+        layout.addWidget(self.group)
+        layout.addStretch()
+
+    def load_action(self, data: dict) -> None:
+        """Load action data into form."""
+        self._current_data = data.copy()
+        self._rebuild_form()
+
+    def _rebuild_form(self) -> None:
+        """Rebuild form fields based on action type."""
+        # Clear existing
+        while self.form_layout.count():
+            item = self.form_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+        self._fields.clear()
+
+        if not self._current_data:
+            self.placeholder = QLabel("Select an action to edit")
+            self.form_layout.addRow(self.placeholder)
+            return
+
+        action = self._current_data.get("action")
+        if not action:
+            return
+
+        action_type = type(action).__name__
+
+        # Title
+        self.form_layout.addRow(QLabel(f"<b>{action_type}</b>"))
+
+        # Build fields based on type
+        if isinstance(action, WaitImage):
+            self._add_text_field("asset_id", action.asset_id)
+            self._add_bool_field("appear", action.appear)
+            self._add_spin_field("timeout_ms", action.timeout_ms, 0, 300000)
+            self._add_spin_field("poll_ms", action.poll_ms, 10, 5000)
+
+        elif isinstance(action, Click):
+            self._add_spin_field("x", action.x or 0, 0, 9999)
+            self._add_spin_field("y", action.y or 0, 0, 9999)
+            self._add_combo_field("button", action.button, ["left", "right", "middle"])
+            self._add_spin_field("clicks", action.clicks, 1, 10)
+            self._add_bool_field("use_match", action.use_match)
+
+        elif isinstance(action, IfImage):
+            self._add_text_field("asset_id", action.asset_id)
+            self._add_label("(then/else actions edited separately)")
+
+        elif isinstance(action, Hotkey):
+            keys_str = "+".join(action.keys) if action.keys else ""
+            self._add_text_field("keys", keys_str)
+            self._add_label("(e.g., CTRL+S, ALT+F4)")
+
+        elif isinstance(action, TypeText):
+            self._add_text_field("text", action.text)
+            self._add_bool_field("paste_mode", action.paste_mode)
+            self._add_bool_field("enter", action.enter)
+
+        elif isinstance(action, Label):
+            self._add_text_field("name", action.name)
+
+        elif isinstance(action, Goto):
+            self._add_text_field("label", action.label)
+
+        elif isinstance(action, RunFlow):
+            self._add_text_field("flow_name", action.flow_name)
+
+        elif isinstance(action, Delay):
+            self._add_spin_field("ms", action.ms, 0, 300000)
+
+        # Comment field (common to all)
+        self._add_text_field("comment", action.comment)
+
+        # Apply button
+        btn_apply = QPushButton("Apply")
+        btn_apply.clicked.connect(self._on_apply)
+        self.form_layout.addRow(btn_apply)
+
+    def _add_text_field(self, name: str, value: str) -> None:
+        field = QLineEdit(str(value))
+        self._fields[name] = field
+        self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
+
+    def _add_spin_field(self, name: str, value: int, min_val: int, max_val: int) -> None:
+        field = QSpinBox()
+        field.setRange(min_val, max_val)
+        field.setValue(value)
+        self._fields[name] = field
+        self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
+
+    def _add_combo_field(self, name: str, value: str, options: list[str]) -> None:
+        field = QComboBox()
+        field.addItems(options)
+        if value in options:
+            field.setCurrentText(value)
+        self._fields[name] = field
+        self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
+
+    def _add_bool_field(self, name: str, value: bool) -> None:
+        field = QCheckBox()
+        field.setChecked(value)
+        self._fields[name] = field
+        self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
+
+    def _add_label(self, text: str) -> None:
+        label = QLabel(text)
+        label.setStyleSheet("color: gray; font-style: italic;")
+        self.form_layout.addRow(label)
+
+    def _on_apply(self) -> None:
+        """Apply changes to action."""
+        if not self._current_data:
+            return
+
+        action = self._current_data.get("action")
+        if not action:
+            return
+
+        # Build updated action based on type
+        try:
+            updated = self._build_updated_action(action)
+            if updated:
+                self._current_data["action"] = updated
+                self.properties_changed.emit(self._current_data)
+                logger.info("Applied changes to %s", type(action).__name__)
+        except Exception as e:
+            logger.error("Failed to apply: %s", e)
+
+    def _build_updated_action(self, action):  # type: ignore
+        """Build updated action from form fields."""
+        if isinstance(action, WaitImage):
+            return WaitImage(
+                asset_id=self._fields["asset_id"].text(),
+                appear=self._fields["appear"].isChecked(),
+                timeout_ms=self._fields["timeout_ms"].value(),
+                poll_ms=self._fields["poll_ms"].value(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Click):
+            return Click(
+                x=self._fields["x"].value() or None,
+                y=self._fields["y"].value() or None,
+                button=self._fields["button"].currentText(),
+                clicks=self._fields["clicks"].value(),
+                use_match=self._fields["use_match"].isChecked(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, IfImage):
+            return IfImage(
+                asset_id=self._fields["asset_id"].text(),
+                then_actions=action.then_actions,
+                else_actions=action.else_actions,
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Hotkey):
+            keys_str = self._fields["keys"].text()
+            keys = [k.strip().upper() for k in keys_str.split("+") if k.strip()]
+            return Hotkey(
+                keys=keys,
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, TypeText):
+            return TypeText(
+                text=self._fields["text"].text(),
+                paste_mode=self._fields["paste_mode"].isChecked(),
+                enter=self._fields["enter"].isChecked(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Label):
+            return Label(
+                name=self._fields["name"].text(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Goto):
+            return Goto(
+                label=self._fields["label"].text(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, RunFlow):
+            return RunFlow(
+                flow_name=self._fields["flow_name"].text(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Delay):
+            return Delay(
+                ms=self._fields["ms"].value(),
+                comment=self._fields["comment"].text(),
+            )
+
+        return None
