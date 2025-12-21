@@ -212,6 +212,46 @@ class WhileImage(ActionBase):
     roi_override: ROI | None = Field(default=None)
 
 
+class PixelColor(BaseModel):
+    """RGB color for pixel checking."""
+
+    r: int = Field(ge=0, le=255)
+    g: int = Field(ge=0, le=255)
+    b: int = Field(ge=0, le=255)
+    tolerance: int = Field(default=10, ge=0, le=255, description="Color tolerance")
+
+    def matches(self, other_r: int, other_g: int, other_b: int) -> bool:
+        """Check if another color matches within tolerance."""
+        return (
+            abs(self.r - other_r) <= self.tolerance
+            and abs(self.g - other_g) <= self.tolerance
+            and abs(self.b - other_b) <= self.tolerance
+        )
+
+
+class WaitPixel(ActionBase):
+    """Wait for pixel color at position."""
+
+    action: Literal["WaitPixel"] = "WaitPixel"
+    x: int = Field(description="X coordinate")
+    y: int = Field(description="Y coordinate")
+    color: PixelColor = Field(description="Expected color")
+    appear: bool = Field(default=True, description="True=wait for color, False=wait until gone")
+    timeout_ms: int = Field(default=10000, ge=0)
+    poll_ms: int = Field(default=100, ge=10)
+
+
+class IfPixel(ActionBase):
+    """Conditional branch based on pixel color."""
+
+    action: Literal["IfPixel"] = "IfPixel"
+    x: int = Field(description="X coordinate")
+    y: int = Field(description="Y coordinate")
+    color: PixelColor = Field(description="Color to check")
+    then_actions: list["Action"] = Field(default_factory=list)
+    else_actions: list["Action"] = Field(default_factory=list)
+
+
 # Discriminated union type
 Action = Annotated[
     WaitImage
@@ -227,7 +267,9 @@ Action = Annotated[
     | Drag
     | Scroll
     | Loop
-    | WhileImage,
+    | WhileImage
+    | WaitPixel
+    | IfPixel,
     Field(discriminator="action"),
 ]
 

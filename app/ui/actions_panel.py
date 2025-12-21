@@ -26,12 +26,15 @@ from core.models import (
     Goto,
     Hotkey,
     IfImage,
+    IfPixel,
     Label,
     Loop,
+    PixelColor,
     RunFlow,
     Scroll,
     TypeText,
     WaitImage,
+    WaitPixel,
     WhileImage,
 )
 from infra import get_logger
@@ -41,8 +44,10 @@ logger = get_logger("ActionsPanel")
 # Action types available
 ACTION_TYPES = [
     ("WaitImage", "👁️ Wait Image"),
+    ("WaitPixel", "🎨 Wait Pixel"),
     ("Click", "🖱️ Click"),
     ("IfImage", "❓ If Image"),
+    ("IfPixel", "🎯 If Pixel"),
     ("Hotkey", "⌨️ Hotkey"),
     ("TypeText", "📝 Type Text"),
     ("Label", "🏷️ Label"),
@@ -58,8 +63,10 @@ ACTION_TYPES = [
 
 ACTION_DEFAULTS = {
     "WaitImage": lambda: WaitImage(asset_id=""),
+    "WaitPixel": lambda: WaitPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Click": lambda: Click(),
     "IfImage": lambda: IfImage(asset_id=""),
+    "IfPixel": lambda: IfPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Hotkey": lambda: Hotkey(keys=[]),
     "TypeText": lambda: TypeText(text=""),
     "Label": lambda: Label(name=""),
@@ -234,6 +241,13 @@ class ActionsPanel(QWidget):
         elif isinstance(action, WhileImage):
             mode = "present" if action.while_present else "absent"
             return f"{action.asset_id} ({mode})"
+        elif isinstance(action, WaitPixel):
+            c = action.color
+            mode = "appear" if action.appear else "disappear"
+            return f"({action.x},{action.y}) RGB({c.r},{c.g},{c.b}) {mode}"
+        elif isinstance(action, IfPixel):
+            c = action.color
+            return f"({action.x},{action.y}) RGB({c.r},{c.g},{c.b})"
         return ""
 
     def highlight_step(self, idx: int) -> None:
