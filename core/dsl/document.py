@@ -5,11 +5,15 @@ Manages the document state for a script:
 - Holds the IR (source of truth)
 - Syncs code ↔ IR ↔ GUI
 - Handles dirty state and undo/redo
+- Graceful error handling with recovery hints
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +29,35 @@ from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
 
 
+class DocumentState(Enum):
+    """Document validation state."""
+    VALID = auto()       # Code parsed successfully
+    ERROR = auto()       # Parse failed, showing errors
+    PARTIAL = auto()     # User is typing, incomplete code
+    RECOVERING = auto()  # Attempting auto-fix
+
+
+@dataclass
+class ParseError:
+    """Enriched parse error with recovery hints."""
+    message: str
+    line: int = 0
+    column: int = 0
+    severity: str = "error"  # error, warning, hint
+    recovery_hint: str = ""
+    quick_fix: str | None = None  # Suggested fix
+
+
+# Common error recovery patterns
+ERROR_RECOVERY_PATTERNS = {
+    r"Expected ';'": ("Thêm ';' ở cuối dòng", ";"),
+    r"Expected '\}'": ("Thiếu '}' đóng block", "}"),
+    r"Expected '\)'": ("Thiếu ')' đóng ngoặc", ")"),
+    r"Unknown asset '(\w+)'": ("Asset không tồn tại. Tạo mới?", None),
+    r"Unknown label '(\w+)'": ("Label không tìm thấy trong flow", None),
+}
+
+
 class ScriptDocument:
     """
     Document model for a script file.
@@ -33,6 +66,11 @@ class ScriptDocument:
     - Code (DSL text)
     - IR (intermediate representation)
     - GUI (panels and inspectors)
+
+    Features:
+    - Graceful degradation on errors
+    - Typing detection to avoid error spam
+    - Recovery hints and quick fixes
 
     Usage:
         doc = ScriptDocument()
@@ -47,10 +85,18 @@ class ScriptDocument:
         self._file_path: Path | None = None
         self._is_dirty = False
 
+        # Error handling state
+        self._state = DocumentState.VALID
+        self._last_valid_ir: ScriptIR | None = None
+        self._parse_errors: list[ParseError] = []
+        self._last_code_length = 0
+        self._typing_direction = 0  # +1 = adding, -1 = deleting
+
         # Callbacks
         self._on_ir_changed: list[Callable[[str], None]] = []
         self._on_code_changed: list[Callable[[str], None]] = []
         self._on_error: list[Callable[[list[str]], None]] = []
+        self._on_state_changed: list[Callable[[DocumentState], None]] = []
 
         # Sync mode
         self._sync_enabled = True
@@ -172,28 +218,188 @@ class ScriptDocument:
         Update IR from new code.
 
         Called when the user edits code in the editor.
+        Implements graceful degradation on errors.
         """
         if not self._sync_enabled:
             return
 
+        # Track typing direction for partial detection
+        code_len_diff = len(new_code) - self._last_code_length
+        self._typing_direction = 1 if code_len_diff > 0 else -1 if code_len_diff < 0 else 0
+        self._last_code_length = len(new_code)
+
         self._code = new_code
         self._is_dirty = True
+
+        # Check if user is actively typing (partial code)
+        if self._is_typing_in_progress(new_code):
+            self._state = DocumentState.PARTIAL
+            # Don't parse incomplete code - avoid error spam
+            return
 
         # Parse to IR
         ir, errors = parse_to_ir(new_code)
 
         if errors:
-            # Keep old IR, but mark as invalid
+            # Enrich errors with recovery hints
+            enriched_errors = self._enrich_errors(errors)
+            self._parse_errors = enriched_errors
+
+            # Keep last valid IR for graceful degradation
+            if self._ir.is_valid and self._last_valid_ir is None:
+                self._last_valid_ir = self._ir
+
+            # Mark current IR as invalid but don't replace
             self._ir.is_valid = False
-            self._ir.parse_errors = errors
-            self._notify_errors(errors)
+            self._ir.parse_errors = [e.message for e in enriched_errors]
+            self._state = DocumentState.ERROR
+            
+            # Notify with enriched error messages
+            self._notify_errors([
+                f"Line {e.line}: {e.message}" + 
+                (f" (Hint: {e.recovery_hint})" if e.recovery_hint else "")
+                for e in enriched_errors
+            ])
+            self._notify_state_changed()
         else:
+            # Parse successful - run semantic analysis
+            semantic_errors = self._run_semantic_analysis(ir)
+            
+            if semantic_errors:
+                # Semantic errors are warnings - still update IR
+                self._parse_errors = semantic_errors
+                for e in semantic_errors:
+                    e.severity = "warning"
+                self._notify_errors([e.message for e in semantic_errors])
+
             # Update IR
-            old_ir = self._ir
+            self._last_valid_ir = ir  # Save as last valid
             self._ir = ir
             self._ir.is_valid = True
             self._ir.parse_errors = []
+            self._parse_errors = []
+            self._state = DocumentState.VALID
+            
+            self._notify_state_changed()
             self._notify_ir_changed(f"code_{source}")
+
+    def _is_typing_in_progress(self, code: str) -> bool:
+        """
+        Detect if user is in the middle of typing.
+        
+        Returns True if code appears incomplete.
+        """
+        code = code.rstrip()
+        if not code:
+            return False
+
+        # Indicators of incomplete code
+        incomplete_patterns = [
+            code.endswith("("),     # click(
+            code.endswith(","),     # click(100,
+            code.endswith("{"),     # flow main {
+            code.endswith("="),     # asset x =
+            code.endswith('"') and code.count('"') % 2 == 1,  # Unclosed string
+        ]
+        
+        # Also check for recently added text (user is typing)
+        if self._typing_direction > 0:
+            # Adding text - check last char is identifier char
+            if code and code[-1].isalnum():
+                # Might be typing a word
+                return True
+
+        return any(incomplete_patterns)
+
+    def _enrich_errors(self, errors: list[str]) -> list[ParseError]:
+        """
+        Enrich raw error messages with recovery hints and quick fixes.
+        """
+        enriched = []
+        
+        for error in errors:
+            # Extract line number if present
+            line = 0
+            match = re.search(r"line\s*(\d+)", error, re.IGNORECASE)
+            if match:
+                line = int(match.group(1))
+
+            # Find matching recovery pattern
+            hint = ""
+            quick_fix = None
+            
+            for pattern, (recovery_hint, fix) in ERROR_RECOVERY_PATTERNS.items():
+                if re.search(pattern, error, re.IGNORECASE):
+                    hint = recovery_hint
+                    quick_fix = fix
+                    break
+
+            enriched.append(ParseError(
+                message=error,
+                line=line,
+                recovery_hint=hint,
+                quick_fix=quick_fix,
+            ))
+
+        return enriched
+
+    def _run_semantic_analysis(self, ir: ScriptIR) -> list[ParseError]:
+        """Run semantic analysis and return errors as ParseError list."""
+        errors = []
+        
+        # Check asset references
+        asset_ids = {a.id for a in ir.assets}
+        flow_names = {f.name for f in ir.flows}
+
+        for flow in ir.flows:
+            for i, action in enumerate(flow.actions):
+                # Check wait_image/if_image asset references
+                if action.action_type in ("wait_image", "if_image", "while_image"):
+                    asset_ref = action.params.get("arg0", "")
+                    if asset_ref and asset_ref not in asset_ids:
+                        errors.append(ParseError(
+                            message=f"Unknown asset '{asset_ref}' in {flow.name}",
+                            line=action.span_line or 0,
+                            severity="warning",
+                            recovery_hint=f"Asset '{asset_ref}' không tồn tại. Tạo mới?",
+                        ))
+
+                # Check run_flow references
+                if action.action_type == "run_flow":
+                    flow_ref = action.params.get("arg0", "")
+                    if flow_ref and flow_ref not in flow_names:
+                        errors.append(ParseError(
+                            message=f"Unknown flow '{flow_ref}'",
+                            line=action.span_line or 0,
+                            severity="warning",
+                            recovery_hint=f"Flow '{flow_ref}' không tìm thấy",
+                        ))
+
+        return errors
+
+    def _notify_state_changed(self) -> None:
+        """Notify state change listeners."""
+        for cb in self._on_state_changed:
+            cb(self._state)
+
+    def on_state_changed(self, callback: Callable[[DocumentState], None]) -> None:
+        """Register callback for state changes."""
+        self._on_state_changed.append(callback)
+
+    @property
+    def state(self) -> DocumentState:
+        """Get current document state."""
+        return self._state
+
+    @property
+    def parse_errors(self) -> list[ParseError]:
+        """Get current parse errors."""
+        return self._parse_errors
+
+    @property
+    def last_valid_ir(self) -> ScriptIR | None:
+        """Get the last successfully parsed IR."""
+        return self._last_valid_ir
 
     # ─────────────────────────────────────────────────────────────
     # GUI → IR → Code Sync
