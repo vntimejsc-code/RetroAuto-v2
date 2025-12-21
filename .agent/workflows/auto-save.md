@@ -6,21 +6,36 @@ description: Quy trình lưu thay đổi code với version và git
 
 Mỗi khi thay đổi code, sử dụng một trong các cách sau:
 
-## Quick Save (Lưu nhanh)
+## Quick Save (Lưu nhanh + Check code)
 
-Cho các thay đổi nhỏ, không cần bump version:
+Cho các thay đổi nhỏ, tự động check code và commit:
 
-```python
-from infra.version import quick_save
-
-quick_save("Sửa lỗi click button")
-# -> Commit: [20241221_121500] Sửa lỗi click button
-```
-
-Hoặc chạy từ command line:
 ```bash
 cd c:\Auto\Newauto
-python -c "from infra.version import quick_save; quick_save('Mô tả thay đổi')"
+
+# 1. Check code trước
+python check_code.py
+
+# 2. Nếu pass, commit
+git add -A
+git commit -m "[YYYYMMDD_HHMMSS] Mô tả thay đổi"
+```
+
+Hoặc chạy tất cả:
+```bash
+# // turbo
+python check_code.py; if ($?) { git add -A; git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Quick save" }
+```
+
+## Quick Save với Auto-fix
+
+```bash
+# Fix lỗi ruff tự động
+python check_code.py --fix
+
+# Commit sau khi fix
+git add -A
+git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Fixed: Mô tả"
 ```
 
 ## Release (Phát hành version mới)
@@ -41,6 +56,14 @@ release(
 # -> v2.1.0, cập nhật CHANGELOG.md, commit và tag
 ```
 
+## Check Code Options
+
+```bash
+python check_code.py           # Quick check (stop on first failure)
+python check_code.py --full    # Full check (run all tests)
+python check_code.py --fix     # Auto-fix ruff issues
+```
+
 ## Rollback
 
 ```bash
@@ -59,6 +82,6 @@ git checkout v2.0.0
 
 ## Lưu ý
 
-- **Luôn quick_save() trước khi thử nghiệm code mới**
+- **Luôn check_code.py trước khi commit**
 - Sử dụng `release()` khi hoàn thành feature
 - Commit message nên rõ ràng, ngắn gọn
