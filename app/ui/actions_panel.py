@@ -21,13 +21,18 @@ from core.models import (
     Action,
     Click,
     Delay,
+    DelayRandom,
+    Drag,
     Goto,
     Hotkey,
     IfImage,
     Label,
+    Loop,
     RunFlow,
+    Scroll,
     TypeText,
     WaitImage,
+    WhileImage,
 )
 from infra import get_logger
 
@@ -35,15 +40,20 @@ logger = get_logger("ActionsPanel")
 
 # Action types available
 ACTION_TYPES = [
-    ("WaitImage", "⏳ Wait Image"),
+    ("WaitImage", "👁️ Wait Image"),
     ("Click", "🖱️ Click"),
     ("IfImage", "❓ If Image"),
     ("Hotkey", "⌨️ Hotkey"),
     ("TypeText", "📝 Type Text"),
     ("Label", "🏷️ Label"),
-    ("Goto", "➡️ Goto"),
+    ("Goto", "↩️ Goto"),
     ("RunFlow", "▶️ Run Flow"),
     ("Delay", "⏱️ Delay"),
+    ("DelayRandom", "🎲 Random Delay"),
+    ("Drag", "↔️ Drag"),
+    ("Scroll", "📜 Scroll"),
+    ("Loop", "🔁 Loop"),
+    ("WhileImage", "🔄 While Image"),
 ]
 
 ACTION_DEFAULTS = {
@@ -56,6 +66,11 @@ ACTION_DEFAULTS = {
     "Goto": lambda: Goto(label=""),
     "RunFlow": lambda: RunFlow(flow_name=""),
     "Delay": lambda: Delay(ms=1000),
+    "DelayRandom": lambda: DelayRandom(),
+    "Drag": lambda: Drag(from_x=0, from_y=0, to_x=100, to_y=100),
+    "Scroll": lambda: Scroll(),
+    "Loop": lambda: Loop(),
+    "WhileImage": lambda: WhileImage(asset_id=""),
 }
 
 
@@ -206,6 +221,19 @@ class ActionsPanel(QWidget):
             return action.flow_name or "?"
         elif isinstance(action, Delay):
             return f"{action.ms}ms"
+        elif isinstance(action, DelayRandom):
+            return f"{action.min_ms}-{action.max_ms}ms"
+        elif isinstance(action, Drag):
+            return f"({action.from_x},{action.from_y})→({action.to_x},{action.to_y})"
+        elif isinstance(action, Scroll):
+            direction = "↑" if action.amount > 0 else "↓"
+            return f"{direction} {abs(action.amount)}"
+        elif isinstance(action, Loop):
+            count = action.count if action.count else "∞"
+            return f"{count}x [{len(action.actions)} actions]"
+        elif isinstance(action, WhileImage):
+            mode = "present" if action.while_present else "absent"
+            return f"{action.asset_id} ({mode})"
         return ""
 
     def highlight_step(self, idx: int) -> None:

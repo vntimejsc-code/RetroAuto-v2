@@ -164,9 +164,70 @@ class Delay(ActionBase):
     ms: int = Field(default=1000, ge=0, description="Delay in milliseconds")
 
 
+class DelayRandom(ActionBase):
+    """Wait for random duration between min and max."""
+
+    action: Literal["DelayRandom"] = "DelayRandom"
+    min_ms: int = Field(default=500, ge=0, description="Minimum delay")
+    max_ms: int = Field(default=1500, ge=0, description="Maximum delay")
+
+
+class Drag(ActionBase):
+    """Drag from one position to another."""
+
+    action: Literal["Drag"] = "Drag"
+    from_x: int = Field(description="Start X coordinate")
+    from_y: int = Field(description="Start Y coordinate")
+    to_x: int = Field(description="End X coordinate")
+    to_y: int = Field(description="End Y coordinate")
+    duration_ms: int = Field(default=500, ge=0, description="Drag duration")
+    button: Literal["left", "right", "middle"] = Field(default="left")
+
+
+class Scroll(ActionBase):
+    """Scroll mouse wheel."""
+
+    action: Literal["Scroll"] = "Scroll"
+    x: int | None = Field(default=None, description="X position (None=current)")
+    y: int | None = Field(default=None, description="Y position (None=current)")
+    amount: int = Field(default=3, description="Scroll amount (positive=up, negative=down)")
+
+
+class Loop(ActionBase):
+    """Repeat actions N times or infinitely."""
+
+    action: Literal["Loop"] = "Loop"
+    count: int | None = Field(default=None, description="Times to repeat (None=infinite)")
+    actions: list["Action"] = Field(default_factory=list)
+
+
+class WhileImage(ActionBase):
+    """Repeat actions while image is present/absent."""
+
+    action: Literal["WhileImage"] = "WhileImage"
+    asset_id: str = Field(description="Asset to check")
+    while_present: bool = Field(default=True, description="True=while exists")
+    actions: list["Action"] = Field(default_factory=list)
+    max_iterations: int = Field(default=100, description="Safety limit")
+    roi_override: ROI | None = Field(default=None)
+
+
 # Discriminated union type
 Action = Annotated[
-    WaitImage | Click | IfImage | Hotkey | TypeText | Label | Goto | RunFlow | Delay,
+    WaitImage
+    | Click
+    | IfImage
+    | Hotkey
+    | TypeText
+    | Label
+    | Goto
+    | RunFlow
+    | Delay
+    | DelayRandom
+    | Drag
+    | Scroll
+    | Loop
+    | WhileImage,
     Field(discriminator="action"),
 ]
 
