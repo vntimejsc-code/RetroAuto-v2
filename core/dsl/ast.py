@@ -172,6 +172,19 @@ class ConstStmt(ASTNode):
 
 
 @dataclass(kw_only=True)
+class ImportStmt(ASTNode):
+    """Import statement: import "path/module" as alias.
+
+    Example:
+        import "lib/combat" as combat
+        import "antiban-pro@2.0" as ab
+    """
+
+    path: str  # Module path (string)
+    alias: str | None = None  # Optional alias name
+
+
+@dataclass(kw_only=True)
 class AssignStmt(ASTNode):
     """Assignment: x = 5;."""
 
@@ -298,6 +311,7 @@ class HotkeysDecl(ASTNode):
 class Program(ASTNode):
     """Root AST node containing all declarations."""
 
+    imports: list[ImportStmt] = field(default_factory=list)  # Phase 3
     hotkeys: HotkeysDecl | None = None
     flows: list[FlowDecl] = field(default_factory=list)
     interrupts: list[InterruptDecl] = field(default_factory=list)

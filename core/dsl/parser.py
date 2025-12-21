@@ -23,6 +23,7 @@ from core.dsl.ast import (
     HotkeysDecl,
     Identifier,
     IfStmt,
+    ImportStmt,  # Phase 3
     InterruptDecl,
     LabelStmt,
     LetStmt,
@@ -199,10 +200,16 @@ class Parser:
         flows: list[FlowDecl] = []
         interrupts: list[InterruptDecl] = []
         constants: list[ConstStmt] = []
+        imports: list = []  # Phase 3: imports list
 
         while not self._at_end():
             try:
-                if self._check(TokenType.HOTKEYS):
+                # ─────────────────────────────────────────────────────
+                # Phase 3: import statements at top of file
+                # ─────────────────────────────────────────────────────
+                if self._check(TokenType.IMPORT):
+                    imports.append(self._parse_import())
+                elif self._check(TokenType.HOTKEYS):
                     hotkeys = self._parse_hotkeys()
                 elif self._check(TokenType.FLOW):
                     flows.append(self._parse_flow())
@@ -226,6 +233,7 @@ class Parser:
 
         return Program(
             span=self._span_from(start),
+            imports=imports,  # Phase 3
             hotkeys=hotkeys,
             flows=flows,
             interrupts=interrupts,
@@ -313,6 +321,35 @@ class Parser:
             span=self._span_from(start),
             name=name_token.value,
             initializer=value,
+        )
+
+    def _parse_import(self) -> ImportStmt:
+        """Parse import statement (Phase 3).
+
+        Syntax:
+            import "path/to/module"
+            import "lib/combat" as combat
+            import "antiban-pro@2.0" as ab
+        """
+        start = self._expect(TokenType.IMPORT)
+
+        # Parse module path (required string)
+        path_token = self._expect(TokenType.STRING, "Expected module path string")
+        path = path_token.value
+
+        # Parse optional alias: as name
+        alias: str | None = None
+        if self._match(TokenType.AS):
+            alias_token = self._expect(TokenType.IDENTIFIER, "Expected alias name")
+            alias = alias_token.value
+
+        # Optional semicolon
+        self._match(TokenType.SEMICOLON)
+
+        return ImportStmt(
+            span=self._span_from(start),
+            path=path,
+            alias=alias,
         )
 
     # ─────────────────────────────────────────────────────────────
