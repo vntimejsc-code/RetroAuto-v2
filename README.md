@@ -1,103 +1,66 @@
-# RetroAuto v2
+# RetroAuto v2 - Advanced Windows Automation Tool
 
-**Windows automation tool with image recognition - Win95/98 style**
+## Overview
+RetroAuto v2 is a comprehensive automation toolchain featuring a custom DSL (RetroScript), a Win95-styled IDE, and powerful runtime capabilities for Windows automation, game botting, and testing.
 
-## Features
+## 🤖 For AI Agents Analyzing This Repo
+This repository is structured to be easily parseable and understandable. Here is your map:
 
-- 🖼️ Image-based automation using template matching
-- 🖱️ Mouse & keyboard control (click, hotkey, type)
-- 📝 YAML script format with validation
-- 🔄 Label/Goto flow control + nested flows
-- ⚡ Interrupt rules for reactive automation
-- 🎨 Classic Windows 95/98 style GUI
+### 1. Core Architecture (`core/`)
+- **DSL (`core/dsl/`)**: The heart of the language.
+  - `parser.py`: Recursive descent parser.
+  - `lexer.py`: Tokenizer.
+  - `ast.py`: Abstract Syntax Tree definitions.
+  - `interpreter.py`: Runtime execution engine.
+- **Engine (`core/engine/`)**: Execution context, scope management, and built-ins.
+- **Vision (`core/vision/`)**: Computer vision capabilities (template matching, OCR stubs).
+- **Game (`core/game/`)**: Game-specific features (Pixel detection, Anti-detect, Macros).
+- **Network (`core/network/`)**: HTTP/WebSocket clients and Remote Control API.
+- **Analytics (`core/analytics/`)**: Metrics and structured logging.
+- **Package (`core/package/`)**: Dependency management (`retro.toml`).
+- **LSP (`core/lsp/`)**: Language Server Protocol implementation.
 
-## Requirements
+### 2. Application Layer (`app/`)
+- **UI (`app/ui/`)**: PySide6 (Qt) based GUI with custom Windows 95 styling.
+  - `main.py`: Entry point.
+  - `main_window.py`: The primary IDE window.
+  - `visual_editor/`: Drag-and-drop flow editing components.
+- **Tools (`app/tools/`)**: CLI utilities (`cli.py`), bundler, scaffolding.
 
-- Python 3.11+
-- Windows 10/11
+### 3. Key Entry Points
+- **Run App**: `python -m app.main`
+- **CLI**: `python -m app.cli`
+- **LSP**: `python -m core.lsp.server`
+- **Verification**: `python verify_all.py`
 
-## Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your/retroauto.git
-cd retroauto
-
-# Create virtual environment
-python -m venv .venv
-.venv\Scripts\activate
-
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Setup pre-commit hooks
-pre-commit install
+### 4. Language Syntax (RetroScript)
+RetroScript looks like a mix of Python and Rust/Go.
+```retroscript
+flow main {
+    log("Starting automation...");
+    
+    # Visual matching
+    if find("button.png") {
+        click(match.x, match.y);
+    }
+    
+    # Network
+    let data = fetch("https://api.example.com/config");
+    
+    # Game loop
+    while true {
+        wait(1s);
+    }
+}
 ```
 
-## Quick Start
+## Setup & Run
+1. Install dependencies: `pip install -r requirements.txt` (or manually: `PySide6`, `mss`, `numpy`, `pillow`, `requests`, `websocket-client`, `tomli`, `tomli-w`)
+2. Run IDE: `python -m app.main`
+3. Verify: `python verify_all.py`
 
-```bash
-# Run the application
-python -m app.main
-
-# Or after installation
-retroauto
-```
-
-## Project Structure
-
-```
-retroauto/
-├── app/                    # Application layer
-│   ├── main.py            # Entry point
-│   └── ui/                # PySide6 UI components
-│       ├── main_window.py
-│       ├── assets_panel.py
-│       ├── actions_panel.py
-│       ├── properties_panel.py
-│       ├── log_panel.py
-│       └── capture_tool.py
-├── core/                   # Core logic
-│   ├── models.py          # Pydantic data models
-│   ├── templates.py       # Template store
-│   ├── script/            # Script IO
-│   │   └── io.py
-│   └── engine/            # Execution engine
-│       ├── runner.py
-│       ├── context.py
-│       └── interrupts.py
-├── vision/                 # Vision subsystem
-│   ├── capture.py         # Screen capture (mss)
-│   └── matcher.py         # Template matching (OpenCV)
-├── input/                  # Input subsystem
-│   ├── mouse.py           # Mouse control (pywin32)
-│   └── keyboard.py        # Keyboard control (pywin32)
-├── infra/                  # Infrastructure
-│   ├── logging.py         # Logging setup
-│   ├── config.py          # Configuration
-│   └── hotkeys.py         # Global hotkeys
-└── tests/                  # Test suite
-```
-
-## Development
-
-```bash
-# Run linting
-ruff check .
-
-# Run formatting
-black .
-
-# Run type checking
-mypy app core vision input infra
-
-# Run tests
-pytest
-
-# Run all checks
-pre-commit run --all-files
-```
-
-## License
-
-MIT
+## Project Status
+- ✅ **Core DSL**: Fully implemented.
+- ✅ **IDE**: Complete with Debugger & LSP.
+- ✅ **Runtime**: Stable with Hot-Reload.
+- ✅ **Modules**: Network, Game, Vision, Analytics, Package Manager all active.
