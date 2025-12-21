@@ -28,6 +28,8 @@ from app.ui.coordinates_panel import CoordinatesPanel
 from app.ui.engine_worker import EngineWorker
 from app.ui.log_panel import LogPanel
 from app.ui.properties_panel import PropertiesPanel
+from core.dsl.document import ScriptDocument
+from core.dsl.sync_manager import SyncManager
 from infra import get_logger
 
 logger = get_logger("MainWindow")
@@ -61,8 +63,13 @@ class MainWindow(QMainWindow):
         self._project_path: Path | None = None
         self._draft_path = Path.home() / ".retroauto" / "draft.json"
 
+        # ScriptDocument and SyncManager for GUI-IDE sync
+        self._script_doc = ScriptDocument()
+        self._sync_manager = SyncManager(self._script_doc)
+
         self._init_ui()
         self._connect_engine_signals()
+        self._connect_sync_signals()
 
         # Create new empty script on start
         self.engine.new_script()
@@ -175,6 +182,43 @@ class MainWindow(QMainWindow):
         self.engine.step_started.connect(self._on_step_started)
         self.engine.flow_completed.connect(self._on_flow_completed)
         self.engine.error_occurred.connect(self._on_error)
+
+    def _connect_sync_signals(self) -> None:
+        """Connect SyncManager signals for GUI-IDE synchronization."""
+        # When IR changes from code editor, refresh Actions panel
+        self._sync_manager.ir_changed.connect(self._on_ir_changed_from_code)
+
+        # When code regenerated from GUI changes, update IDE if open
+        self._sync_manager.code_regenerated.connect(self._on_code_regenerated)
+
+        # Connect actions panel changes to sync manager
+        self.actions_panel.action_changed.connect(
+            lambda: self._sync_manager.on_action_changed(
+                "main",
+                self.actions_panel._last_changed_index,
+                self.actions_panel._actions[self.actions_panel._last_changed_index]
+                if 0 <= self.actions_panel._last_changed_index < len(self.actions_panel._actions)
+                else None,
+            )
+        )
+
+        logger.info("Sync signals connected")
+
+    def _on_ir_changed_from_code(self, change_type: str) -> None:
+        """Handle IR changes from code editor."""
+        if change_type.startswith("code_"):
+            # Refresh actions panel from IR
+            actions = self._sync_manager.get_flow_actions("main")
+            if actions:
+                self.actions_panel.set_actions(actions)
+            logger.debug("Actions panel refreshed from IR (%s)", change_type)
+
+    def _on_code_regenerated(self, new_code: str) -> None:
+        """Handle code regenerated from GUI changes."""
+        # Update IDE window if open
+        if hasattr(self, "_ide_window") and self._ide_window:
+            self._ide_window.set_code(new_code)
+        logger.debug("Code regenerated from GUI changes")
 
     def _update_title(self) -> None:
         """Update window title with project name."""
