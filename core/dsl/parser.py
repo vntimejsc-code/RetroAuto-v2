@@ -381,6 +381,18 @@ class Parser:
         if self._check(TokenType.RETURN):
             return self._parse_return()
 
+        # ─────────────────────────────────────────────────────────────
+        # RetroScript: $variable assignment
+        # ─────────────────────────────────────────────────────────────
+        if self._check(TokenType.VARIABLE):
+            return self._parse_variable_assignment()
+
+        # ─────────────────────────────────────────────────────────────
+        # RetroScript: repeat N: block
+        # ─────────────────────────────────────────────────────────────
+        if self._check(TokenType.REPEAT):
+            return self._parse_repeat()
+
         # Expression statement
         return self._parse_expression_statement()
 
@@ -507,6 +519,84 @@ class Parser:
         return ReturnStmt(
             span=self._span_from(start),
             value=value,
+        )
+
+    # ─────────────────────────────────────────────────────────────
+    # RetroScript Parsing
+    # ─────────────────────────────────────────────────────────────
+
+    def _parse_variable_assignment(self) -> AssignStmt:
+        """Parse $variable = expression (RetroScript)."""
+        start = self._advance()  # $variable token
+        var_name = start.value  # includes $ prefix
+
+        self._expect(TokenType.ASSIGN, "Expected '=' after variable name")
+        value = self._parse_expression()
+
+        # Optional semicolon (RetroScript doesn't require it)
+        self._match(TokenType.SEMICOLON)
+
+        # Create identifier node for target
+        target = Identifier(span=self._span_from(start), name=var_name)
+
+        return AssignStmt(
+            span=self._span_from(start),
+            target=target,
+            value=value,
+        )
+
+    def _parse_repeat(self) -> ForStmt:
+        """Parse repeat N: block (RetroScript).
+
+        Translates to: for _i in range(N) { block }
+        """
+        start = self._expect(TokenType.REPEAT)
+
+        # Parse count (optional - if missing, infinite loop)
+        count: ASTNode | None = None
+        if self._check(TokenType.INTEGER):
+            count_token = self._advance()
+            count = Literal(
+                span=self._span_from(count_token),
+                value=int(count_token.value),
+                literal_type="integer",
+            )
+
+        # Optional 'times' keyword
+        self._match(TokenType.TIMES)
+
+        # Expect colon or brace
+        if not self._match(TokenType.COLON):
+            self._expect(TokenType.LBRACE)
+            # Put back for block parsing
+            self.pos -= 1
+
+        # Parse block
+        body = self._parse_block()
+
+        # Optional 'end' keyword (RetroScript style)
+        self._match(TokenType.END)
+
+        # Create synthetic range call
+        if count:
+            range_call = CallExpr(
+                span=self._span_from(start),
+                callee="range",
+                args=[count],
+            )
+        else:
+            # Infinite loop - use large number with safety limit
+            range_call = CallExpr(
+                span=self._span_from(start),
+                callee="range",
+                args=[Literal(span=self._span_from(start), value=1000, literal_type="integer")],
+            )
+
+        return ForStmt(
+            span=self._span_from(start),
+            variable="_i",
+            iterable=range_call,
+            body=body,
         )
 
     def _parse_expression_statement(self) -> ASTNode:
