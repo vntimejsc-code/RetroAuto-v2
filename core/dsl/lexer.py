@@ -121,7 +121,7 @@ class Lexer:
             return
 
         # ─────────────────────────────────────────────────────────────
-        # Comments
+        # Comments (// and #)
         # ─────────────────────────────────────────────────────────────
         if char == "/":
             if self._peek(1) == "/":
@@ -130,6 +130,11 @@ class Lexer:
             elif self._peek(1) == "*":
                 self._scan_block_comment(start_line, start_col)
                 return
+
+        # RetroScript: # for line comments
+        if char == "#":
+            self._scan_hash_comment(start_line, start_col)
+            return
 
         # ─────────────────────────────────────────────────────────────
         # Strings
@@ -143,6 +148,13 @@ class Lexer:
         # ─────────────────────────────────────────────────────────────
         if char.isdigit():
             self._scan_number(start_line, start_col)
+            return
+
+        # ─────────────────────────────────────────────────────────────
+        # RetroScript: $variable
+        # ─────────────────────────────────────────────────────────────
+        if char == "$":
+            self._scan_variable(start_line, start_col)
             return
 
         # ─────────────────────────────────────────────────────────────
@@ -166,6 +178,31 @@ class Lexer:
             self._advance()
         value = "//" + self.source[start : self.pos]
         self._add_token(TokenType.LINE_COMMENT, value, start_line, start_col)
+
+    def _scan_hash_comment(self, start_line: int, start_col: int) -> None:
+        """Scan # line comment (RetroScript style)."""
+        self._advance()  # #
+        start = self.pos
+        while not self._at_end() and self._peek() != "\n":
+            self._advance()
+        value = "#" + self.source[start : self.pos]
+        self._add_token(TokenType.LINE_COMMENT, value, start_line, start_col)
+
+    def _scan_variable(self, start_line: int, start_col: int) -> None:
+        """Scan $variable name (RetroScript)."""
+        self._advance()  # $
+        start = self.pos
+
+        if not (self._peek().isalpha() or self._peek() == "_"):
+            self.errors.append(LexerError("Expected variable name after $", start_line, start_col))
+            self._add_token(TokenType.ERROR, "$", start_line, start_col)
+            return
+
+        while self._peek().isalnum() or self._peek() == "_":
+            self._advance()
+
+        value = "$" + self.source[start : self.pos]
+        self._add_token(TokenType.VARIABLE, value, start_line, start_col)
 
     def _scan_block_comment(self, start_line: int, start_col: int) -> None:
         """Scan /* block comment */."""
@@ -275,6 +312,11 @@ class Lexer:
             "||": TokenType.OR,
             "->": TokenType.ARROW,
         }
+
+        # Check for Unicode arrow first
+        if char == "→":
+            self._add_token(TokenType.ARROW, "→", start_line, start_col)
+            return
 
         for op, token_type in two_char_ops.items():
             if char == op[0] and self._peek() == op[1]:

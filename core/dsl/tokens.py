@@ -53,6 +53,35 @@ class TokenType(Enum):
     HOTKEYS = auto()  # hotkeys
 
     # ─────────────────────────────────────────────────────────────
+    # RetroScript Keywords (Phase 1)
+    # ─────────────────────────────────────────────────────────────
+    MATCH = auto()  # match (pattern matching)
+    RETRY = auto()  # retry
+    TIMES = auto()  # times (retry 3 times)
+    FIND = auto()  # find
+    RUN = auto()  # run (call flow)
+    DEF = auto()  # def (function definition)
+    END = auto()  # end (block end)
+    REPEAT = auto()  # repeat
+    WAIT = auto()  # wait
+    CLICK = auto()  # click
+    TYPE_KW = auto()  # type
+    PRESS = auto()  # press
+    SLEEP = auto()  # sleep
+    SCROLL = auto()  # scroll
+    DRAG = auto()  # drag
+
+    # RetroScript logical keywords (word form)
+    AND_KW = auto()  # and (word form)
+    OR_KW = auto()  # or (word form)
+    NOT_KW = auto()  # not (word form)
+
+    # ─────────────────────────────────────────────────────────────
+    # RetroScript Variable
+    # ─────────────────────────────────────────────────────────────
+    VARIABLE = auto()  # $varname
+
+    # ─────────────────────────────────────────────────────────────
     # Operators
     # ─────────────────────────────────────────────────────────────
     PLUS = auto()  # +
@@ -126,6 +155,26 @@ KEYWORDS: dict[str, TokenType] = {
     "true": TokenType.TRUE,
     "false": TokenType.FALSE,
     "null": TokenType.NULL,
+    # RetroScript keywords
+    "match": TokenType.MATCH,
+    "retry": TokenType.RETRY,
+    "times": TokenType.TIMES,
+    "find": TokenType.FIND,
+    "run": TokenType.RUN,
+    "def": TokenType.DEF,
+    "end": TokenType.END,
+    "repeat": TokenType.REPEAT,
+    "wait": TokenType.WAIT,
+    "click": TokenType.CLICK,
+    "type": TokenType.TYPE_KW,
+    "press": TokenType.PRESS,
+    "sleep": TokenType.SLEEP,
+    "scroll": TokenType.SCROLL,
+    "drag": TokenType.DRAG,
+    # Logical keywords (word form)
+    "and": TokenType.AND_KW,
+    "or": TokenType.OR_KW,
+    "not": TokenType.NOT_KW,
 }
 
 

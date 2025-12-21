@@ -191,16 +191,9 @@ class MainWindow(QMainWindow):
         # When code regenerated from GUI changes, update IDE if open
         self._sync_manager.code_regenerated.connect(self._on_code_regenerated)
 
-        # Connect actions panel changes to sync manager
-        self.actions_panel.action_changed.connect(
-            lambda: self._sync_manager.on_action_changed(
-                "main",
-                self.actions_panel._last_changed_index,
-                self.actions_panel._actions[self.actions_panel._last_changed_index]
-                if 0 <= self.actions_panel._last_changed_index < len(self.actions_panel._actions)
-                else None,
-            )
-        )
+        # Note: action_changed signal will be connected when we need
+        # full bidirectional sync (actions_panel -> IR -> code)
+        # For now, focus on code -> IR -> GUI direction
 
         logger.info("Sync signals connected")
 
@@ -402,14 +395,36 @@ class MainWindow(QMainWindow):
             main_flow.actions = self.actions_panel.get_actions()
 
     def _on_open_ide(self) -> None:
-        """Open the DSL IDE window."""
+        """Open the DSL IDE window with current script code."""
         from app.ui.ide_main_window import IDEMainWindow
         from app.ui.win95_style import generate_stylesheet
+        from core.dsl.adapter import action_to_ir
+        from core.dsl.ir import FlowIR, ScriptIR, ir_to_code
 
-        self.ide_window = IDEMainWindow()
-        self.ide_window.setStyleSheet(generate_stylesheet())
-        self.ide_window.show()
-        logger.info("Opened IDE window")
+        # Generate DSL code from current actions
+        actions = self.actions_panel.get_actions()
+        
+        # Build IR from actions
+        ir = ScriptIR()
+        main_flow = FlowIR(name="main")
+        for action in actions:
+            action_ir = action_to_ir(action)
+            main_flow.actions.append(action_ir)
+        ir.flows.append(main_flow)
+        
+        # Generate code
+        code = ir_to_code(ir)
+        
+        # Create and show IDE window
+        self._ide_window = IDEMainWindow()
+        self._ide_window.setStyleSheet(generate_stylesheet())
+        
+        # Set the generated code in editor
+        if hasattr(self._ide_window, 'editor') and self._ide_window.editor:
+            self._ide_window.editor.setPlainText(code)
+        
+        self._ide_window.show()
+        logger.info("Opened IDE window with %d actions", len(actions))
 
     def _save_draft(self) -> None:
         """Auto-save actions draft to file."""

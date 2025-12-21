@@ -82,17 +82,22 @@ class CoordinatesPanel(QWidget):
         self.coord_list.customContextMenuRequested.connect(self._show_context_menu)
         self.coord_list.setStyleSheet("""
             QListWidget {
-                background-color: #FFFFFF;
+                background-color: #2B2B2B;
                 border: 2px inset #808080;
                 font-family: "Consolas", "Courier New", monospace;
                 font-size: 9pt;
+                color: #E0E0E0;
             }
             QListWidget::item {
                 padding: 2px 4px;
+                border-bottom: 1px solid #3C3C3C;
             }
             QListWidget::item:selected {
-                background-color: #000080;
+                background-color: #264F78;
                 color: #FFFFFF;
+            }
+            QListWidget::item:hover {
+                background-color: #3C3C3C;
             }
         """)
         group_layout.addWidget(self.coord_list)
