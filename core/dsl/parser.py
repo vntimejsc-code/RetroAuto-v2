@@ -393,6 +393,12 @@ class Parser:
         if self._check(TokenType.REPEAT):
             return self._parse_repeat()
 
+        # ─────────────────────────────────────────────────────────────
+        # RetroScript: retry N: block
+        # ─────────────────────────────────────────────────────────────
+        if self._check(TokenType.RETRY):
+            return self._parse_retry()
+
         # Expression statement
         return self._parse_expression_statement()
 
@@ -599,6 +605,59 @@ class Parser:
             body=body,
         )
 
+    def _parse_retry(self) -> TryStmt:
+        """Parse retry N: block (RetroScript).
+
+        Syntax: retry 3 times: block
+        Translates to: try { block } catch err { if _retry < 3 { _retry++; goto retry } }
+        """
+        start = self._expect(TokenType.RETRY)
+
+        # Parse count
+        count = 3  # Default retry count
+        if self._check(TokenType.INTEGER):
+            count_token = self._advance()
+            count = int(count_token.value)
+
+        # Optional 'times' keyword
+        self._match(TokenType.TIMES)
+
+        # Expect colon or brace
+        if not self._match(TokenType.COLON):
+            self._expect(TokenType.LBRACE)
+            self.pos -= 1
+
+        # Parse try block
+        try_block = self._parse_block()
+
+        # Optional 'end' keyword
+        self._match(TokenType.END)
+
+        # Parse optional else block (runs if all retries fail)
+        else_block: BlockStmt | None = None
+        if self._match(TokenType.ELSE):
+            if not self._match(TokenType.COLON):
+                self._expect(TokenType.LBRACE)
+                self.pos -= 1
+            else_block = self._parse_block()
+            self._match(TokenType.END)
+
+        # For now, we create a simple TryStmt
+        # The engine will handle retry logic based on retry_count metadata
+        result = TryStmt(
+            span=self._span_from(start),
+            try_block=try_block,
+            catch_var="_retry_err",
+            catch_block=else_block if else_block else BlockStmt(
+                span=self._span_from(start),
+                statements=[],
+            ),
+        )
+
+        # Store retry count as attribute (engine uses this)
+        result.retry_count = count  # type: ignore
+        return result
+
     def _parse_expression_statement(self) -> ASTNode:
         """Parse expression statement or assignment."""
         start = self._peek()
@@ -631,30 +690,32 @@ class Parser:
         return self._parse_or()
 
     def _parse_or(self) -> ASTNode:
-        """Parse || expression."""
+        """Parse || or 'or' expression."""
         left = self._parse_and()
 
-        while self._match(TokenType.OR):
+        # Support both || and 'or' keyword (RetroScript)
+        while self._match(TokenType.OR, TokenType.OR_KW):
             right = self._parse_and()
             left = BinaryExpr(
                 span=left.span.merge(right.span),
                 left=left,
-                operator="||",
+                operator="or",  # Normalize to 'or'
                 right=right,
             )
 
         return left
 
     def _parse_and(self) -> ASTNode:
-        """Parse && expression."""
+        """Parse && or 'and' expression."""
         left = self._parse_equality()
 
-        while self._match(TokenType.AND):
+        # Support both && and 'and' keyword (RetroScript)
+        while self._match(TokenType.AND, TokenType.AND_KW):
             right = self._parse_equality()
             left = BinaryExpr(
                 span=left.span.merge(right.span),
                 left=left,
-                operator="&&",
+                operator="and",  # Normalize to 'and'
                 right=right,
             )
 
