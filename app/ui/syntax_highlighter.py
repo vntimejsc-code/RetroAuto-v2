@@ -26,6 +26,9 @@ class SyntaxColors:
     BUILTIN = QColor("#00007F")  # Dark blue (italic)
     OPERATOR = QColor("#000000")  # Black
     ERROR = QColor("#FF0000")  # Red
+    # Phase 4: RetroScript specific
+    VARIABLE = QColor("#006666")  # Teal for $variables
+    DECORATOR = QColor("#9932CC")  # Purple for @decorators
 
 
 # ─────────────────────────────────────────────────────────────
@@ -53,6 +56,7 @@ def make_format(
 # ─────────────────────────────────────────────────────────────
 
 KEYWORDS = {
+    # Core keywords
     "flow",
     "interrupt",
     "priority",
@@ -77,22 +81,50 @@ KEYWORDS = {
     "true",
     "false",
     "null",
+    # Phase 1: RetroScript keywords
+    "repeat",
+    "retry",
+    "times",
+    "match",
+    "and",
+    "or",
+    "not",
+    "end",
+    "def",
+    # Phase 2: Testing & config
+    "test",
+    "mock",
+    "assert",
+    "permissions",
+    "config",
+    "meta",
+    # Phase 3: Modules
+    "import",
+    "as",
 }
 
 BUILTINS = {
+    # Core builtins
     "wait_image",
     "find_image",
     "image_exists",
     "wait_any",
-    "click",
     "move",
     "hotkey",
     "type_text",
-    "sleep",
     "run_flow",
     "log",
-    "assert",
     "range",
+    # Phase 1: RetroScript actions
+    "find",
+    "wait",
+    "click",
+    "type",
+    "press",
+    "sleep",
+    "scroll",
+    "drag",
+    "run",
 }
 
 
@@ -127,6 +159,9 @@ class DSLHighlighter(QSyntaxHighlighter):
             "number": make_format(SyntaxColors.NUMBER),
             "duration": make_format(SyntaxColors.DURATION),
             "error": make_format(SyntaxColors.ERROR),
+            # Phase 4: RetroScript specific
+            "variable": make_format(SyntaxColors.VARIABLE, bold=True),
+            "decorator": make_format(SyntaxColors.DECORATOR, bold=True),
         }
 
     def highlightBlock(self, text: str) -> None:
@@ -156,10 +191,33 @@ class DSLHighlighter(QSyntaxHighlighter):
                     i += 1
                 continue
 
-            # Line comment
+            # Line comment (// style)
             if text[i : i + 2] == "//":
                 self.setFormat(i, length - i, self.formats["comment"])
                 return
+
+            # RetroScript: # line comment
+            if char == "#":
+                self.setFormat(i, length - i, self.formats["comment"])
+                return
+
+            # RetroScript: $variable highlighting
+            if char == "$":
+                start = i
+                i += 1
+                while i < length and (text[i].isalnum() or text[i] == "_"):
+                    i += 1
+                self.setFormat(start, i - start, self.formats["variable"])
+                continue
+
+            # RetroScript: @decorator highlighting
+            if char == "@":
+                start = i
+                i += 1
+                while i < length and (text[i].isalnum() or text[i] == "_"):
+                    i += 1
+                self.setFormat(start, i - start, self.formats["decorator"])
+                continue
 
             # Block comment start
             if text[i : i + 2] == "/*":
