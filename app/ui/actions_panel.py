@@ -319,8 +319,11 @@ class ActionsPanel(QWidget):
         self.action_list.asset_dropped_insert.connect(self._on_asset_dropped_insert)
         group_layout.addWidget(self.action_list)
 
-        # Bottom buttons (Delete, Clear, Move)
+        # Bottom buttons (Add, Delete, Clear, Move)
         btn_layout = QHBoxLayout()
+
+        self.btn_add = QPushButton("+ Add")
+        self.btn_add.clicked.connect(self._show_add_menu)
 
         self.btn_delete = QPushButton("Delete")
         self.btn_delete.clicked.connect(self._on_delete)
@@ -339,6 +342,7 @@ class ActionsPanel(QWidget):
         self.btn_down.clicked.connect(self._on_move_down)
         self.btn_down.setEnabled(False)
 
+        btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addWidget(self.btn_clear)
         btn_layout.addStretch()
