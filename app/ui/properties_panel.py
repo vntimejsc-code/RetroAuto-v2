@@ -101,8 +101,11 @@ class PropertiesPanel(QWidget):
             self._add_combo_field("button", action.button, ["left", "right", "middle"])
             self._add_spin_field("clicks", action.clicks, 1, 10)
             self._add_spin_field("timeout_ms", action.timeout_ms, 0, 60000)
-            self._add_spin_field("offset_x", action.offset_x, -500, 500)
-            self._add_spin_field("offset_y", action.offset_y, -500, 500)
+            # Advanced options (collapsible)
+            self._add_collapsible_section("▸ Advanced", [
+                ("offset_x", action.offset_x, -500, 500),
+                ("offset_y", action.offset_y, -500, 500),
+            ])
 
         elif isinstance(action, ClickUntil):
             self._add_text_field("click_asset_id", action.click_asset_id)
@@ -190,6 +193,38 @@ class PropertiesPanel(QWidget):
         label = QLabel(text)
         label.setStyleSheet("color: gray; font-style: italic;")
         self.form_layout.addRow(label)
+
+    def _add_collapsible_section(
+        self, title: str, fields: list[tuple[str, int, int, int]]
+    ) -> None:
+        """Add collapsible section with spin fields (hidden by default)."""
+        # Toggle checkbox
+        toggle = QCheckBox(title)
+        toggle.setStyleSheet("color: #888; font-weight: bold;")
+        self.form_layout.addRow(toggle)
+
+        # Create hidden fields
+        field_widgets = []
+        for name, value, min_val, max_val in fields:
+            field = QSpinBox()
+            field.setRange(min_val, max_val)
+            field.setValue(value)
+            field.setVisible(False)
+            self._fields[name] = field
+            label = QLabel(name.replace("_", " ").title() + ":")
+            label.setVisible(False)
+            label.setStyleSheet("padding-left: 16px;")
+            self.form_layout.addRow(label, field)
+            field_widgets.append((label, field))
+
+        # Toggle visibility
+        def on_toggle(checked: bool) -> None:
+            toggle.setText("▾ Advanced" if checked else "▸ Advanced")
+            for label, field in field_widgets:
+                label.setVisible(checked)
+                field.setVisible(checked)
+
+        toggle.toggled.connect(on_toggle)
 
     def _on_apply(self) -> None:
         """Apply changes to action."""
