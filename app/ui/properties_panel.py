@@ -247,7 +247,30 @@ class PropertiesPanel(QWidget):
 
     def _build_updated_action(self, action):  # type: ignore
         """Build updated action from form fields."""
-        if isinstance(action, WaitImage):
+        if isinstance(action, ClickImage):
+            return ClickImage(
+                asset_id=self._fields["asset_id"].text(),
+                button=self._fields["button"].currentText(),
+                clicks=self._fields["clicks"].value(),
+                timeout_ms=self._fields["timeout_ms"].value(),
+                offset_x=self._fields["offset_x"].value(),
+                offset_y=self._fields["offset_y"].value(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, ClickUntil):
+            return ClickUntil(
+                click_asset_id=self._fields["click_asset_id"].text(),
+                until_asset_id=self._fields["until_asset_id"].text(),
+                until_appear=self._fields["until_appear"].isChecked(),
+                button=self._fields["button"].currentText(),
+                click_interval_ms=self._fields["click_interval_ms"].value(),
+                timeout_ms=self._fields["timeout_ms"].value(),
+                max_clicks=self._fields["max_clicks"].value(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, WaitImage):
             return WaitImage(
                 asset_id=self._fields["asset_id"].text(),
                 appear=self._fields["appear"].isChecked(),

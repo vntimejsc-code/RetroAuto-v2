@@ -571,6 +571,10 @@ class ActionsPanel(QWidget):
         """Get short detail string for action."""
         if isinstance(action, ClickImage):
             return action.asset_id or "?"
+        elif isinstance(action, ClickUntil):
+            click = action.click_asset_id or "?"
+            until = action.until_asset_id or "?"
+            return f"{click} → {until}"
         elif isinstance(action, WaitImage):
             return action.asset_id or "?"
         elif isinstance(action, Click):
