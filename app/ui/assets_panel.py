@@ -234,8 +234,25 @@ class AssetsPanel(QWidget):
 
     def _import_image(self, path: Path) -> None:
         """Import image as new asset with smart naming."""
-        # Generate smart ID from filename
-        asset_id = self._generate_smart_id(path.stem)
+        # Step 1: Try clean filename
+        base_id = self._clean_name(path.stem)
+        
+        if not self._id_exists(base_id):
+            # Unique - use as is
+            asset_id = base_id
+        else:
+            # Step 2: Try with folder prefix (e.g., folder_filename)
+            folder_name = self._clean_name(path.parent.name)
+            prefixed_id = f"{folder_name}_{base_id}" if folder_name else base_id
+            
+            if not self._id_exists(prefixed_id):
+                asset_id = prefixed_id
+            else:
+                # Step 3: Show dialog to let user rename
+                asset_id = self._prompt_for_unique_id(base_id, prefixed_id, path)
+                if not asset_id:
+                    # User cancelled
+                    return
 
         asset = AssetImage(
             id=asset_id,
@@ -245,24 +262,52 @@ class AssetsPanel(QWidget):
         self.add_asset(asset)
         logger.info("Imported asset: %s from %s", asset_id, path)
 
-    def _generate_smart_id(self, name: str) -> str:
-        """Generate a smart, unique ID from filename."""
-        # Clean the name: lowercase, replace spaces with underscore
-        clean_name = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower())
-        clean_name = re.sub(r"_+", "_", clean_name).strip("_")
+    def _clean_name(self, name: str) -> str:
+        """Clean a name to valid ID format (lowercase, alphanumeric + underscore)."""
+        clean = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower())
+        clean = re.sub(r"_+", "_", clean).strip("_")
+        if clean.isdigit() or not clean:
+            clean = f"img_{clean or 'new'}"
+        return clean
 
-        # If name is just numbers, prefix with 'img_'
-        if clean_name.isdigit() or not clean_name:
-            clean_name = f"img_{clean_name or 'new'}"
+    def _id_exists(self, asset_id: str) -> bool:
+        """Check if asset ID already exists."""
+        return any(a.id == asset_id for a in self._assets)
 
-        # Ensure unique
-        base_name = clean_name
+    def _prompt_for_unique_id(self, base_id: str, prefixed_id: str, path: Path) -> str | None:
+        """Show dialog to get unique ID from user when auto-naming fails."""
+        # Suggest a numbered version as fallback
         counter = 1
-        while any(a.id == clean_name for a in self._assets):
-            clean_name = f"{base_name}_{counter}"
+        suggested = prefixed_id
+        while self._id_exists(suggested):
+            suggested = f"{prefixed_id}_{counter}"
             counter += 1
 
-        return clean_name
+        new_id, ok = QInputDialog.getText(
+            self,
+            "Tên ảnh bị trùng",
+            f"Ảnh '{base_id}' đã tồn tại.\n"
+            f"Folder: {path.parent.name}\n\n"
+            f"Nhập ID mới:",
+            text=suggested,
+        )
+
+        if not ok or not new_id:
+            return None
+
+        # Clean and validate
+        clean_id = self._clean_name(new_id)
+        if not clean_id:
+            QMessageBox.warning(self, "ID không hợp lệ", "ID không được để trống.")
+            return None
+
+        if self._id_exists(clean_id):
+            QMessageBox.warning(
+                self, "ID bị trùng", f"ID '{clean_id}' đã tồn tại. Vui lòng chọn tên khác."
+            )
+            return None
+
+        return clean_id
 
     def _on_delete(self) -> None:
         """Delete selected asset."""
