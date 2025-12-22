@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
 
 from core.models import (
     Click,
+    ClickImage,
+    ClickUntil,
     Delay,
     Goto,
     Hotkey,
@@ -94,7 +96,24 @@ class PropertiesPanel(QWidget):
         self.form_layout.addRow(QLabel(f"<b>{action_type}</b>"))
 
         # Build fields based on type
-        if isinstance(action, WaitImage):
+        if isinstance(action, ClickImage):
+            self._add_text_field("asset_id", action.asset_id)
+            self._add_combo_field("button", action.button, ["left", "right", "middle"])
+            self._add_spin_field("clicks", action.clicks, 1, 10)
+            self._add_spin_field("timeout_ms", action.timeout_ms, 0, 60000)
+            self._add_spin_field("offset_x", action.offset_x, -500, 500)
+            self._add_spin_field("offset_y", action.offset_y, -500, 500)
+
+        elif isinstance(action, ClickUntil):
+            self._add_text_field("click_asset_id", action.click_asset_id)
+            self._add_text_field("until_asset_id", action.until_asset_id)
+            self._add_bool_field("until_appear", action.until_appear)
+            self._add_combo_field("button", action.button, ["left", "right", "middle"])
+            self._add_spin_field("click_interval_ms", action.click_interval_ms, 100, 10000)
+            self._add_spin_field("timeout_ms", action.timeout_ms, 0, 300000)
+            self._add_spin_field("max_clicks", action.max_clicks, 1, 1000)
+
+        elif isinstance(action, WaitImage):
             self._add_text_field("asset_id", action.asset_id)
             self._add_bool_field("appear", action.appear)
             self._add_spin_field("timeout_ms", action.timeout_ms, 0, 300000)
