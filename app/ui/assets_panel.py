@@ -8,8 +8,8 @@ Enhanced UX: drag-drop feedback, inline editing, context menu, smart naming.
 from pathlib import Path
 import re
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QAction, QColor
+from PySide6.QtCore import QMimeData, Qt, Signal
+from PySide6.QtGui import QAction, QColor, QDrag
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -32,6 +32,9 @@ from infra import get_logger
 
 logger = get_logger("AssetsPanel")
 
+# Custom MIME type for drag to Actions panel
+ASSET_MIME_TYPE = "application/x-retroauto-asset"
+
 
 # Smart naming categories
 NAMING_CATEGORIES = {
@@ -45,6 +48,35 @@ NAMING_CATEGORIES = {
     "chk": "Checkbox",
     "lbl": "Label",
 }
+
+
+class AssetListWidget(QListWidget):
+    """Custom list widget that sends asset_id via MIME when dragging to Actions."""
+
+    def __init__(self, parent=None) -> None:  # type: ignore
+        super().__init__(parent)
+        self.setDragEnabled(True)
+        self.setDefaultDropAction(Qt.DropAction.CopyAction)
+
+    def startDrag(self, supportedActions) -> None:  # type: ignore
+        """Start drag with custom MIME type containing asset_id."""
+        item = self.currentItem()
+        if not item:
+            return
+
+        asset_id = item.data(Qt.ItemDataRole.UserRole)
+        if not asset_id:
+            return
+
+        # Create drag with custom MIME data
+        drag = QDrag(self)
+        mime_data = QMimeData()
+        mime_data.setData(ASSET_MIME_TYPE, asset_id.encode("utf-8"))
+        mime_data.setText(f"Asset: {asset_id}")  # For visual feedback
+        drag.setMimeData(mime_data)
+
+        # Execute drag
+        drag.exec(Qt.DropAction.CopyAction)
 
 
 class AssetsPanel(QWidget):
@@ -93,9 +125,8 @@ class AssetsPanel(QWidget):
         """)
         group_layout.addWidget(self.drop_hint)
 
-        # Asset list
-        self.asset_list = QListWidget()
-        self.asset_list.setDragEnabled(True)
+        # Asset list with custom drag support
+        self.asset_list = AssetListWidget()
         self.asset_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.asset_list.currentItemChanged.connect(self._on_selection_changed)
         self.asset_list.itemDoubleClicked.connect(self._on_item_double_clicked)

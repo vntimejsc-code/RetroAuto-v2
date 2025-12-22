@@ -4,15 +4,19 @@ RetroAuto v2 - Actions Panel
 Manages the list of actions in a flow.
 """
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QKeySequence, QShortcut
+from PySide6.QtCore import QMimeData, QPoint, Qt, Signal
+from PySide6.QtGui import QColor, QDrag, QKeySequence, QPainter, QPen, QShortcut
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QGroupBox,
     QHBoxLayout,
     QListWidget,
     QListWidgetItem,
     QMenu,
     QPushButton,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
     QVBoxLayout,
     QWidget,
 )
@@ -80,6 +84,122 @@ ACTION_DEFAULTS = {
     "WhileImage": lambda: WhileImage(asset_id=""),
 }
 
+# Custom MIME type for asset drag
+ASSET_MIME_TYPE = "application/x-retroauto-asset"
+
+
+class ActionListWidget(QListWidget):
+    """
+    Custom list widget with external drop support from Assets panel.
+    Shows visual indicator for drop position.
+    """
+
+    asset_dropped = Signal(str, int)  # asset_id, drop_index
+
+    def __init__(self, parent=None) -> None:  # type: ignore
+        super().__init__(parent)
+        self._drop_indicator_index = -1
+        self.setAcceptDrops(True)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.viewport().setAcceptDrops(True)
+
+    def dragEnterEvent(self, event) -> None:  # type: ignore
+        """Accept drag from Assets panel or internal move."""
+        mime = event.mimeData()
+        if mime.hasFormat(ASSET_MIME_TYPE):
+            event.acceptProposedAction()
+        elif mime.hasFormat("application/x-qabstractitemmodeldatalist"):
+            # Internal move
+            super().dragEnterEvent(event)
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event) -> None:  # type: ignore
+        """Update drop indicator position."""
+        mime = event.mimeData()
+        if mime.hasFormat(ASSET_MIME_TYPE):
+            # Calculate drop index based on mouse position
+            pos = event.position().toPoint()
+            self._drop_indicator_index = self._get_drop_index(pos)
+            self.viewport().update()  # Trigger repaint
+            event.acceptProposedAction()
+        else:
+            self._drop_indicator_index = -1
+            super().dragMoveEvent(event)
+
+    def dragLeaveEvent(self, event) -> None:  # type: ignore
+        """Clear drop indicator."""
+        self._drop_indicator_index = -1
+        self.viewport().update()
+        super().dragLeaveEvent(event)
+
+    def dropEvent(self, event) -> None:  # type: ignore
+        """Handle drop from Assets panel."""
+        mime = event.mimeData()
+        if mime.hasFormat(ASSET_MIME_TYPE):
+            asset_id = mime.data(ASSET_MIME_TYPE).data().decode("utf-8")
+            drop_index = self._drop_indicator_index
+            if drop_index < 0:
+                drop_index = self.count()  # Append at end
+            self._drop_indicator_index = -1
+            self.viewport().update()
+            self.asset_dropped.emit(asset_id, drop_index)
+            event.acceptProposedAction()
+        else:
+            self._drop_indicator_index = -1
+            super().dropEvent(event)
+
+    def _get_drop_index(self, pos: QPoint) -> int:
+        """Calculate drop index based on mouse position."""
+        if self.count() == 0:
+            return 0
+
+        # Find the item at position
+        item = self.itemAt(pos)
+        if item:
+            rect = self.visualItemRect(item)
+            index = self.row(item)
+            # If in bottom half of item, insert after
+            if pos.y() > rect.center().y():
+                return index + 1
+            return index
+        else:
+            # Below all items - append at end
+            return self.count()
+
+    def paintEvent(self, event) -> None:  # type: ignore
+        """Paint drop indicator line."""
+        super().paintEvent(event)
+
+        if self._drop_indicator_index >= 0:
+            painter = QPainter(self.viewport())
+            pen = QPen(QColor("#0078d4"), 3)  # Blue line, 3px thick
+            painter.setPen(pen)
+
+            # Calculate Y position for indicator
+            if self._drop_indicator_index < self.count():
+                item = self.item(self._drop_indicator_index)
+                if item:
+                    rect = self.visualItemRect(item)
+                    y = rect.top()
+                else:
+                    y = 0
+            else:
+                # After last item
+                if self.count() > 0:
+                    item = self.item(self.count() - 1)
+                    if item:
+                        rect = self.visualItemRect(item)
+                        y = rect.bottom()
+                    else:
+                        y = 0
+                else:
+                    y = 0
+
+            # Draw horizontal line across widget
+            painter.drawLine(0, y, self.viewport().width(), y)
+            painter.end()
+
 
 class ActionsPanel(QWidget):
     """
@@ -90,6 +210,7 @@ class ActionsPanel(QWidget):
     - Add action menu (WaitImage, Click, etc.)
     - Reorder (up/down)
     - Context menu: Run Step, Run From Here
+    - Drop from Assets panel to create WaitImage
     """
 
     action_selected = Signal(dict)  # action data for properties panel
@@ -110,13 +231,14 @@ class ActionsPanel(QWidget):
         group = QGroupBox("Actions")
         group_layout = QVBoxLayout(group)
 
-        # Action list with extended selection
-        self.action_list = QListWidget()
+        # Action list with extended selection and drop support
+        self.action_list = ActionListWidget(self)
         self.action_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.action_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.action_list.currentItemChanged.connect(self._on_selection_changed)
         self.action_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.action_list.customContextMenuRequested.connect(self._show_context_menu)
+        self.action_list.asset_dropped.connect(self._on_asset_dropped)
         group_layout.addWidget(self.action_list)
 
         # Buttons
@@ -375,3 +497,33 @@ class ActionsPanel(QWidget):
             self._refresh_list()
             self.action_list.setCurrentRow(idx)
             logger.debug("Updated action %d", idx)
+
+    def _on_asset_dropped(self, asset_id: str, drop_index: int) -> None:
+        """Handle asset dropped from Assets panel to create WaitImage action."""
+        action = WaitImage(asset_id=asset_id)
+        
+        # Insert at specific position
+        if drop_index >= len(self._actions):
+            self._actions.append(action)
+        else:
+            self._actions.insert(drop_index, action)
+        
+        self._refresh_list()
+        self.action_list.setCurrentRow(drop_index)
+        self.action_changed.emit()
+        logger.info("Created WaitImage from dropped asset: %s at index %d", asset_id, drop_index)
+
+    def insert_action_for_asset(self, asset_id: str, action_type: str) -> None:
+        """Insert action for asset (called from Assets panel context menu)."""
+        if action_type == "WaitImage":
+            action = WaitImage(asset_id=asset_id)
+        elif action_type == "IfImage":
+            action = IfImage(asset_id=asset_id)
+        else:
+            return
+        
+        self._actions.append(action)
+        self._refresh_list()
+        self.action_list.setCurrentRow(len(self._actions) - 1)
+        self.action_changed.emit()
+        logger.info("Created %s for asset: %s", action_type, asset_id)
