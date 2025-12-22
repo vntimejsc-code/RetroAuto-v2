@@ -110,6 +110,18 @@ class Click(ActionBase):
     use_match: bool = Field(default=False, description="Click at last match center")
 
 
+class ClickImage(ActionBase):
+    """Wait for image and click on it (combo action)."""
+
+    action: Literal["ClickImage"] = "ClickImage"
+    asset_id: str = Field(description="Asset to find and click")
+    button: Literal["left", "right", "middle"] = Field(default="left")
+    clicks: int = Field(default=1, ge=1, le=10)
+    timeout_ms: int = Field(default=10000, ge=0)
+    offset_x: int = Field(default=0, description="X offset from center")
+    offset_y: int = Field(default=0, description="Y offset from center")
+
+
 class IfImage(ActionBase):
     """Conditional branch based on image presence."""
 

@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from core.models import (
     Action,
     Click,
+    ClickImage,
     Delay,
     DelayRandom,
     Drag,
@@ -47,29 +48,31 @@ from infra import get_logger
 
 logger = get_logger("ActionsPanel")
 
-# Action types available
+# Action types available (ordered by frequency)
 ACTION_TYPES = [
+    ("ClickImage", "🎯 Click Image"),
     ("WaitImage", "👁️ Wait Image"),
-    ("WaitPixel", "🎨 Wait Pixel"),
     ("Click", "🖱️ Click"),
     ("IfImage", "❓ If Image"),
     ("Else", "↩️ Else"),
     ("EndIf", "🔚 EndIf"),
-    ("IfPixel", "🎯 If Pixel"),
+    ("Delay", "⏱️ Delay"),
+    ("DelayRandom", "🎲 Random Delay"),
     ("Hotkey", "⌨️ Hotkey"),
     ("TypeText", "📝 Type Text"),
+    ("Loop", "🔁 Loop"),
     ("Label", "🏷️ Label"),
     ("Goto", "↩️ Goto"),
     ("RunFlow", "▶️ Run Flow"),
-    ("Delay", "⏱️ Delay"),
-    ("DelayRandom", "🎲 Random Delay"),
+    ("WaitPixel", "🎨 Wait Pixel"),
+    ("IfPixel", "🎯 If Pixel"),
     ("Drag", "↔️ Drag"),
     ("Scroll", "📜 Scroll"),
-    ("Loop", "🔁 Loop"),
     ("WhileImage", "🔄 While Image"),
 ]
 
 ACTION_DEFAULTS = {
+    "ClickImage": lambda: ClickImage(asset_id=""),
     "WaitImage": lambda: WaitImage(asset_id=""),
     "WaitPixel": lambda: WaitPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Click": lambda: Click(),
@@ -262,6 +265,7 @@ class ActionsPanel(QWidget):
         super().__init__()
         self._actions: list[Action] = []
         self._current_highlight: int = -1
+        self._clipboard: list[Action] = []  # For copy/paste
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -320,7 +324,7 @@ class ActionsPanel(QWidget):
         self._setup_shortcuts()
 
     def _setup_shortcuts(self) -> None:
-        """Setup keyboard shortcuts."""
+        """Setup keyboard shortcuts for gamer-friendly workflow."""
         # Delete key
         self.del_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self.action_list)
         self.del_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
@@ -330,6 +334,31 @@ class ActionsPanel(QWidget):
         self.select_all_shortcut = QShortcut(QKeySequence.StandardKey.SelectAll, self.action_list)
         self.select_all_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.select_all_shortcut.activated.connect(self.action_list.selectAll)
+
+        # Ctrl+D to duplicate
+        self.dup_shortcut = QShortcut(QKeySequence("Ctrl+D"), self.action_list)
+        self.dup_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.dup_shortcut.activated.connect(self._on_duplicate)
+
+        # Ctrl+C to copy
+        self.copy_shortcut = QShortcut(QKeySequence.StandardKey.Copy, self.action_list)
+        self.copy_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.copy_shortcut.activated.connect(self._on_copy)
+
+        # Ctrl+V to paste
+        self.paste_shortcut = QShortcut(QKeySequence.StandardKey.Paste, self.action_list)
+        self.paste_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.paste_shortcut.activated.connect(self._on_paste)
+
+        # Ctrl+Shift+Up to move up
+        self.move_up_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Up"), self.action_list)
+        self.move_up_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.move_up_shortcut.activated.connect(self._on_move_up)
+
+        # Ctrl+Shift+Down to move down
+        self.move_down_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Down"), self.action_list)
+        self.move_down_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.move_down_shortcut.activated.connect(self._on_move_down)
 
     def load_actions(self, actions: list[Action]) -> None:
         """Load actions from script flow."""
@@ -378,7 +407,9 @@ class ActionsPanel(QWidget):
 
     def _get_action_detail(self, action: Action) -> str:
         """Get short detail string for action."""
-        if isinstance(action, WaitImage):
+        if isinstance(action, ClickImage):
+            return action.asset_id or "?"
+        elif isinstance(action, WaitImage):
             return action.asset_id or "?"
         elif isinstance(action, Click):
             # Show specific click type
@@ -535,15 +566,41 @@ class ActionsPanel(QWidget):
             self.action_changed.emit()
 
     def _show_context_menu(self, pos) -> None:  # type: ignore
-        """Show context menu for run actions."""
+        """Show enhanced context menu with edit actions."""
         item = self.action_list.itemAt(pos)
         if not item:
             return
 
         menu = QMenu(self)
         idx = self.action_list.row(item)
-        menu.addAction("▶ Run Step", lambda: self.run_step_requested.emit(idx))
-        menu.addAction("▶▶ Run From Here", lambda: logger.info("Run from %d", idx))
+
+        # Run actions
+        menu.addAction("▶ Test Step", lambda: self.run_step_requested.emit(idx))
+        menu.addSeparator()
+
+        # Edit actions
+        menu.addAction("📋 Duplicate        Ctrl+D", self._on_duplicate)
+        menu.addAction("📄 Copy              Ctrl+C", self._on_copy)
+        if self._clipboard:
+            menu.addAction("📥 Paste             Ctrl+V", self._on_paste)
+        menu.addSeparator()
+
+        # Insert actions
+        insert_menu = menu.addMenu("➕ Insert")
+        insert_menu.addAction("⬆️ Insert Above", lambda: self._insert_action_at(idx))
+        insert_menu.addAction("⬇️ Insert Below", lambda: self._insert_action_at(idx + 1))
+        menu.addSeparator()
+
+        # Move actions
+        if idx > 0:
+            menu.addAction("⬆️ Move Up        Ctrl+Shift+↑", self._on_move_up)
+        if idx < len(self._actions) - 1:
+            menu.addAction("⬇️ Move Down    Ctrl+Shift+↓", self._on_move_down)
+        menu.addSeparator()
+
+        # Delete
+        menu.addAction("🗑️ Delete            Del", self._on_delete)
+
         menu.exec(self.action_list.mapToGlobal(pos))
 
     def update_action(self, data: dict) -> None:
@@ -627,3 +684,88 @@ class ActionsPanel(QWidget):
         self.action_list.setCurrentRow(len(self._actions) - 1)
         self.action_changed.emit()
         logger.info("Created %s for asset: %s", action_type, asset_id)
+
+    def _on_duplicate(self) -> None:
+        """Duplicate selected actions."""
+        selected = self.action_list.selectedItems()
+        if not selected:
+            return
+
+        # Get indices sorted
+        rows = sorted([self.action_list.row(item) for item in selected])
+        insert_pos = rows[-1] + 1
+
+        for row in rows:
+            if 0 <= row < len(self._actions):
+                # Deep copy using model copy
+                action_copy = self._actions[row].model_copy(deep=True)
+                self._actions.insert(insert_pos, action_copy)
+                insert_pos += 1
+
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Duplicated %d actions", len(rows))
+
+    def _on_copy(self) -> None:
+        """Copy selected actions to clipboard."""
+        selected = self.action_list.selectedItems()
+        if not selected:
+            return
+
+        # Get actions by sorted indices
+        rows = sorted([self.action_list.row(item) for item in selected])
+        self._clipboard = [
+            self._actions[row].model_copy(deep=True)
+            for row in rows
+            if 0 <= row < len(self._actions)
+        ]
+        logger.info("Copied %d actions to clipboard", len(self._clipboard))
+
+    def _on_paste(self) -> None:
+        """Paste clipboard actions after current selection."""
+        if not self._clipboard:
+            return
+
+        # Get insert position (after current selection)
+        current = self.action_list.currentRow()
+        insert_pos = current + 1 if current >= 0 else len(self._actions)
+
+        for action in self._clipboard:
+            action_copy = action.model_copy(deep=True)
+            self._actions.insert(insert_pos, action_copy)
+            insert_pos += 1
+
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Pasted %d actions", len(self._clipboard))
+
+    def _insert_action_at(self, position: int) -> None:
+        """Show add menu and insert action at specific position."""
+        menu = QMenu(self)
+        for action_type, label in ACTION_TYPES:
+            action = menu.addAction(label)
+            action.setData(action_type)
+            action.triggered.connect(
+                lambda checked, t=action_type, p=position: self._add_action_at(t, p)
+            )
+        # Show menu at current item position
+        item = self.action_list.item(position if position < self.action_list.count() else position - 1)
+        if item:
+            rect = self.action_list.visualItemRect(item)
+            global_pos = self.action_list.mapToGlobal(rect.bottomLeft())
+            menu.exec(global_pos)
+
+    def _add_action_at(self, action_type: str, position: int) -> None:
+        """Add new action at specific position."""
+        factory = ACTION_DEFAULTS.get(action_type)
+        if factory:
+            action = factory()
+            if position >= len(self._actions):
+                self._actions.append(action)
+            else:
+                self._actions.insert(position, action)
+            self._refresh_list()
+            self.action_list.setCurrentRow(position)
+            self.action_changed.emit()
+            logger.info("Added %s at position %d", action_type, position)
+
