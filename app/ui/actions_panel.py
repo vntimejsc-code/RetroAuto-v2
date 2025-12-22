@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView,
     QGroupBox,
     QHBoxLayout,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMenu,
@@ -398,6 +399,14 @@ class ActionsPanel(QWidget):
 
         quick_bar.addStretch()
 
+        # Search input (filter actions)
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("🔍 Filter...")
+        self.search_input.setFixedWidth(100)
+        self.search_input.setClearButtonEnabled(True)
+        self.search_input.textChanged.connect(self._on_search_changed)
+        quick_bar.addWidget(self.search_input)
+
         # More menu button
         self.btn_more = QPushButton("+ More")
         self.btn_more.clicked.connect(self._show_add_menu)
@@ -411,6 +420,7 @@ class ActionsPanel(QWidget):
         self.action_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.action_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.action_list.currentItemChanged.connect(self._on_selection_changed)
+        self.action_list.itemDoubleClicked.connect(self._on_double_click)
         self.action_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.action_list.customContextMenuRequested.connect(self._show_context_menu)
         self.action_list.asset_dropped_on_item.connect(self._on_asset_dropped_on_item)
@@ -1022,3 +1032,21 @@ class ActionsPanel(QWidget):
         if row >= 0:
             self.run_step_requested.emit(row)
             logger.info("Test step: %d", row)
+
+    def _on_search_changed(self, text: str) -> None:
+        """Filter action list by search text."""
+        search = text.lower().strip()
+        for i in range(self.action_list.count()):
+            item = self.action_list.item(i)
+            if item:
+                # Hide items that don't match search
+                visible = not search or search in item.text().lower()
+                item.setHidden(not visible)
+
+    def _on_double_click(self, item: QListWidgetItem) -> None:
+        """Handle double-click for quick inline edit (opens properties panel)."""
+        row = self.action_list.row(item)
+        if 0 <= row < len(self._actions):
+            action = self._actions[row]
+            self.action_selected.emit({"index": row, "action": action})
+            logger.info("Double-click edit: %s", type(action).__name__)
