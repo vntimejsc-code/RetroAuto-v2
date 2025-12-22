@@ -537,7 +537,7 @@ class ActionsPanel(QWidget):
             action = menu.addAction(label)
             action.setData(action_type)
             action.triggered.connect(lambda checked, t=action_type: self._add_action(t))
-        menu.exec(self.btn_add.mapToGlobal(self.btn_add.rect().bottomLeft()))
+        menu.exec(self.btn_more.mapToGlobal(self.btn_more.rect().bottomLeft()))
 
     def _add_action(self, action_type: str) -> None:
         """Add a new action of given type."""
