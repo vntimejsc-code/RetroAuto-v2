@@ -27,6 +27,8 @@ from core.models import (
     Delay,
     DelayRandom,
     Drag,
+    Else,
+    EndIf,
     Goto,
     Hotkey,
     IfImage,
@@ -41,7 +43,6 @@ from core.models import (
     WaitPixel,
     WhileImage,
 )
-from infra import get_logger
 
 logger = get_logger("ActionsPanel")
 
@@ -51,6 +52,8 @@ ACTION_TYPES = [
     ("WaitPixel", "🎨 Wait Pixel"),
     ("Click", "🖱️ Click"),
     ("IfImage", "❓ If Image"),
+    ("Else", "↩️ Else"),
+    ("EndIf", "🔚 EndIf"),
     ("IfPixel", "🎯 If Pixel"),
     ("Hotkey", "⌨️ Hotkey"),
     ("TypeText", "📝 Type Text"),
@@ -70,6 +73,8 @@ ACTION_DEFAULTS = {
     "WaitPixel": lambda: WaitPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Click": lambda: Click(),
     "IfImage": lambda: IfImage(asset_id=""),
+    "Else": lambda: Else(),
+    "EndIf": lambda: EndIf(),
     "IfPixel": lambda: IfPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Hotkey": lambda: Hotkey(keys=[]),
     "TypeText": lambda: TypeText(text=""),
@@ -335,8 +340,11 @@ class ActionsPanel(QWidget):
         return list(self._actions)
 
     def _refresh_list(self) -> None:
-        """Refresh list widget from internal actions."""
+        """Refresh list widget from internal actions with visual indentation."""
         self.action_list.clear()
+
+        # Track if we're inside an if block for indentation
+        if_depth = 0
 
         for i, action in enumerate(self._actions):
             action_type = type(action).__name__
@@ -349,7 +357,21 @@ class ActionsPanel(QWidget):
             if detail:
                 label = f"{label}: {detail}"
 
-            item = QListWidgetItem(label)
+            # Handle visual indentation for if/else/endif blocks
+            prefix = ""
+            if action_type == "IfImage":
+                if_depth += 1
+            elif action_type == "Else":
+                # Else is at current depth but marks transition
+                label = "┣ Else"
+            elif action_type == "EndIf":
+                label = "┗ EndIf"
+                if_depth = max(0, if_depth - 1)
+            elif if_depth > 0:
+                # Inside an if block - indent
+                prefix = "│  " * (if_depth - 1) + "┣── "
+
+            item = QListWidgetItem(prefix + label)
             item.setData(256, i)  # Qt.UserRole
             self.action_list.addItem(item)
 

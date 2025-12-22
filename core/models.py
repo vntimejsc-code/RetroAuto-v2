@@ -120,6 +120,18 @@ class IfImage(ActionBase):
     roi_override: ROI | None = Field(default=None)
 
 
+class Else(ActionBase):
+    """Marks start of else block in IfImage (for GUI flat list)."""
+
+    action: Literal["Else"] = "Else"
+
+
+class EndIf(ActionBase):
+    """Marks end of IfImage block (for GUI flat list)."""
+
+    action: Literal["EndIf"] = "EndIf"
+
+
 class Hotkey(ActionBase):
     """Press hotkey combination."""
 
