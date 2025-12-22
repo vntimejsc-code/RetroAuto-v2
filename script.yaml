@@ -1,0 +1,46 @@
+name: Untitled
+version: '1.0'
+author: ''
+description: ''
+hotkeys:
+  start: F5
+  stop: F6
+  pause: F7
+assets: []
+flows:
+- name: main
+  actions:
+  - comment: ''
+    action: Click
+    x: 1261
+    y: 514
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1286
+    y: 494
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1288
+    y: 371
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1243
+    y: 253
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+interrupts: []
+main_flow: main

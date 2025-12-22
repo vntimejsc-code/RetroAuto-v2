@@ -276,6 +276,35 @@ class ActionsPanel(QWidget):
         group = QGroupBox("Actions")
         group_layout = QVBoxLayout(group)
 
+        # Quick Add Bar - 1-click common actions
+        quick_bar = QHBoxLayout()
+        quick_bar.setSpacing(2)
+
+        # Common action quick buttons
+        quick_actions = [
+            ("🎯", "ClickImage", "Click Image"),
+            ("🖱️", "Click", "Click"),
+            ("👁️", "WaitImage", "Wait Image"),
+            ("⏱️", "Delay", "Delay"),
+            ("🔁", "Loop", "Loop"),
+        ]
+
+        for icon, action_type, tooltip in quick_actions:
+            btn = QPushButton(icon)
+            btn.setFixedSize(28, 24)
+            btn.setToolTip(f"Add {tooltip}")
+            btn.clicked.connect(lambda checked, t=action_type: self._quick_add(t))
+            quick_bar.addWidget(btn)
+
+        quick_bar.addStretch()
+
+        # More menu button
+        self.btn_more = QPushButton("+ More")
+        self.btn_more.clicked.connect(self._show_add_menu)
+        quick_bar.addWidget(self.btn_more)
+
+        group_layout.addLayout(quick_bar)
+
         # Action list with extended selection and drop support
         self.action_list = ActionListWidget(self)
         self.action_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
@@ -287,17 +316,14 @@ class ActionsPanel(QWidget):
         self.action_list.asset_dropped_insert.connect(self._on_asset_dropped_insert)
         group_layout.addWidget(self.action_list)
 
-        # Buttons
+        # Bottom buttons (Delete, Clear, Move)
         btn_layout = QHBoxLayout()
-
-        self.btn_add = QPushButton("+ Add")
-        self.btn_add.clicked.connect(self._show_add_menu)
 
         self.btn_delete = QPushButton("Delete")
         self.btn_delete.clicked.connect(self._on_delete)
         self.btn_delete.setEnabled(False)
 
-        self.btn_clear = QPushButton("Clear All")
+        self.btn_clear = QPushButton("Clear")
         self.btn_clear.clicked.connect(self._on_clear_all)
 
         self.btn_up = QPushButton("▲")
@@ -310,7 +336,6 @@ class ActionsPanel(QWidget):
         self.btn_down.clicked.connect(self._on_move_down)
         self.btn_down.setEnabled(False)
 
-        btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_delete)
         btn_layout.addWidget(self.btn_clear)
         btn_layout.addStretch()
@@ -523,6 +548,31 @@ class ActionsPanel(QWidget):
             self.action_list.setCurrentRow(len(self._actions) - 1)
             self.action_changed.emit()
             logger.info("Added action: %s", action_type)
+
+    def _quick_add(self, action_type: str) -> None:
+        """Quick add action after current selection (1-click workflow)."""
+        factory = ACTION_DEFAULTS.get(action_type)
+        if not factory:
+            return
+
+        action = factory()
+
+        # Insert after current selection, or at end
+        current_row = self.action_list.currentRow()
+        if current_row >= 0:
+            insert_pos = current_row + 1
+        else:
+            insert_pos = len(self._actions)
+
+        if insert_pos >= len(self._actions):
+            self._actions.append(action)
+        else:
+            self._actions.insert(insert_pos, action)
+
+        self._refresh_list()
+        self.action_list.setCurrentRow(insert_pos)
+        self.action_changed.emit()
+        logger.info("Quick added: %s at position %d", action_type, insert_pos)
 
     def _on_delete(self) -> None:
         """Delete selected actions."""
