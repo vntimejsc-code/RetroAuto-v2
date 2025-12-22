@@ -25,6 +25,7 @@ from core.models import (
     Action,
     Click,
     ClickImage,
+    ClickUntil,
     Delay,
     DelayRandom,
     Drag,
@@ -51,6 +52,7 @@ logger = get_logger("ActionsPanel")
 # Action types available (ordered by frequency)
 ACTION_TYPES = [
     ("ClickImage", "🎯 Click Image"),
+    ("ClickUntil", "🔄 Click Until"),
     ("WaitImage", "👁️ Wait Image"),
     ("Click", "🖱️ Click"),
     ("IfImage", "❓ If Image"),
@@ -73,6 +75,7 @@ ACTION_TYPES = [
 
 ACTION_DEFAULTS = {
     "ClickImage": lambda: ClickImage(asset_id=""),
+    "ClickUntil": lambda: ClickUntil(click_asset_id="", until_asset_id=""),
     "WaitImage": lambda: WaitImage(asset_id=""),
     "WaitPixel": lambda: WaitPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Click": lambda: Click(),

@@ -122,6 +122,19 @@ class ClickImage(ActionBase):
     offset_y: int = Field(default=0, description="Y offset from center")
 
 
+class ClickUntil(ActionBase):
+    """Click repeatedly until target image appears/vanishes (farming loop)."""
+
+    action: Literal["ClickUntil"] = "ClickUntil"
+    click_asset_id: str = Field(description="Asset to click")
+    until_asset_id: str = Field(description="Target asset to check")
+    until_appear: bool = Field(default=True, description="True=until appears, False=until vanishes")
+    button: Literal["left", "right", "middle"] = Field(default="left")
+    click_interval_ms: int = Field(default=1000, ge=100)
+    timeout_ms: int = Field(default=30000, ge=0)
+    max_clicks: int = Field(default=50, ge=1, description="Safety limit")
+
+
 class IfImage(ActionBase):
     """Conditional branch based on image presence."""
 
