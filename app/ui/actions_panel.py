@@ -43,6 +43,7 @@ from core.models import (
     WaitPixel,
     WhileImage,
 )
+from infra import get_logger
 
 logger = get_logger("ActionsPanel")
 
