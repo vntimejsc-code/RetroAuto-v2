@@ -102,6 +102,94 @@ ACTION_DEFAULTS = {
     "Scroll": lambda: Scroll(),
 }
 
+# Color scheme by action category
+ACTION_COLORS = {
+    "click": QColor("#4CAF50"),      # Green - click actions
+    "wait": QColor("#2196F3"),       # Blue - wait/check actions
+    "control": QColor("#FF9800"),    # Orange - control flow
+    "input": QColor("#9C27B0"),      # Purple - input actions
+    "timing": QColor("#607D8B"),     # Gray-blue - timing
+    "marker": QColor("#888888"),     # Gray - block markers
+}
+
+ACTION_CATEGORY = {
+    "ClickImage": "click", "Click": "click", "ClickUntil": "click",
+    "WaitImage": "wait", "WaitPixel": "wait",
+    "IfImage": "control", "Else": "marker", "EndIf": "marker",
+    "Loop": "control", "EndLoop": "marker",
+    "WhileImage": "control", "EndWhile": "marker",
+    "Goto": "control", "Label": "control", "RunFlow": "control",
+    "Hotkey": "input", "TypeText": "input",
+    "Delay": "timing", "DelayRandom": "timing",
+    "IfPixel": "control", "Drag": "click", "Scroll": "click",
+}
+
+
+class ActionItemDelegate(QStyledItemDelegate):
+    """Custom delegate to draw tree lines and expand indicators."""
+
+    def __init__(self, parent=None):  # type: ignore
+        super().__init__(parent)
+        self.line_color = QColor("#555555")
+        self.indent_width = 20
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index) -> None:  # type: ignore
+        """Draw item with visual tree lines."""
+        painter.save()
+
+        # Get item data
+        depth = index.data(257) or 0  # Qt.UserRole + 1
+        is_block_start = index.data(258) or False  # Qt.UserRole + 2
+        category = index.data(259) or "timing"  # Qt.UserRole + 3
+        text = index.data(Qt.ItemDataRole.DisplayRole) or ""
+
+        # Draw selection background
+        if option.state & QStyle.StateFlag.State_Selected:
+            painter.fillRect(option.rect, option.palette.highlight())
+            text_color = option.palette.highlightedText().color()
+        else:
+            text_color = ACTION_COLORS.get(category, QColor("#CCCCCC"))
+
+        # Calculate tree line area
+        tree_width = depth * self.indent_width
+        text_x = option.rect.x() + tree_width + 4
+        y_center = option.rect.y() + option.rect.height() // 2
+
+        # Draw tree lines
+        pen = QPen(self.line_color, 1)
+        painter.setPen(pen)
+
+        for i in range(depth):
+            x = option.rect.x() + (i * self.indent_width) + self.indent_width // 2
+            # Vertical line
+            painter.drawLine(x, option.rect.y(), x, option.rect.y() + option.rect.height())
+            # Horizontal connector for last level
+            if i == depth - 1:
+                painter.drawLine(x, y_center, x + self.indent_width // 2, y_center)
+
+        # Draw expand indicator for block starters
+        if is_block_start:
+            indicator = "▾ "
+            painter.setPen(QColor("#888888"))
+            painter.drawText(text_x, option.rect.y(), 20, option.rect.height(),
+                           Qt.AlignmentFlag.AlignVCenter, indicator)
+            text_x += 14
+
+        # Draw text
+        painter.setPen(text_color)
+        text_rect = option.rect.adjusted(text_x - option.rect.x(), 0, 0, 0)
+        painter.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter, text)
+
+        painter.restore()
+
+    def sizeHint(self, option: QStyleOptionViewItem, index) -> "QSize":  # type: ignore
+        """Return size with space for tree lines."""
+        from PySide6.QtCore import QSize
+        size = super().sizeHint(option, index)
+        depth = index.data(257) or 0
+        return QSize(size.width() + depth * self.indent_width, max(size.height(), 22))
+
+
 # Custom MIME type for asset drag
 ASSET_MIME_TYPE = "application/x-retroauto-asset"
 
@@ -316,6 +404,7 @@ class ActionsPanel(QWidget):
 
         # Action list with extended selection and drop support
         self.action_list = ActionListWidget(self)
+        self.action_list.setItemDelegate(ActionItemDelegate(self.action_list))
         self.action_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.action_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.action_list.currentItemChanged.connect(self._on_selection_changed)
@@ -414,28 +503,6 @@ class ActionsPanel(QWidget):
         # Track block depth for indentation (supports nested blocks)
         block_depth = 0
 
-        # Color scheme by action category
-        colors = {
-            "click": QColor("#4CAF50"),      # Green - click actions
-            "wait": QColor("#2196F3"),       # Blue - wait/check actions
-            "control": QColor("#FF9800"),    # Orange - control flow
-            "input": QColor("#9C27B0"),      # Purple - input actions
-            "timing": QColor("#607D8B"),     # Gray-blue - timing
-            "marker": QColor("#888888"),     # Gray - block markers
-        }
-
-        action_colors = {
-            "ClickImage": "click", "Click": "click", "ClickUntil": "click",
-            "WaitImage": "wait", "WaitPixel": "wait",
-            "IfImage": "control", "Else": "marker", "EndIf": "marker",
-            "Loop": "control", "EndLoop": "marker",
-            "WhileImage": "control", "EndWhile": "marker",
-            "Goto": "control", "Label": "control", "RunFlow": "control",
-            "Hotkey": "input", "TypeText": "input",
-            "Delay": "timing", "DelayRandom": "timing",
-            "IfPixel": "control", "Drag": "click", "Scroll": "click",
-        }
-
         for i, action in enumerate(self._actions):
             action_type = type(action).__name__
             label = next(
@@ -447,34 +514,28 @@ class ActionsPanel(QWidget):
             if detail:
                 label = f"{label}: {detail}"
 
-            # Handle visual indentation for all block types
-            prefix = ""
+            # Determine depth and flags for this item
+            is_block_start = action_type in ("IfImage", "Loop", "WhileImage")
+            item_depth = block_depth
 
             # Block openers increase depth AFTER this item
-            if action_type in ("IfImage", "Loop", "WhileImage"):
-                if block_depth > 0:
-                    prefix = "│  " * (block_depth - 1) + "┣── "
+            if is_block_start:
                 block_depth += 1
 
-            # Block markers (Else)
-            elif action_type == "Else":
-                label = "┣ Else"
-
-            # Block closers decrease depth
+            # Block closers decrease depth BEFORE this item
             elif action_type in ("EndIf", "EndLoop", "EndWhile"):
                 block_depth = max(0, block_depth - 1)
-                label = f"┗ {action_type.replace('End', 'End ')}"
+                item_depth = block_depth
 
-            # Regular items inside blocks
-            elif block_depth > 0:
-                prefix = "│  " * (block_depth - 1) + "┣── "
+            # Get category for color
+            category = ACTION_CATEGORY.get(action_type, "timing")
 
-            item = QListWidgetItem(prefix + label)
-            item.setData(256, i)  # Qt.UserRole
-
-            # Apply color
-            category = action_colors.get(action_type, "timing")
-            item.setForeground(colors[category])
+            # Create item with data roles for delegate
+            item = QListWidgetItem(label)
+            item.setData(256, i)         # Qt.UserRole - index
+            item.setData(257, item_depth)  # Qt.UserRole + 1 - depth
+            item.setData(258, is_block_start)  # Qt.UserRole + 2 - is_block_start
+            item.setData(259, category)   # Qt.UserRole + 3 - category
 
             self.action_list.addItem(item)
 
