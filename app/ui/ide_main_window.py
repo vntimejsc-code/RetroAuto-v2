@@ -378,7 +378,7 @@ class IDEMainWindow(QMainWindow):
             main_dsl = path / "scripts" / "main.dsl"
             if not main_dsl.exists():
                 main_dsl.write_text(
-                    '''// main.dsl - RetroScript 9.0
+                    """// main.dsl - RetroScript 9.0
 // Press F5 to run, F6 to stop
 
 @config
@@ -417,7 +417,7 @@ class IDEMainWindow(QMainWindow):
   // Handle common popups
   close_popup -> press Escape
   error_dialog -> click ok_btn
-''',
+""",
                     encoding="utf-8",
                 )
 

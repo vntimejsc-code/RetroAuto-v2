@@ -23,7 +23,7 @@ graph TD
     User[User / Developer] --> IDE[Win95 IDE Layer]
     IDE --> LSP[Language Server]
     IDE --> Visual[Visual Editor]
-    
+
     subgraph "Core System"
         LSP --> Parser
         Parser --> AST[Abstract Syntax Tree]
@@ -31,14 +31,14 @@ graph TD
         Compiler --> IR[Intermediate Representation]
         IR --> Runtime[Execution Engine]
     end
-    
+
     subgraph "Feature Modules"
         Runtime --> Vision[Computer Vision Core]
         Runtime --> Input[Input Simulation]
         Runtime --> Network[Network Stack]
         Runtime --> Game[Game Automation]
     end
-    
+
     Runtime --> Analytics[Telemetry & Logging]
 ```
 

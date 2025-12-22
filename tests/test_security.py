@@ -6,7 +6,6 @@ from core.security.policy import SecurityViolation
 
 
 class TestSecuritySandbox(unittest.TestCase):
-
     def test_default_unsafe(self):
         """Default policy should allow actions."""
         code = 'flow main { type("hello"); }'

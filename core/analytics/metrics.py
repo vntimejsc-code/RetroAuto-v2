@@ -522,7 +522,9 @@ class DashboardStats:
             "status": (
                 "healthy"
                 if success_rate >= 0.9
-                else "degraded" if success_rate >= 0.7 else "unhealthy"
+                else "degraded"
+                if success_rate >= 0.7
+                else "unhealthy"
             ),
             "success_rate": success_rate,
             "uptime": time.time() - self._start_time,

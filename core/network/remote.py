@@ -106,9 +106,7 @@ class RemoteAPIHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         """Handle POST requests."""
         # Security Check
-        if self.controller and not self.controller.check_auth(
-            self.headers.get("Authorization")
-        ):
+        if self.controller and not self.controller.check_auth(self.headers.get("Authorization")):
             self._send_json({"error": "Unauthorized"}, 401)
             return
 

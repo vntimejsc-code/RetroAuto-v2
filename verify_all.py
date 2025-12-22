@@ -12,7 +12,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 
 class TestRetroAutoIntegration(unittest.TestCase):
-
     def test_phase_01_11_core(self):
         """Verify Core DSL components."""
         print("\n[Phase 1-11] Core DSL...", end=" ")

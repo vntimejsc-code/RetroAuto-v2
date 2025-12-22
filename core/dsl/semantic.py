@@ -411,7 +411,9 @@ class SemanticAnalyzer:
                 list_arg = call.args[0]
                 if isinstance(list_arg, ArrayExpr):
                     for elem in list_arg.elements:  # noqa: SIM102
-                        if isinstance(elem, Literal) and elem.literal_type == "string":  # noqa: SIM102
+                        if (
+                            isinstance(elem, Literal) and elem.literal_type == "string"
+                        ):  # noqa: SIM102
                             if elem.value not in self.known_assets:
                                 self.diagnostics.append(unknown_asset(elem.value, elem.span))
 

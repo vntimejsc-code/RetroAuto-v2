@@ -182,7 +182,9 @@ class ActionsPanel(QWidget):
 
         for i, action in enumerate(self._actions):
             action_type = type(action).__name__
-            label = next((label_text for t, label_text in ACTION_TYPES if t == action_type), action_type)
+            label = next(
+                (label_text for t, label_text in ACTION_TYPES if t == action_type), action_type
+            )
 
             # Add details to label
             detail = self._get_action_detail(action)
