@@ -24,11 +24,31 @@ def main() -> int:
     logger = setup_logging()
     logger.info("RetroAuto v2 starting...")
 
+    # Check OCR availability
+    try:
+        from vision.ocr import TextReader
+        reader = TextReader()
+        if not reader.available:
+            logger.warning("OCR (Tesseract) not available - ReadText actions will be disabled")
+            logger.info("To enable OCR, install Tesseract: https://github.com/tesseract-ocr/tesseract")
+        else:
+            logger.info("OCR initialized successfully")
+    except Exception as e:
+        logger.warning(f"OCR initialization failed: {e}")
+
     # Create Qt application
     app = QApplication(sys.argv)
 
-    # Apply Windows 95/98 style
-    app.setStyle(QStyleFactory.create("Windows"))
+    # Apply Windows 95/98 style (Fusion for better QSS support, or keep Windows)
+    app.setStyle(QStyleFactory.create("Fusion"))
+
+    # Load Dark Theme
+    theme_path = _project_root / "app" / "resources" / "dark_theme.qss"
+    if theme_path.exists():
+        app.setStyleSheet(theme_path.read_text(encoding="utf-8"))
+        logger.info("Dark theme loaded")
+    else:
+        logger.warning(f"Theme file not found: {theme_path}")
 
     # Create and show main window
     window = MainWindow()

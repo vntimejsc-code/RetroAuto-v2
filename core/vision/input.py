@@ -167,25 +167,68 @@ class MouseController:
         return self._position
 
     def _move_humanized(self, x: int, y: int) -> None:
-        """Move with human-like motion."""
-        # Get current position
-        current = self.position()
+        """Move with human-like motion using Cubic Bezier curves."""
+        # Get start position
+        start = self.position()
+        start_x, start_y = start.x, start.y
 
-        # Calculate distance
-        dx = x - current.x
-        dy = y - current.y
-        distance = (dx**2 + dy**2) ** 0.5
+        # Distance check
+        dist = ((x - start_x) ** 2 + (y - start_y) ** 2) ** 0.5
+        if dist < 5:
+            pyautogui.moveTo(x, y)
+            return
 
-        # Duration based on distance
-        duration = min(0.5, max(0.1, distance / 2000))
+        # Randomize control points for Bezier curve
+        # Curve should not be a straight line
+        offset = min(dist * 0.2, 100)
+        c1_x = start_x + (x - start_x) * 0.3 + random.randint(int(-offset), int(offset))
+        c1_y = start_y + (y - start_y) * 0.3 + random.randint(int(-offset), int(offset))
+        c2_x = start_x + (x - start_x) * 0.7 + random.randint(int(-offset), int(offset))
+        c2_y = start_y + (y - start_y) * 0.7 + random.randint(int(-offset), int(offset))
 
-        # Add slight curve
-        pyautogui.moveTo(
-            x + random.randint(-2, 2),
-            y + random.randint(-2, 2),
-            duration=duration,
-        )
-        pyautogui.moveTo(x, y, duration=0.05)
+        # Steps calculation based on distance (more steps = smoother)
+        steps = int(max(20, dist / 15))
+        
+        # Duration based on Fitts' Law approximation
+        base_speed = random.uniform(0.3, 0.6)  # Pixel per sec factor
+        duration = max(0.2, min(1.5, dist / 1000 * base_speed + random.uniform(0.1, 0.3)))
+
+        # Move along curve
+        start_time = time.time()
+        for i in range(1, steps + 1):
+            t = i / steps
+            
+            # Easing function (easeOutQuad) for natural deceleration
+            # t = t * (2 - t) 
+            
+            # Cubic Bezier formula
+            curr_x = (
+                (1 - t) ** 3 * start_x
+                + 3 * (1 - t) ** 2 * t * c1_x
+                + 3 * (1 - t) * t ** 2 * c2_x
+                + t ** 3 * x
+            )
+            curr_y = (
+                (1 - t) ** 3 * start_y
+                + 3 * (1 - t) ** 2 * t * c1_y
+                + 3 * (1 - t) * t ** 2 * c2_y
+                + t ** 3 * y
+            )
+
+            # PyAutoGUI handles the actual move event
+            # Use 0 duration for instant steps, minimal sleep manually
+            pyautogui.moveTo(int(curr_x), int(curr_y), _pause=False)
+            
+            # Variable sleep to simulate velocity changes
+            elapsed = time.time() - start_time
+            remaining = duration - elapsed
+            if remaining > 0:
+                time.sleep(remaining / (steps - i + 1))
+
+        # Final jitter correction (humans rarely land perfectly on pixel 0)
+        final_x = x + random.randint(-1, 1)
+        final_y = y + random.randint(-1, 1)
+        pyautogui.moveTo(final_x, final_y, duration=0.05)
 
     def _update_position(self) -> None:
         """Update cached position."""

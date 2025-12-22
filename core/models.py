@@ -93,7 +93,7 @@ class WaitImage(ActionBase):
     action: Literal["WaitImage"] = "WaitImage"
     asset_id: str = Field(description="Asset to wait for")
     appear: bool = Field(default=True, description="True=appear, False=vanish")
-    timeout_ms: int = Field(default=10000, ge=0)
+    timeout_ms: int = Field(default=10000, ge=0, le=300000, description="Timeout in ms (max 5 min)")
     poll_ms: int = Field(default=100, ge=10)
     roi_override: ROI | None = Field(default=None)
 
@@ -133,6 +133,36 @@ class ClickUntil(ActionBase):
     click_interval_ms: int = Field(default=1000, ge=100)
     timeout_ms: int = Field(default=30000, ge=0)
     max_clicks: int = Field(default=50, ge=1, description="Safety limit")
+
+
+class ClickRandom(ActionBase):
+    """Click randomly within a region (Anti-ban)."""
+
+    action: Literal["ClickRandom"] = "ClickRandom"
+    roi: ROI = Field(description="Region to click in")
+    clicks: int = Field(default=1, ge=1, le=10)
+    interval_ms: int = Field(default=100, ge=0)
+    button: Literal["left", "right", "middle"] = Field(default="left")
+
+
+class ReadText(ActionBase):
+    """Read text from screen region using OCR."""
+
+    action: Literal["ReadText"] = "ReadText"
+    variable_name: str = Field(description="Variable to store the result", example="hp_value")
+    roi: ROI = Field(description="Region to read")
+    allowlist: str = Field(default="", description="Whitelist of characters (e.g. '0123456789')")
+
+
+class IfText(ActionBase):
+    """Conditional branch based on text variable value."""
+
+    action: Literal["IfText"] = "IfText"
+    variable_name: str = Field(description="Variable to check (e.g. $hp)")
+    operator: Literal["contains", "equals", "starts_with", "ends_with", "numeric_lt", "numeric_gt"] = "contains"
+    value: str = Field(description="Value to compare against")
+    then_actions: list[Action] = Field(default_factory=list)
+    else_actions: list[Action] = Field(default_factory=list)
 
 
 class IfImage(ActionBase):
@@ -305,6 +335,7 @@ class IfPixel(ActionBase):
 Action = Annotated[
     WaitImage
     | Click
+    | ClickImage  # Added missing ClickImage
     | IfImage
     | Hotkey
     | TypeText
@@ -318,7 +349,10 @@ Action = Annotated[
     | Loop
     | WhileImage
     | WaitPixel
-    | IfPixel,
+    | IfPixel
+    | ClickRandom
+    | ReadText
+    | IfText,
     Field(discriminator="action"),
 ]
 
@@ -328,11 +362,37 @@ Action = Annotated[
 # ─────────────────────────────────────────────────────────────
 
 
+class GraphNode(BaseModel):
+    """Node in visual graph editor."""
+    
+    id: str = Field(description="Unique node ID (UUID)")
+    action: Action = Field(description="The action this node executes")
+    x: float = Field(default=0, description="X position on canvas")
+    y: float = Field(default=0, description="Y position on canvas")
+
+
+class GraphConnection(BaseModel):
+    """Connection between two nodes in the graph."""
+    
+    from_node: str = Field(description="Source node ID")
+    from_socket: str = Field(description="Source socket name (e.g., 'exec_out')")
+    to_node: str = Field(description="Target node ID")
+    to_socket: str = Field(description="Target socket name (e.g., 'exec_in')")
+
+
+class FlowGraph(BaseModel):
+    """Visual graph representation of a flow."""
+    
+    nodes: list[GraphNode] = Field(default_factory=list)
+    connections: list[GraphConnection] = Field(default_factory=list)
+
+
 class Flow(BaseModel):
     """A named sequence of actions."""
 
     name: str = Field(description="Flow name")
     actions: list[Action] = Field(default_factory=list)
+    graph: FlowGraph | None = Field(default=None, description="Visual graph representation")
 
 
 class InterruptRule(BaseModel):

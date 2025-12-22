@@ -27,6 +27,8 @@ from core.models import (
     Click,
     ClickImage,
     ClickUntil,
+    ClickRandom,
+    ROI,
     Delay,
     DelayRandom,
     Drag,
@@ -38,9 +40,11 @@ from core.models import (
     Hotkey,
     IfImage,
     IfPixel,
+    IfText,
     Label,
     Loop,
     PixelColor,
+    ReadText,
     RunFlow,
     Scroll,
     TypeText,
@@ -52,32 +56,82 @@ from infra import get_logger
 
 logger = get_logger("ActionsPanel")
 
-# Action types available (ordered by frequency)
-ACTION_TYPES = [
-    ("ClickImage", "🎯 Click Image"),
-    ("ClickUntil", "🔄 Click Until"),
-    ("WaitImage", "👁️ Wait Image"),
-    ("Click", "🖱️ Click"),
-    ("IfImage", "❓ If Image"),
-    ("Else", "↩️ Else"),
-    ("EndIf", "🔚 EndIf"),
-    ("Loop", "🔁 Loop"),
-    ("EndLoop", "🔚 EndLoop"),
-    ("WhileImage", "🔄 While Image"),
-    ("EndWhile", "🔚 EndWhile"),
-    ("Delay", "⏱️ Delay"),
-    ("DelayRandom", "🎲 Random Delay"),
-    ("Hotkey", "⌨️ Hotkey"),
-    ("TypeText", "📝 Type Text"),
-    ("Label", "🏷️ Label"),
-    ("Goto", "↩️ Goto"),
-    ("RunFlow", "▶️ Run Flow"),
-    ("WaitPixel", "🎨 Wait Pixel"),
-    ("IfPixel", "🎯 If Pixel"),
-    ("Drag", "↔️ Drag"),
-    ("Scroll", "📜 Scroll"),
-]
+# Categorized action types for better discoverability
+ACTION_CATEGORIES = {
+    "🎯 Clicks & Mouse": [
+        ("ClickImage", "🎯 Click Image"),
+        ("ClickUntil", "🔄 Click Until"),
+        ("ClickRandom", "🎲 Click Random"),
+        ("Click", "🖱️ Click"),
+        ("Drag", "↔️ Drag"),
+        ("Scroll", "📜 Scroll"),
+    ],
+    "👁️ Vision & Wait": [
+        ("WaitImage", "👁️ Wait Image"),
+        ("IfImage", "❓ If Image"),
+        ("WhileImage", "🔄 While Image"),
+        ("WaitPixel", "🎨 Wait Pixel"),
+        ("IfPixel", "🎯 If Pixel"),
+        ("ReadText", "🧠 Read Text"),
+    ],
+    "⌨️ Keyboard & Input": [
+        ("Hotkey", "⌨️ Hotkey"),
+        ("TypeText", "📝 Type Text"),
+    ],
+    "⏱️ Timing & Delays": [
+        ("Delay", "⏱️ Delay"),
+        ("DelayRandom", "🎲 Random Delay"),
+    ],
+    "🔄 Flow Control": [
+        ("IfText", "📝 If Text"),
+        ("Loop", "🔁 Loop"),
+        ("Label", "🏷️ Label"),
+        ("Goto", "↩️ Goto"),
+        ("RunFlow", "▶️ Run Flow"),
+    ],
+    "📐 Structure Markers": [
+        ("Else", "↩️ Else"),
+        ("EndIf", "🔚 EndIf"),
+        ("EndLoop", "🔚 EndLoop"),
+        ("EndWhile", "🔚 EndWhile"),
+    ],
+}
 
+# Smart templates for common patterns
+ACTION_TEMPLATES = {
+    "🎯 Wait & Click": [
+        ("WaitImage", {"asset_id": "[target]", "appear": True}),
+        ("ClickImage", {"asset_id": "[target]"}),
+    ],
+    "🔄 Loop Until Found": [
+        ("Loop", {"iterations": 100}),
+        ("WaitImage", {"asset_id": "[target]", "timeout_ms": 500}),
+        ("ClickImage", {"asset_id": "[target]"}),
+        ("EndLoop", {}),
+    ],
+    "❓ Check & React": [
+        ("IfImage", {"asset_id": "[condition]"}),
+        ("ClickImage", {"asset_id": "[action_true]"}),
+        ("Else", {}),
+        ("ClickImage", {"asset_id": "[action_false]"}),
+        ("EndIf", {}),
+    ],
+    "📝 Read & Check Value": [
+        ("ReadText", {"variable_name": "$value", "roi": {"x": 0, "y": 0, "w": 100, "h": 30}}),
+        ("IfText", {"variable_name": "$value", "operator": "numeric_lt", "value": "50"}),
+        ("ClickImage", {"asset_id": "[action]"}),
+        ("EndIf", {}),
+    ],
+    "⏱️ Timed Sequence": [
+        ("ClickImage", {"asset_id": "[step1]"}),
+        ("Delay", {"ms": 1000}),
+        ("ClickImage", {"asset_id": "[step2]"}),
+        ("Delay", {"ms": 1000}),
+        ("ClickImage", {"asset_id": "[step3]"}),
+    ],
+}
+
+# Action factory functions
 ACTION_DEFAULTS = {
     "ClickImage": lambda: ClickImage(asset_id=""),
     "ClickUntil": lambda: ClickUntil(click_asset_id="", until_asset_id=""),
@@ -85,6 +139,7 @@ ACTION_DEFAULTS = {
     "WaitPixel": lambda: WaitPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Click": lambda: Click(),
     "IfImage": lambda: IfImage(asset_id=""),
+    "IfText": lambda: IfText(variable_name="$var", value="0"),
     "Else": lambda: Else(),
     "EndIf": lambda: EndIf(),
     "Loop": lambda: Loop(),
@@ -99,8 +154,10 @@ ACTION_DEFAULTS = {
     "RunFlow": lambda: RunFlow(flow_name=""),
     "Delay": lambda: Delay(ms=1000),
     "DelayRandom": lambda: DelayRandom(),
+    "ReadText": lambda: ReadText(variable_name="$var", roi=ROI(x=0, y=0, w=100, h=30)),
     "Drag": lambda: Drag(from_x=0, from_y=0, to_x=100, to_y=100),
     "Scroll": lambda: Scroll(),
+    "ClickRandom": lambda: ClickRandom(roi=ROI(x=0, y=0, w=100, h=100)),
 }
 
 # Color scheme by action category
@@ -116,11 +173,11 @@ ACTION_COLORS = {
 ACTION_CATEGORY = {
     "ClickImage": "click", "Click": "click", "ClickUntil": "click",
     "WaitImage": "wait", "WaitPixel": "wait",
-    "IfImage": "control", "Else": "marker", "EndIf": "marker",
+    "IfImage": "control", "Else": "control", "EndIf": "marker", "IfText": "control",
     "Loop": "control", "EndLoop": "marker",
     "WhileImage": "control", "EndWhile": "marker",
     "Goto": "control", "Label": "control", "RunFlow": "control",
-    "Hotkey": "input", "TypeText": "input",
+    "Hotkey": "input", "TypeText": "input", "ReadText": "input",
     "Delay": "timing", "DelayRandom": "timing",
     "IfPixel": "control", "Drag": "click", "Scroll": "click",
 }
@@ -386,6 +443,7 @@ class ActionsPanel(QWidget):
             ("🎯", "ClickImage", "Click Image"),
             ("🖱️", "Click", "Click"),
             ("👁️", "WaitImage", "Wait Image"),
+            ("👻", "WaitGone", "Wait Gone"),
             ("⏱️", "Delay", "Delay"),
             ("🔁", "Loop", "Loop"),
         ]
@@ -575,6 +633,9 @@ class ActionsPanel(QWidget):
             click = action.click_asset_id or "?"
             until = action.until_asset_id or "?"
             return f"{click} → {until}"
+        elif isinstance(action, ClickRandom):
+            r = action.roi
+            return f"ROI({r.x},{r.y}, {r.w}x{r.h})"
         elif isinstance(action, WaitImage):
             return action.asset_id or "?"
         elif isinstance(action, Click):
@@ -628,6 +689,10 @@ class ActionsPanel(QWidget):
         elif isinstance(action, IfPixel):
             c = action.color
             return f"({action.x},{action.y}) RGB({c.r},{c.g},{c.b})"
+        elif isinstance(action, ReadText):
+            return f"{action.variable_name} = OCR"
+        elif isinstance(action, IfText):
+            return f"if {action.variable_name} {action.operator} {action.value}"
         return ""
 
     def highlight_step(self, idx: int) -> None:
@@ -669,12 +734,26 @@ class ActionsPanel(QWidget):
                 self.action_selected.emit(data)
 
     def _show_add_menu(self) -> None:
-        """Show menu for adding action types."""
+        """Show categorized add action menu with templates."""
         menu = QMenu(self)
-        for action_type, label in ACTION_TYPES:
-            action = menu.addAction(label)
-            action.setData(action_type)
-            action.triggered.connect(lambda checked, t=action_type: self._add_action(t))
+        
+        # Add Templates submenu first (most common use case)
+        templates_menu = menu.addMenu("✨ Templates")
+        for template_name in ACTION_TEMPLATES.keys():
+            action = templates_menu.addAction(template_name)
+            action.triggered.connect(lambda checked=False, t=template_name: self._add_template(t))
+        
+        menu.addSeparator()
+        
+        # Add categorized actions
+        for category_name, actions in ACTION_CATEGORIES.items():
+            category_menu = menu.addMenu(category_name)
+            for action_type, label in actions:
+                action = category_menu.addAction(label)
+                action.triggered.connect(
+                    lambda checked=False, t=action_type: self._add_action_type(t)
+                )
+        
         menu.exec(self.btn_more.mapToGlobal(self.btn_more.rect().bottomLeft()))
 
     def _add_action(self, action_type: str) -> None:
@@ -690,15 +769,53 @@ class ActionsPanel(QWidget):
             self.action_list.setCurrentRow(len(self._actions) - 1)
             self.action_changed.emit()
             logger.info("Added action: %s", action_type)
+    
+    def _add_template(self, template_name: str) -> None:
+        """Add a template (multiple actions at once)."""
+        template = ACTION_TEMPLATES.get(template_name)
+        if not template:
+            return
+        
+        self._save_state()  # Save for undo
+        
+        # Get insertion index (append at end)
+        insert_pos = len(self._actions)
+        
+        # Add all actions from template
+        for action_type, params in template:
+            # Create action with default
+            action = ACTION_DEFAULTS[action_type]()
+            
+            # Apply template parameters
+            for key, value in params.items():
+                if hasattr(action, key):
+                    setattr(action, key, value)
+            
+            self._actions.append(action)
+        
+        self._refresh_list()
+        # Select first action of template
+        self.action_list.setCurrentRow(insert_pos)
+        self.action_changed.emit()
+        
+        logger.info(f"Added template: {template_name} ({len(template)} actions)")
+    
+    def _add_action_type(self, action_type: str) -> None:
+        """Add action from categorized menu (alias for _add_action)."""
+        self._add_action(action_type)
 
     def _quick_add(self, action_type: str) -> None:
         """Quick add action after current selection (1-click workflow)."""
-        factory = ACTION_DEFAULTS.get(action_type)
-        if not factory:
-            return
+        if action_type == "WaitGone":
+             self._save_state()
+             action = WaitImage(asset_id="", appear=False)
+        else:
+            factory = ACTION_DEFAULTS.get(action_type)
+            if not factory:
+                return
 
-        self._save_state()  # Save for undo
-        action = factory()
+            self._save_state()  # Save for undo
+            action = factory()
 
         # Insert after current selection, or at end
         current_row = self.action_list.currentRow()

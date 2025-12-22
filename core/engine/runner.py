@@ -9,20 +9,30 @@ from collections.abc import Callable
 
 from core.engine.context import EngineState, ExecutionContext
 from core.models import (
-    Action,
     Click,
+    ClickRandom,
     Delay,
+    DelayRandom,
+    Drag,
     Flow,
     Goto,
     Hotkey,
     IfImage,
+    IfPixel,
     Label,
+    Loop,
     RunFlow,
+    Scroll,
     TypeText,
+    ReadText,
     WaitImage,
+    IfText,
+    Action,  # Add Action type
 )
+from core.graph.walker import GraphWalker
 from infra import get_logger
 from vision import WaitResult
+from vision.ocr import TextReader
 
 logger = get_logger("Runner")
 
@@ -57,6 +67,7 @@ class Runner:
         self._on_step = on_step
         self._on_complete = on_complete
         self._call_stack: list[tuple[str, int]] = []  # For nested RunFlow
+        self._ocr = TextReader()
 
     def run_flow(self, flow_name: str, from_step: int = 0) -> bool:
         """
@@ -77,6 +88,42 @@ class Runner:
         self._ctx.set_state(EngineState.RUNNING)
         logger.info("Starting flow: %s (from step %d)", flow_name, from_step)
 
+        # Check if flow has a graph representation
+        if flow.graph and flow.graph.nodes:
+            logger.info("Executing flow using graph mode")
+            return self._execute_graph(flow)
+        
+        # Legacy mode: execute as linear list
+        logger.info("Executing flow using legacy list mode")
+        return self._execute_list(flow, from_step, labels)
+    
+    def _execute_graph(self, flow: Flow) -> bool:
+        """Execute flow using graph walker."""
+        try:
+            walker = GraphWalker(flow.graph)
+            
+            # Create action executor callback that maintains context
+            def execute_action(action: Action) -> Any:
+                # Check stop/pause before each action
+                if not self._ctx.wait_if_paused():
+                    raise InterruptedError("Flow stopped by user")
+                
+                # Execute the action and return result
+                return self._execute_action(action, flow, {})
+            
+            # Execute graph
+            walker.execute_graph(execute_action)
+            return True
+            
+        except InterruptedError:
+            logger.info("Graph execution stopped by user")
+            return False
+        except Exception as e:
+            logger.error(f"Graph execution failed: {e}")
+            return False
+    
+    def _execute_list(self, flow: Flow, from_step: int, labels: dict[str, int]) -> bool:
+        """Execute flow using traditional linear list walker (backward compat)."""
         # Build label index for fast Goto
         labels = self._build_label_index(flow)
 
@@ -170,6 +217,9 @@ class Runner:
         elif isinstance(action, Click):
             return self._exec_click(action)
 
+        elif isinstance(action, ClickRandom):
+            return self._exec_click_random(action)
+
         elif isinstance(action, IfImage):
             return self._exec_if_image(action, flow, labels)
 
@@ -192,6 +242,12 @@ class Runner:
         elif isinstance(action, Delay):
             return self._exec_delay(action)
 
+        elif isinstance(action, ReadText):
+            return self._exec_read_text(action)
+
+        elif isinstance(action, IfText):
+            return self._exec_if_text(action, flow, labels)
+
         else:
             logger.warning("Unknown action type: %s", type(action).__name__)
             return None
@@ -199,6 +255,72 @@ class Runner:
     # ─────────────────────────────────────────────────────────────
     # Action Executors
     # ─────────────────────────────────────────────────────────────
+
+    def _exec_read_text(self, action: ReadText) -> None:
+        """Execute ReadText action."""
+        try:
+             # Capture screen (returns PIL Image usually, depends on Capture impl)
+             # ctx.capture.grab() -> Image
+             screenshot = self._ctx.capture.grab()
+             
+             text = self._ocr.read_from_image(
+                 screenshot, 
+                 roi=action.roi, 
+                 allowlist=action.allowlist
+             )
+             
+             # Store in variable
+             self._ctx.variables[action.variable_name] = text
+             logger.info("ReadText: %s = '%s' (ROI: %s)", action.variable_name, text, action.roi)
+             
+        except Exception as e:
+            logger.error("ReadText failed: %s", e)
+
+    def _exec_if_text(self, action: IfText, flow: Flow, labels: dict[str, int]) -> None:
+        """Execute IfText conditional."""
+        # Get variable value
+        var_val = str(self._ctx.variables.get(action.variable_name, ""))
+        target = action.value
+        op = action.operator
+        result = False
+        
+        try:
+            if op == "contains":
+                result = target in var_val
+            elif op == "equals":
+                result = var_val == target
+            elif op == "starts_with":
+                result = var_val.startswith(target)
+            elif op == "ends_with":
+                result = var_val.endswith(target)
+            elif op == "numeric_gt" or op == "numeric_lt":
+                # Clean up string for numeric conversion (remove non-digits if needed, or just try)
+                # Simple float conversion
+                f_val = float(var_val.replace(',', '').strip())
+                f_target = float(target)
+                if op == "numeric_gt":
+                    result = f_val > f_target
+                else:
+                    result = f_val < f_target
+        except ValueError:
+            logger.warning("IfText: Numeric conversion failed for '%s'", var_val)
+            result = False
+            
+        logger.info("IfText: '%s' %s '%s' -> %s", var_val, op, target, result)
+        
+        branch = action.then_actions if result else action.else_actions
+        
+        # Execute branch
+        for sub_action in branch:
+            # Check stop/pause between sub-actions
+             if not self._ctx.wait_if_paused():
+                 return None
+                 
+             # Recursive execution? No, flat execution context needed for goto/labels usually
+             # But action models support nesting. We can execute purely.
+             # Note: Goto inside IfText won't work well unless we flatten the flow.
+             # For now, we just execute simple actions.
+             self._execute_action(sub_action, flow, labels)
 
     def _exec_wait_image(self, action: WaitImage) -> bool | None:
         """Execute WaitImage action."""
@@ -339,4 +461,42 @@ class Runner:
             time.sleep(sleep_time / 1000.0)
             remaining -= sleep_time
 
+        return None
+
+    def _exec_click_random(self, action: ClickRandom) -> None:
+        """Execute ClickRandom action."""
+        import random
+
+        # Calculate random point within ROI
+        # Use normal distribution (gaussian) for more human-like "center-bias"
+        # but clamp to ROI bounds
+        
+        # Center of ROI
+        cx = action.roi.x + action.roi.w / 2
+        cy = action.roi.y + action.roi.h / 2
+        
+        # Standard deviation = 1/6 of width/height (99% points within ROI)
+        sigma_x = action.roi.w / 6
+        sigma_y = action.roi.h / 6
+        
+        # Box-Muller transform or simple gauss
+        x = int(random.gauss(cx, sigma_x))
+        y = int(random.gauss(cy, sigma_y))
+        
+        # Clamp to bounds
+        x = max(action.roi.x, min(action.roi.x + action.roi.w, x))
+        y = max(action.roi.y, min(action.roi.y + action.roi.h, y))
+
+        logger.info(
+            "ClickRandom: (%d, %d) in ROI(x=%d, y=%d, w=%d, h=%d)",
+            x, y, action.roi.x, action.roi.y, action.roi.w, action.roi.h
+        )
+        
+        self._ctx.mouse.click(
+            x=x,
+            y=y,
+            button=action.button,
+            clicks=action.clicks,
+            interval=action.interval_ms / 1000.0
+        )
         return None

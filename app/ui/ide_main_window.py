@@ -30,13 +30,15 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QSplitter,
     QStatusBar,
+    QTabWidget,
     QToolBar,
     QVBoxLayout,
     QWidget,
 )
 
 from app.ui.code_editor import DSLCodeEditor
-from app.ui.inspector_panel import InspectorPanel
+from app.ui.properties_panel import PropertiesPanel
+from app.ui.interrupts_panel import InterruptsPanel
 from app.ui.output_panel import OutputPanel
 from app.ui.project_explorer import ProjectExplorer
 from core.dsl.formatter import format_code
@@ -60,6 +62,7 @@ class IDEMainWindow(QMainWindow):
         super().__init__()
         self._current_file: Path | None = None
         self._is_modified = False
+        self._script = None  # Current loaded script
         self._init_ui()
         self._init_menu()
         self._init_toolbar()
@@ -86,8 +89,22 @@ class IDEMainWindow(QMainWindow):
         hsplitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Project Explorer (already has header)
+        # Left Panel (Explorer | Assets | Interrupts)
+        self.left_tabs = QTabWidget()
+        self.left_tabs.setTabPosition(QTabWidget.TabPosition.South)
+        
+        # Explorer Tab
         self.explorer = ProjectExplorer()
-        hsplitter.addWidget(self.explorer)
+        self.left_tabs.addTab(self.explorer, "📂 Explorer")
+        
+        # Assets Tab (Placeholder for now, or move AssetsPanel here later if desired)
+        # For now, just keep Explorer and Interrupts
+        
+        # Interrupts Tab
+        self.interrupts_panel = InterruptsPanel()
+        self.left_tabs.addTab(self.interrupts_panel, "⚡ Interrupts")
+        
+        hsplitter.addWidget(self.left_tabs)
 
         # Code Editor with header
         editor_container = QWidget()
@@ -114,7 +131,7 @@ class IDEMainWindow(QMainWindow):
         hsplitter.addWidget(editor_container)
 
         # Inspector
-        self.inspector = InspectorPanel()
+        self.inspector = PropertiesPanel()
         hsplitter.addWidget(self.inspector)
 
         # Set proportions (1:3:1)
@@ -325,6 +342,12 @@ class IDEMainWindow(QMainWindow):
         # Output
         self.output.diagnostic_clicked.connect(self._goto_diagnostic)
 
+        # Interrupts Panel
+        self.interrupts_panel.rule_selected.connect(self._on_rule_selected)
+        self.interrupts_panel.rule_changed.connect(self._on_rules_changed)
+
+        # Inspector (PropertiesPanel doesn't need signal connection in IDE)
+
     def _restore_state(self) -> None:
         """Restore window state from settings."""
         settings = QSettings("RetroAuto", "MacroIDE95")
@@ -336,6 +359,10 @@ class IDEMainWindow(QMainWindow):
         last_project = settings.value("last_project")
         if last_project and Path(last_project).exists():
             self.explorer.load_project(Path(last_project))
+            
+        # Restore interrupts if script loaded
+        if self._script:
+            self.interrupts_panel.set_rules(self._script.interrupts)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Handle window close."""
@@ -617,3 +644,16 @@ class IDEMainWindow(QMainWindow):
             "classic Win95/98 styling.\n\n"
             "© 2024 RetroAuto",
         )
+
+    def _on_rule_selected(self, data: dict) -> None:
+        """Handle interrupt rule selection."""
+        # data = {"index": int, "rule": InterruptRule}
+        self.inspector.load_action(
+            {"action": data["rule"], "type": "interrupt", "index": data["index"]}
+        )
+
+    def _on_rules_changed(self, rules: list) -> None:
+        """Handle interrupt rules update."""
+        if self._script:
+            self._script.interrupts = rules
+            self._mark_modified()

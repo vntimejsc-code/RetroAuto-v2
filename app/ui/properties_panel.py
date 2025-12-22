@@ -22,15 +22,21 @@ from core.models import (
     Click,
     ClickImage,
     ClickUntil,
+    ClickRandom,  # Add import
     Delay,
     Goto,
     Hotkey,
     IfImage,
+    IfText,
+    InterruptRule,  # Add import
     Label,
+    ROI,
+    ReadText,
     RunFlow,
     TypeText,
     WaitImage,
 )
+
 from infra import get_logger
 
 logger = get_logger("PropertiesPanel")
@@ -133,6 +139,14 @@ class PropertiesPanel(QWidget):
             self._add_text_field("asset_id", action.asset_id)
             self._add_label("(then/else actions edited separately)")
 
+        elif isinstance(action, IfText):
+            self._add_text_field("variable_name", action.variable_name)
+            self._add_combo_field("operator", action.operator, [
+                "contains", "equals", "starts_with", "ends_with", "numeric_lt", "numeric_gt"
+            ])
+            self._add_text_field("value", action.value)
+            self._add_label("(then/else actions edited separately)")
+
         elif isinstance(action, Hotkey):
             keys_str = "+".join(action.keys) if action.keys else ""
             self._add_text_field("keys", keys_str)
@@ -151,6 +165,30 @@ class PropertiesPanel(QWidget):
 
         elif isinstance(action, RunFlow):
             self._add_text_field("flow_name", action.flow_name)
+
+        elif isinstance(action, ReadText):
+            self._add_text_field("variable_name", action.variable_name)
+            r = action.roi
+            self._add_spin_field("roi_x", r.x, 0, 9999)
+            self._add_spin_field("roi_y", r.y, 0, 9999)
+            self._add_spin_field("roi_w", r.w, 1, 9999)
+            self._add_spin_field("roi_h", r.h, 1, 9999)
+            self._add_text_field("allowlist", action.allowlist)
+
+        elif isinstance(action, InterruptRule):
+            self._add_text_field("when_image", action.when_image)
+            self._add_spin_field("priority", action.priority, 0, 100)
+            self._add_text_field("run_flow", action.run_flow or "")
+
+        elif isinstance(action, ClickRandom):
+            r = action.roi
+            self._add_spin_field("roi_x", r.x, 0, 9999)
+            self._add_spin_field("roi_y", r.y, 0, 9999)
+            self._add_spin_field("roi_w", r.w, 1, 9999)
+            self._add_spin_field("roi_h", r.h, 1, 9999)
+            self._add_spin_field("clicks", action.clicks, 1, 10)
+            self._add_spin_field("interval_ms", action.interval_ms, 0, 5000)
+            self._add_combo_field("button", action.button, ["left", "right", "middle"])
 
         elif isinstance(action, Delay):
             self._add_spin_field("ms", action.ms, 0, 300000)
@@ -297,6 +335,16 @@ class PropertiesPanel(QWidget):
                 comment=self._fields["comment"].text(),
             )
 
+        elif isinstance(action, IfText):
+            return IfText(
+                variable_name=self._fields["variable_name"].text(),
+                operator=self._fields["operator"].currentText(),
+                value=self._fields["value"].text(),
+                then_actions=action.then_actions,
+                else_actions=action.else_actions,
+                comment=self._fields["comment"].text(),
+            )
+
         elif isinstance(action, Hotkey):
             keys_str = self._fields["keys"].text()
             keys = [k.strip().upper() for k in keys_str.split("+") if k.strip()]
@@ -328,6 +376,41 @@ class PropertiesPanel(QWidget):
         elif isinstance(action, RunFlow):
             return RunFlow(
                 flow_name=self._fields["flow_name"].text(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, ReadText):
+            return ReadText(
+                variable_name=self._fields["variable_name"].text(),
+                roi=ROI(
+                    x=self._fields["roi_x"].value(),
+                    y=self._fields["roi_y"].value(),
+                    w=self._fields["roi_w"].value(),
+                    h=self._fields["roi_h"].value()
+                ),
+                allowlist=self._fields["allowlist"].text(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, InterruptRule):
+            return InterruptRule(
+                when_image=self._fields["when_image"].text(),
+                priority=self._fields["priority"].value(),
+                run_flow=self._fields["run_flow"].text() or None,
+                do_actions=action.do_actions  # Preserve existing
+            )
+
+        elif isinstance(action, ClickRandom):
+            return ClickRandom(
+                roi=ROI(
+                    x=self._fields["roi_x"].value(),
+                    y=self._fields["roi_y"].value(),
+                    w=self._fields["roi_w"].value(),
+                    h=self._fields["roi_h"].value()
+                ),
+                clicks=self._fields["clicks"].value(),
+                interval_ms=self._fields["interval_ms"].value(),
+                button=self._fields["button"].currentText(),
                 comment=self._fields["comment"].text(),
             )
 
