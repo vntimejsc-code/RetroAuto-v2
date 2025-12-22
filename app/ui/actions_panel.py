@@ -546,22 +546,23 @@ class ActionsPanel(QWidget):
         if isinstance(action, WaitImage):
             updated = WaitImage(
                 asset_id=asset_id,
-                timeout=action.timeout,
-                threshold=action.threshold,
+                appear=action.appear,
+                timeout_ms=action.timeout_ms,
+                poll_ms=action.poll_ms,
+                roi_override=action.roi_override,
             )
         elif isinstance(action, IfImage):
             updated = IfImage(
                 asset_id=asset_id,
                 then_actions=action.then_actions,
                 else_actions=action.else_actions,
-                threshold=action.threshold,
+                roi_override=action.roi_override,
             )
         elif isinstance(action, WhileImage):
             updated = WhileImage(
                 asset_id=asset_id,
                 while_present=action.while_present,
                 actions=action.actions,
-                threshold=action.threshold,
             )
         else:
             # Action doesn't support asset_id - ignore drop
