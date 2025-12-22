@@ -249,6 +249,18 @@ class WhileImage(ActionBase):
     roi_override: ROI | None = Field(default=None)
 
 
+class EndLoop(ActionBase):
+    """Marks end of Loop block (for GUI flat list)."""
+
+    action: Literal["EndLoop"] = "EndLoop"
+
+
+class EndWhile(ActionBase):
+    """Marks end of WhileImage block (for GUI flat list)."""
+
+    action: Literal["EndWhile"] = "EndWhile"
+
+
 class PixelColor(BaseModel):
     """RGB color for pixel checking."""
 

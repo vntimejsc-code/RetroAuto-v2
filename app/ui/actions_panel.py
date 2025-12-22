@@ -31,6 +31,8 @@ from core.models import (
     Drag,
     Else,
     EndIf,
+    EndLoop,
+    EndWhile,
     Goto,
     Hotkey,
     IfImage,
@@ -58,11 +60,14 @@ ACTION_TYPES = [
     ("IfImage", "❓ If Image"),
     ("Else", "↩️ Else"),
     ("EndIf", "🔚 EndIf"),
+    ("Loop", "🔁 Loop"),
+    ("EndLoop", "🔚 EndLoop"),
+    ("WhileImage", "🔄 While Image"),
+    ("EndWhile", "🔚 EndWhile"),
     ("Delay", "⏱️ Delay"),
     ("DelayRandom", "🎲 Random Delay"),
     ("Hotkey", "⌨️ Hotkey"),
     ("TypeText", "📝 Type Text"),
-    ("Loop", "🔁 Loop"),
     ("Label", "🏷️ Label"),
     ("Goto", "↩️ Goto"),
     ("RunFlow", "▶️ Run Flow"),
@@ -70,7 +75,6 @@ ACTION_TYPES = [
     ("IfPixel", "🎯 If Pixel"),
     ("Drag", "↔️ Drag"),
     ("Scroll", "📜 Scroll"),
-    ("WhileImage", "🔄 While Image"),
 ]
 
 ACTION_DEFAULTS = {
@@ -82,6 +86,10 @@ ACTION_DEFAULTS = {
     "IfImage": lambda: IfImage(asset_id=""),
     "Else": lambda: Else(),
     "EndIf": lambda: EndIf(),
+    "Loop": lambda: Loop(),
+    "EndLoop": lambda: EndLoop(),
+    "WhileImage": lambda: WhileImage(asset_id=""),
+    "EndWhile": lambda: EndWhile(),
     "IfPixel": lambda: IfPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Hotkey": lambda: Hotkey(keys=[]),
     "TypeText": lambda: TypeText(text=""),
@@ -92,8 +100,6 @@ ACTION_DEFAULTS = {
     "DelayRandom": lambda: DelayRandom(),
     "Drag": lambda: Drag(from_x=0, from_y=0, to_x=100, to_y=100),
     "Scroll": lambda: Scroll(),
-    "Loop": lambda: Loop(),
-    "WhileImage": lambda: WhileImage(asset_id=""),
 }
 
 # Custom MIME type for asset drag
@@ -402,11 +408,33 @@ class ActionsPanel(QWidget):
         return list(self._actions)
 
     def _refresh_list(self) -> None:
-        """Refresh list widget from internal actions with visual indentation."""
+        """Refresh list widget from internal actions with visual indentation and colors."""
         self.action_list.clear()
 
-        # Track if we're inside an if block for indentation
-        if_depth = 0
+        # Track block depth for indentation (supports nested blocks)
+        block_depth = 0
+
+        # Color scheme by action category
+        colors = {
+            "click": QColor("#4CAF50"),      # Green - click actions
+            "wait": QColor("#2196F3"),       # Blue - wait/check actions
+            "control": QColor("#FF9800"),    # Orange - control flow
+            "input": QColor("#9C27B0"),      # Purple - input actions
+            "timing": QColor("#607D8B"),     # Gray-blue - timing
+            "marker": QColor("#888888"),     # Gray - block markers
+        }
+
+        action_colors = {
+            "ClickImage": "click", "Click": "click", "ClickUntil": "click",
+            "WaitImage": "wait", "WaitPixel": "wait",
+            "IfImage": "control", "Else": "marker", "EndIf": "marker",
+            "Loop": "control", "EndLoop": "marker",
+            "WhileImage": "control", "EndWhile": "marker",
+            "Goto": "control", "Label": "control", "RunFlow": "control",
+            "Hotkey": "input", "TypeText": "input",
+            "Delay": "timing", "DelayRandom": "timing",
+            "IfPixel": "control", "Drag": "click", "Scroll": "click",
+        }
 
         for i, action in enumerate(self._actions):
             action_type = type(action).__name__
@@ -419,22 +447,35 @@ class ActionsPanel(QWidget):
             if detail:
                 label = f"{label}: {detail}"
 
-            # Handle visual indentation for if/else/endif blocks
+            # Handle visual indentation for all block types
             prefix = ""
-            if action_type == "IfImage":
-                if_depth += 1
+
+            # Block openers increase depth AFTER this item
+            if action_type in ("IfImage", "Loop", "WhileImage"):
+                if block_depth > 0:
+                    prefix = "│  " * (block_depth - 1) + "┣── "
+                block_depth += 1
+
+            # Block markers (Else)
             elif action_type == "Else":
-                # Else is at current depth but marks transition
                 label = "┣ Else"
-            elif action_type == "EndIf":
-                label = "┗ EndIf"
-                if_depth = max(0, if_depth - 1)
-            elif if_depth > 0:
-                # Inside an if block - indent
-                prefix = "│  " * (if_depth - 1) + "┣── "
+
+            # Block closers decrease depth
+            elif action_type in ("EndIf", "EndLoop", "EndWhile"):
+                block_depth = max(0, block_depth - 1)
+                label = f"┗ {action_type.replace('End', 'End ')}"
+
+            # Regular items inside blocks
+            elif block_depth > 0:
+                prefix = "│  " * (block_depth - 1) + "┣── "
 
             item = QListWidgetItem(prefix + label)
             item.setData(256, i)  # Qt.UserRole
+
+            # Apply color
+            category = action_colors.get(action_type, "timing")
+            item.setForeground(colors[category])
+
             self.action_list.addItem(item)
 
     def _get_action_detail(self, action: Action) -> str:
