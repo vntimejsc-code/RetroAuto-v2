@@ -676,7 +676,27 @@ class ActionsPanel(QWidget):
         action_type = type(action).__name__
 
         # Only update actions that have asset_id
-        if isinstance(action, WaitImage):
+        if isinstance(action, ClickImage):
+            updated = ClickImage(
+                asset_id=asset_id,
+                button=action.button,
+                clicks=action.clicks,
+                timeout_ms=action.timeout_ms,
+                offset_x=action.offset_x,
+                offset_y=action.offset_y,
+            )
+        elif isinstance(action, ClickUntil):
+            # For ClickUntil, update the click_asset_id (primary target)
+            updated = ClickUntil(
+                click_asset_id=asset_id,
+                until_asset_id=action.until_asset_id,
+                until_appear=action.until_appear,
+                button=action.button,
+                click_interval_ms=action.click_interval_ms,
+                timeout_ms=action.timeout_ms,
+                max_clicks=action.max_clicks,
+            )
+        elif isinstance(action, WaitImage):
             updated = WaitImage(
                 asset_id=asset_id,
                 appear=action.appear,
