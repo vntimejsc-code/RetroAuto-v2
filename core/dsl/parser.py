@@ -7,6 +7,8 @@ Produces AST with precise span tracking.
 
 from __future__ import annotations
 
+from typing import Any
+
 from core.dsl.ast import (
     ArrayExpr,
     AssignStmt,
@@ -131,7 +133,9 @@ class Parser:
         return token
 
     def _check(self, *types: TokenType) -> bool:
-        """Check if current token is one of the types."""
+        """Check if current token is of given type."""
+        if self._at_end():
+            return False
         return self._peek().type in types
 
     def _match(self, *types: TokenType) -> Token | None:
@@ -146,10 +150,6 @@ class Parser:
             return self._advance()
         current = self._peek()
         expected_name = token_type.name.lower()
-        if message:
-            msg = message
-        else:
-            msg = f"Expected {expected_name}"
         raise ParseError(expected_token(expected_name, current.value, Span.from_token(current)))
 
     def _span_from(self, start_token: Token) -> Span:
@@ -200,7 +200,8 @@ class Parser:
         flows: list[FlowDecl] = []
         interrupts: list[InterruptDecl] = []
         constants: list[ConstStmt] = []
-        imports: list = []  # Phase 3: imports list
+        imports: list[ImportStmt] = []  # Phase 3: imports list
+        permissions: list[str] = []  # Phase 15: permissions
 
         while not self._at_end():
             try:
@@ -221,7 +222,9 @@ class Parser:
                 # RetroScript Phase 2: @decorator blocks
                 # ─────────────────────────────────────────────────────
                 elif self._check(TokenType.AT_SIGN):
-                    self._parse_decorator_block()
+                    deco_data = self._parse_decorator_block()
+                    if deco_data and deco_data.get("type") == "permissions":
+                        permissions.extend(deco_data.get("values", []))
                 else:
                     # Try to parse as statement for better error
                     token = self._peek()
@@ -233,12 +236,56 @@ class Parser:
 
         return Program(
             span=self._span_from(start),
+            permissions=permissions,
             imports=imports,  # Phase 3
             hotkeys=hotkeys,
             flows=flows,
             interrupts=interrupts,
             constants=constants,
         )
+
+    def _parse_decorator_block(self) -> dict[str, Any] | None:
+        """Parse decorator block like @permissions { ... }."""
+        self._expect(TokenType.AT_SIGN)
+
+        # Check decorator type
+        self._peek()
+        if self._match(TokenType.PERMISSIONS):
+            # @permissions { "FS_READ", "NET_ALL" }
+            self._expect(TokenType.LBRACE)
+            perms: list[str] = []
+
+            while not self._check(TokenType.RBRACE) and not self._at_end():
+                if self._check(TokenType.STRING):
+                    perms.append(self._advance().value)
+                elif self._check(TokenType.IDENTIFIER):
+                    # Allow non-quoted identifiers too
+                    perms.append(self._advance().value)
+
+                self._match(TokenType.COMMA)
+
+            self._expect(TokenType.RBRACE)
+            return {"type": "permissions", "values": perms}
+
+        elif self._match(TokenType.CONFIG):
+            # @config { ... } - Placeholder for now
+            self._parse_block()  # Skip body
+            return {"type": "config"}
+
+        elif self._check(TokenType.TEST, TokenType.META):
+            # Other decorators - skip for now
+            self._advance()
+            if self._check(TokenType.LBRACE):
+                self._parse_block()
+            return None
+
+        else:
+            # Unknown decorator
+            self._expect(TokenType.IDENTIFIER)
+            # Maybe skip block?
+            if self._check(TokenType.LBRACE):
+                self._parse_block()
+            return None
 
     def _parse_hotkeys(self) -> HotkeysDecl:
         """Parse hotkeys block."""
@@ -696,9 +743,13 @@ class Parser:
             span=self._span_from(start),
             try_block=try_block,
             catch_var="_retry_err",
-            catch_block=else_block if else_block else BlockStmt(
-                span=self._span_from(start),
-                statements=[],
+            catch_block=(
+                else_block
+                if else_block
+                else BlockStmt(
+                    span=self._span_from(start),
+                    statements=[],
+                )
             ),
         )
 
@@ -773,91 +824,6 @@ class Parser:
             span=self._span_from(start),
             statements=statements,
         )
-
-    def _parse_decorator_block(self) -> None:
-        """Parse @decorator blocks (RetroScript Phase 2).
-
-        Handles:
-        - @test "name": block
-        - @config: block
-        - @permissions: block
-        - @meta: block
-        """
-        start = self._expect(TokenType.AT_SIGN)
-
-        # Check what decorator type
-        if self._check(TokenType.TEST):
-            self._parse_test_block(start)
-        elif self._check(TokenType.CONFIG):
-            self._parse_config_block(start)
-        elif self._check(TokenType.PERMISSIONS):
-            self._parse_permissions_block(start)
-        elif self._check(TokenType.META):
-            self._parse_meta_block(start)
-        else:
-            # Unknown decorator - skip to next line
-            token = self._peek()
-            self.errors.append(unexpected_token(token.value, Span.from_token(token)))
-            self._synchronize()
-
-    def _parse_test_block(self, start: Token) -> None:
-        """Parse @test 'name': block."""
-        self._expect(TokenType.TEST)
-
-        # Parse optional test name
-        test_name = "unnamed"
-        if self._check(TokenType.STRING):
-            test_name = self._advance().value
-
-        # Parse block
-        if not self._match(TokenType.COLON):
-            self._expect(TokenType.LBRACE)
-            self.pos -= 1
-
-        body = self._parse_block()
-        self._match(TokenType.END)
-
-        # Store test - for now just log it (engine will handle tests)
-        # TODO: Add tests to Program structure
-
-    def _parse_config_block(self, start: Token) -> None:
-        """Parse @config: block with key=value pairs."""
-        self._expect(TokenType.CONFIG)
-
-        if not self._match(TokenType.COLON):
-            self._expect(TokenType.LBRACE)
-            self.pos -= 1
-
-        body = self._parse_block()
-        self._match(TokenType.END)
-
-        # Store config - TODO: Add config to Program structure
-
-    def _parse_permissions_block(self, start: Token) -> None:
-        """Parse @permissions: block."""
-        self._expect(TokenType.PERMISSIONS)
-
-        if not self._match(TokenType.COLON):
-            self._expect(TokenType.LBRACE)
-            self.pos -= 1
-
-        body = self._parse_block()
-        self._match(TokenType.END)
-
-        # Store permissions - TODO: Add to Program structure
-
-    def _parse_meta_block(self, start: Token) -> None:
-        """Parse @meta: block."""
-        self._expect(TokenType.META)
-
-        if not self._match(TokenType.COLON):
-            self._expect(TokenType.LBRACE)
-            self.pos -= 1
-
-        body = self._parse_block()
-        self._match(TokenType.END)
-
-        # Store meta - TODO: Add to Program structure
 
     def _parse_expression_statement(self) -> ASTNode:
         """Parse expression statement or assignment."""

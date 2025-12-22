@@ -7,9 +7,10 @@ Part of RetroScript Phase 5 - Advanced IDE Features.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from core.dsl.ast import ASTNode, Program
@@ -145,10 +146,12 @@ class Debugger:
         self._state = DebugState.RUNNING
         self._context = DebugContext()
         if program:
-            self._context.stack.append(StackFrame(
-                name="<main>",
-                line=1,
-            ))
+            self._context.stack.append(
+                StackFrame(
+                    name="<main>",
+                    line=1,
+                )
+            )
 
     def stop(self) -> None:
         """Stop debugging session."""

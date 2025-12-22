@@ -53,29 +53,34 @@ class InspectorPanel(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
 
-        # Title
+        # Title - dark theme matching other panels
         self.title_label = QLabel("Inspector")
-        self.title_label.setStyleSheet("""
+        self.title_label.setStyleSheet(
+            """
             QLabel {
                 font-weight: bold;
                 padding: 4px;
-                background-color: #000080;
+                background-color: #0078d4;
                 color: #FFFFFF;
             }
-        """)
+        """
+        )
         layout.addWidget(self.title_label)
 
-        # Scroll area for properties
+        # Scroll area for properties - dark theme
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("""
+        scroll.setStyleSheet(
+            """
             QScrollArea {
-                border: 2px inset #808080;
-                background-color: #C0C0C0;
+                border: 1px solid #555555;
+                background-color: #3c3c3c;
             }
-        """)
+        """
+        )
 
         self.content = QWidget()
+        self.content.setStyleSheet("background-color: #3c3c3c;")
         self.content_layout = QVBoxLayout(self.content)
         self.content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 

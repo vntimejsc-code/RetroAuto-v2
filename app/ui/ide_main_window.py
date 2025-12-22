@@ -85,13 +85,33 @@ class IDEMainWindow(QMainWindow):
         # Top horizontal splitter (explorer | editor | inspector)
         hsplitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # Project Explorer
+        # Project Explorer (already has header)
         self.explorer = ProjectExplorer()
         hsplitter.addWidget(self.explorer)
 
-        # Code Editor
+        # Code Editor with header
+        editor_container = QWidget()
+        editor_layout = QVBoxLayout(editor_container)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(0)
+
+        editor_header = QLabel("Code Editor")
+        editor_header.setStyleSheet(
+            """
+            QLabel {
+                font-weight: bold;
+                padding: 4px;
+                background-color: #0078d4;
+                color: #FFFFFF;
+            }
+        """
+        )
+        editor_layout.addWidget(editor_header)
+
         self.editor = DSLCodeEditor()
-        hsplitter.addWidget(self.editor)
+        editor_layout.addWidget(self.editor)
+
+        hsplitter.addWidget(editor_container)
 
         # Inspector
         self.inspector = InspectorPanel()
@@ -128,10 +148,15 @@ class IDEMainWindow(QMainWindow):
         new_action.triggered.connect(self._new_project)
         file_menu.addAction(new_action)
 
-        open_action = QAction("&Open Project...", self)
-        open_action.setShortcut(QKeySequence.StandardKey.Open)
-        open_action.triggered.connect(self._open_project)
-        file_menu.addAction(open_action)
+        open_project_action = QAction("Open &Project...", self)
+        open_project_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
+        open_project_action.triggered.connect(self._open_project)
+        file_menu.addAction(open_project_action)
+
+        open_file_action = QAction("&Open File...", self)
+        open_file_action.setShortcut(QKeySequence.StandardKey.Open)
+        open_file_action.triggered.connect(self._open_single_file)
+        file_menu.addAction(open_file_action)
 
         file_menu.addSeparator()
 
@@ -228,11 +253,17 @@ class IDEMainWindow(QMainWindow):
         new_btn.triggered.connect(self._new_project)
         toolbar.addAction(new_btn)
 
-        # Open
-        open_btn = QAction("📂 Open", self)
-        open_btn.setToolTip("Open Project (Ctrl+O)")
-        open_btn.triggered.connect(self._open_project)
-        toolbar.addAction(open_btn)
+        # Open Folder
+        open_folder_btn = QAction("📂 Folder", self)
+        open_folder_btn.setToolTip("Open Project Folder (Ctrl+Shift+O)")
+        open_folder_btn.triggered.connect(self._open_project)
+        toolbar.addAction(open_folder_btn)
+
+        # Open File
+        open_file_btn = QAction("📄 File", self)
+        open_file_btn.setToolTip("Open File (Ctrl+O)")
+        open_file_btn.triggered.connect(self._open_single_file)
+        toolbar.addAction(open_file_btn)
 
         # Save
         save_btn = QAction("💾 Save", self)
@@ -343,12 +374,50 @@ class IDEMainWindow(QMainWindow):
             (path / "scripts").mkdir(exist_ok=True)
             (path / "flows").mkdir(exist_ok=True)
 
-            # Create main.dsl
+            # Create main.dsl with new RetroScript syntax
             main_dsl = path / "scripts" / "main.dsl"
             if not main_dsl.exists():
                 main_dsl.write_text(
-                    '// main.dsl\n\nhotkeys {\n  start = "F5"\n  stop = "F6"\n}\n\n'
-                    "flow main {\n  // TODO: Add your automation\n}\n",
+                    '''// main.dsl - RetroScript 9.0
+// Press F5 to run, F6 to stop
+
+@config
+  timeout = 30s
+  loop_limit = 1000
+  click_delay = 50..100ms
+  on_error = pause
+
+@hotkeys
+  start = "F5"
+  stop = "F6"
+
+@main:
+  log "Script started..."
+
+  // Example: Wait for a button and click it
+  $target = find(login_btn, timeout: 10s)
+  match $target:
+    Found(pos, score):
+      log "Found button at {pos} (score: {score}%)"
+      click pos
+    NotFound:
+      log.warn "Button not found, skipping..."
+
+  // Loop example
+  repeat 5:
+    $item = find(item_icon)
+    if $item.found:
+      click $item.pos
+      sleep 500ms
+  end
+
+  log "Script completed!"
+
+@interrupts:
+  // Handle common popups
+  close_popup -> press Escape
+  error_dialog -> click ok_btn
+''',
                     encoding="utf-8",
                 )
 
@@ -368,6 +437,31 @@ class IDEMainWindow(QMainWindow):
             settings.setValue("last_project", str(path))
 
             self.output.log_info(f"Opened project: {path.name}")
+
+    def _open_single_file(self) -> None:
+        """Open a file directly (DSL, YAML, JSON, TXT)."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open File",
+            "",
+            "DSL Scripts (*.dsl);;"
+            "YAML Files (*.yaml *.yml);;"
+            "JSON Files (*.json);;"
+            "Text Files (*.txt);;"
+            "All Files (*)",
+        )
+        if file_path:
+            # Determine file type from extension
+            ext = Path(file_path).suffix.lower()
+            if ext == ".dsl":
+                file_type = "script"
+            elif ext in (".yaml", ".yml"):
+                file_type = "yaml"
+            elif ext == ".json":
+                file_type = "json"
+            else:
+                file_type = "text"
+            self._open_file(file_path, file_type)
 
     def _open_file(self, file_path: str, file_type: str) -> None:
         """Open a file in the editor."""

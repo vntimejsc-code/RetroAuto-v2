@@ -8,10 +8,11 @@ Part of RetroScript Phase 11 - Test Runner.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from xml.etree import ElementTree as ET
 
 
@@ -75,6 +76,7 @@ class TestSuite:
 # Mock System
 # ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class MockCall:
     """Record of a mock function call."""
@@ -134,12 +136,14 @@ class MockRegistry:
             Mock return value
         """
         # Record call
-        self._calls.append(MockCall(
-            name=name,
-            args=args,
-            kwargs=kwargs,
-            timestamp=time.time(),
-        ))
+        self._calls.append(
+            MockCall(
+                name=name,
+                args=args,
+                kwargs=kwargs,
+                timestamp=time.time(),
+            )
+        )
 
         # Return fixed value if set
         if name in self._return_values:
@@ -189,6 +193,7 @@ class MockRegistry:
 # ─────────────────────────────────────────────────────────────
 # Assertions
 # ─────────────────────────────────────────────────────────────
+
 
 class AssertionError(Exception):
     """Test assertion failure."""
@@ -297,6 +302,7 @@ def assert_type(value: Any, expected_type: type, message: str = "") -> None:
 # Test Runner
 # ─────────────────────────────────────────────────────────────
 
+
 class TestRunner:
     """Test runner for RetroScript tests.
 
@@ -351,12 +357,14 @@ class TestRunner:
                 suite.tests.append(result)
 
         except Exception as e:
-            suite.tests.append(TestCase(
-                name="<file>",
-                file=str(path),
-                status=TestStatus.ERROR,
-                error=str(e),
-            ))
+            suite.tests.append(
+                TestCase(
+                    name="<file>",
+                    file=str(path),
+                    status=TestStatus.ERROR,
+                    error=str(e),
+                )
+            )
 
         suite.end_time = time.time()
         self._suites.append(suite)
@@ -389,14 +397,16 @@ class TestRunner:
         for match in re.finditer(pattern, source, re.MULTILINE | re.DOTALL):
             name = match.group(1)
             body = match.group(2)
-            line = source[:match.start()].count('\n') + 1
+            line = source[: match.start()].count("\n") + 1
 
-            tests.append({
-                "name": name,
-                "body": body,
-                "line": line,
-                "file": file,
-            })
+            tests.append(
+                {
+                    "name": name,
+                    "body": body,
+                    "line": line,
+                    "file": file,
+                }
+            )
 
         return tests
 

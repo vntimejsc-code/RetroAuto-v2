@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -27,7 +26,8 @@ def create_parser() -> argparse.ArgumentParser:
         description="RetroScript CLI - Automation scripting tool",
     )
     parser.add_argument(
-        "--version", "-v",
+        "--version",
+        "-v",
         action="version",
         version="RetroScript 1.0.0",
     )
@@ -56,7 +56,8 @@ def create_parser() -> argparse.ArgumentParser:
     new_parser = subparsers.add_parser("new", help="Create new project")
     new_parser.add_argument("name", help="Project name")
     new_parser.add_argument(
-        "--template", "-t",
+        "--template",
+        "-t",
         choices=["basic", "game_bot", "scraper", "testing"],
         default="basic",
         help="Project template",
@@ -112,12 +113,14 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         if args.profile:
             from core.runtime.profiler import get_profiler
+
             profiler = get_profiler()
             profiler.reset()
             print("Profiling enabled")
 
         if args.watch:
             from core.runtime.hot_reload import HotReloader
+
             reloader = HotReloader()
             reloader.watch(file_path)
             reloader.on_reload = lambda p: print(f"Reloaded: {p}")
@@ -126,6 +129,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             try:
                 while True:
                     import time
+
                     time.sleep(1)
             except KeyboardInterrupt:
                 reloader.stop()
@@ -145,7 +149,7 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        from app.tools.bundler import Bundler, BundleOptions
+        from app.tools.bundler import BundleOptions, Bundler
 
         options = BundleOptions(include_assets=not args.no_assets)
         bundler = Bundler(options)
@@ -192,9 +196,9 @@ def cmd_new(args: argparse.Namespace) -> int:
 
         project_path = create_project(args.name, args.template)
         print(f"Created project: {project_path}")
-        print(f"\nNext steps:")
+        print("\nNext steps:")
         print(f"  cd {args.name}")
-        print(f"  retro run main.retro")
+        print("  retro run main.retro")
         return 0
 
     except Exception as e:
@@ -257,10 +261,7 @@ def cmd_fmt(args: argparse.Namespace) -> int:
 
         formatter = Formatter()
 
-        if path.is_file():
-            files = [path]
-        else:
-            files = list(path.glob("**/*.retro"))
+        files = [path] if path.is_file() else list(path.glob("**/*.retro"))
 
         for file in files:
             source = file.read_text(encoding="utf-8")
@@ -292,10 +293,7 @@ def cmd_lint(args: argparse.Namespace) -> int:
 
         validator = LiveValidator()
 
-        if path.is_file():
-            files = [path]
-        else:
-            files = list(path.glob("**/*.retro"))
+        files = [path] if path.is_file() else list(path.glob("**/*.retro"))
 
         total_issues = 0
 

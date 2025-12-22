@@ -16,6 +16,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QInputDialog,
+    QLabel,
     QMenu,
     QMessageBox,
     QTreeWidget,
@@ -50,6 +51,20 @@ class ProjectExplorer(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        # Header - matching Inspector style
+        self.header_label = QLabel("Explorer")
+        self.header_label.setStyleSheet(
+            """
+            QLabel {
+                font-weight: bold;
+                padding: 4px;
+                background-color: #0078d4;
+                color: #FFFFFF;
+            }
+        """
+        )
+        layout.addWidget(self.header_label)
+
         # Tree widget
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
@@ -59,21 +74,24 @@ class ProjectExplorer(QWidget):
 
         layout.addWidget(self.tree)
 
-        # Style
-        self.tree.setStyleSheet("""
+        # Style - Dark theme matching Main Window's Actions panel
+        self.tree.setStyleSheet(
+            """
             QTreeWidget {
-                background-color: #FFFFFF;
-                border: 2px inset #808080;
+                background-color: #3c3c3c;
+                color: #e0e0e0;
+                border: 1px solid #555555;
             }
             QTreeWidget::item {
                 padding: 2px;
                 min-height: 18px;
             }
             QTreeWidget::item:selected {
-                background-color: #000080;
+                background-color: #0078d4;
                 color: #FFFFFF;
             }
-        """)
+        """
+        )
 
     # ─────────────────────────────────────────────────────────────
     # Project Loading

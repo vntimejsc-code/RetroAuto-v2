@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QPointF, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -20,9 +20,7 @@ from PySide6.QtGui import (
     QPen,
 )
 from PySide6.QtWidgets import (
-    QGraphicsEllipseItem,
     QGraphicsItem,
-    QGraphicsLineItem,
     QGraphicsPathItem,
     QGraphicsRectItem,
     QGraphicsScene,
@@ -263,7 +261,7 @@ class FlowDiagram(QGraphicsView):
         y = 50
         spacing_y = 80
 
-        for node_id, item in self._nodes.items():
+        for _node_id, item in self._nodes.items():
             item.setPos(x, y)
             y += spacing_y
 

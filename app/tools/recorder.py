@@ -8,9 +8,9 @@ Part of RetroScript Phase 7 - Tools + Productivity.
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Callable
 
 
 class EventType(Enum):
@@ -92,69 +92,81 @@ class ScriptRecorder:
         """Record a mouse click event."""
         if not self._recording:
             return
-        self._add_event(RecordedEvent(
-            event_type=EventType.MOUSE_CLICK,
-            timestamp=self._get_timestamp(),
-            x=x,
-            y=y,
-            button=button,
-        ))
+        self._add_event(
+            RecordedEvent(
+                event_type=EventType.MOUSE_CLICK,
+                timestamp=self._get_timestamp(),
+                x=x,
+                y=y,
+                button=button,
+            )
+        )
 
     def record_move(self, x: int, y: int) -> None:
         """Record a mouse move event."""
         if not self._recording or not self.options.record_mouse_moves:
             return
-        self._add_event(RecordedEvent(
-            event_type=EventType.MOUSE_MOVE,
-            timestamp=self._get_timestamp(),
-            x=x,
-            y=y,
-        ))
+        self._add_event(
+            RecordedEvent(
+                event_type=EventType.MOUSE_MOVE,
+                timestamp=self._get_timestamp(),
+                x=x,
+                y=y,
+            )
+        )
 
     def record_drag(self, x1: int, y1: int, x2: int, y2: int) -> None:
         """Record a drag event."""
         if not self._recording:
             return
         # Store start in x,y and end in button as "x2,y2"
-        self._add_event(RecordedEvent(
-            event_type=EventType.MOUSE_DRAG,
-            timestamp=self._get_timestamp(),
-            x=x1,
-            y=y1,
-            button=f"{x2},{y2}",
-        ))
+        self._add_event(
+            RecordedEvent(
+                event_type=EventType.MOUSE_DRAG,
+                timestamp=self._get_timestamp(),
+                x=x1,
+                y=y1,
+                button=f"{x2},{y2}",
+            )
+        )
 
     def record_scroll(self, x: int, y: int, delta: int) -> None:
         """Record a scroll event."""
         if not self._recording:
             return
-        self._add_event(RecordedEvent(
-            event_type=EventType.MOUSE_SCROLL,
-            timestamp=self._get_timestamp(),
-            x=x,
-            y=y,
-            scroll_delta=delta,
-        ))
+        self._add_event(
+            RecordedEvent(
+                event_type=EventType.MOUSE_SCROLL,
+                timestamp=self._get_timestamp(),
+                x=x,
+                y=y,
+                scroll_delta=delta,
+            )
+        )
 
     def record_key(self, key: str) -> None:
         """Record a key press event."""
         if not self._recording:
             return
-        self._add_event(RecordedEvent(
-            event_type=EventType.KEY_PRESS,
-            timestamp=self._get_timestamp(),
-            key=key,
-        ))
+        self._add_event(
+            RecordedEvent(
+                event_type=EventType.KEY_PRESS,
+                timestamp=self._get_timestamp(),
+                key=key,
+            )
+        )
 
     def record_text(self, text: str) -> None:
         """Record typed text."""
         if not self._recording:
             return
-        self._add_event(RecordedEvent(
-            event_type=EventType.KEY_TYPE,
-            timestamp=self._get_timestamp(),
-            text=text,
-        ))
+        self._add_event(
+            RecordedEvent(
+                event_type=EventType.KEY_TYPE,
+                timestamp=self._get_timestamp(),
+                text=text,
+            )
+        )
 
     def _add_event(self, event: RecordedEvent) -> None:
         """Add event and trigger callback."""
@@ -241,11 +253,13 @@ class ScriptRecorder:
                         break  # Special key ends merge
                     i += 1
                 if text:
-                    result.append(RecordedEvent(
-                        event_type=EventType.KEY_TYPE,
-                        timestamp=start_time,
-                        text=text,
-                    ))
+                    result.append(
+                        RecordedEvent(
+                            event_type=EventType.KEY_TYPE,
+                            timestamp=start_time,
+                            text=text,
+                        )
+                    )
                     continue
 
             result.append(event)
@@ -259,7 +273,7 @@ class ScriptRecorder:
             if event.button == "left":
                 return f"click({event.x}, {event.y})"
             else:
-                return f"click({event.x}, {event.y}, button=\"{event.button}\")"
+                return f'click({event.x}, {event.y}, button="{event.button}")'
 
         elif event.event_type == EventType.MOUSE_MOVE:
             return f"move({event.x}, {event.y})"

@@ -7,13 +7,15 @@ Part of RetroScript Phase 14 - Visual Editor Components.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
-from PySide6.QtCore import QTimer, Qt, Signal
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
@@ -21,7 +23,6 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
-    QHBoxLayout,
     QWidget,
 )
 
@@ -98,7 +99,8 @@ class VariableWatch(QWidget):
         layout.addWidget(self._table)
 
         # Style
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QTableWidget {
                 border: 1px solid #3c3c3c;
                 border-radius: 4px;
@@ -131,7 +133,8 @@ class VariableWatch(QWidget):
             QPushButton:hover {
                 background: #404040;
             }
-        """)
+        """
+        )
 
     def _setup_timer(self) -> None:
         """Setup refresh timer."""
@@ -190,7 +193,8 @@ class VariableWatch(QWidget):
 
         # Filter variables
         filtered = [
-            var for var in self._variables.values()
+            var
+            for var in self._variables.values()
             if not filter_text or filter_text in var.name.lower()
         ]
 
@@ -254,7 +258,7 @@ class VariableWatch(QWidget):
         if col == 1:  # Value column
             item = self._table.item(row, col)
             if item:
-                name = item.data(Qt.ItemDataRole.UserRole)
+                item.data(Qt.ItemDataRole.UserRole)
                 # Enable editing
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
                 self._table.editItem(item)

@@ -7,11 +7,11 @@ Part of RetroScript Phase 14 - Visual Editor Components.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from PySide6.QtCore import QPoint, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QCursor, QPainter, QPen, QPixmap, QScreen
+from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QLabel, QRubberBand, QWidget
 
 
@@ -58,9 +58,9 @@ class ROISelector(QWidget):
 
         # Window setup
         self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setCursor(Qt.CursorShape.CrossCursor)
@@ -206,13 +206,15 @@ class MiniROIPreview(QLabel):
         super().__init__(parent)
         self.setMinimumSize(100, 75)
         self.setMaximumSize(300, 225)
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QLabel {
                 border: 2px solid #0096ff;
                 border-radius: 4px;
                 background: #1e1e1e;
             }
-        """)
+        """
+        )
         self._region: Region | None = None
 
     def set_region(self, region: Region) -> None:

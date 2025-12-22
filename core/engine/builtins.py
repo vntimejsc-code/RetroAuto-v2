@@ -9,11 +9,15 @@ from __future__ import annotations
 
 import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from core.engine.scope import ExecutionContext
+
+
+from core.security.policy import Permission
 
 
 @dataclass
@@ -25,6 +29,7 @@ class BuiltinFunction:
     min_args: int = 0
     max_args: int = -1  # -1 = unlimited
     description: str = ""
+    permission: Permission = Permission.NONE
 
 
 class BuiltinRegistry:
@@ -51,6 +56,7 @@ class BuiltinRegistry:
         min_args: int = 0,
         max_args: int = -1,
         description: str = "",
+        permission: Permission = Permission.NONE,
     ) -> None:
         """Register a built-in function."""
         self._functions[name] = BuiltinFunction(
@@ -59,6 +65,7 @@ class BuiltinRegistry:
             min_args=min_args,
             max_args=max_args,
             description=description,
+            permission=permission,
         )
 
     def has(self, name: str) -> bool:
@@ -71,22 +78,25 @@ class BuiltinRegistry:
         Raises:
             NameError: If function not found
             TypeError: If wrong number of arguments
+            SecurityViolation: If permission denied
         """
         if name not in self._functions:
             raise NameError(f"Unknown function: {name}")
 
         builtin = self._functions[name]
 
+        # Security Check
+        if builtin.permission != Permission.NONE and self._context:
+            self._context.policy.check(builtin.permission)
+
         # Check argument count
         if len(args) < builtin.min_args:
             raise TypeError(
-                f"{name}() requires at least {builtin.min_args} arguments, "
-                f"got {len(args)}"
+                f"{name}() requires at least {builtin.min_args} arguments, " f"got {len(args)}"
             )
         if builtin.max_args >= 0 and len(args) > builtin.max_args:
             raise TypeError(
-                f"{name}() takes at most {builtin.max_args} arguments, "
-                f"got {len(args)}"
+                f"{name}() takes at most {builtin.max_args} arguments, " f"got {len(args)}"
             )
 
         return builtin.func(*args, **kwargs)
@@ -158,15 +168,19 @@ class BuiltinRegistry:
         # ─────────────────────────────────────────────────────
         # Automation stubs (to be implemented by engine)
         # ─────────────────────────────────────────────────────
-        self.register("find", self._find_stub, 1, 2, "Find image on screen")
-        self.register("wait", self._wait_stub, 1, 2, "Wait for image")
-        self.register("click", self._click_stub, 1, 3, "Click at position")
-        self.register("move", self._move_stub, 2, 2, "Move mouse")
-        self.register("press", self._press_stub, 1, 1, "Press key")
-        self.register("type", self._type_text_stub, 1, 1, "Type text")
-        self.register("scroll", self._scroll_stub, 1, 1, "Scroll wheel")
-        self.register("drag", self._drag_stub, 4, 4, "Drag from to")
-        self.register("hotkey", self._hotkey_stub, 1, 1, "Key combination")
+        self.register("find", self._find_stub, 1, 2, "Find image on screen", Permission.SCREEN_READ)
+        self.register("wait", self._wait_stub, 1, 2, "Wait for image", Permission.SCREEN_READ)
+        self.register(
+            "click", self._click_stub, 1, 3, "Click at position", Permission.INPUT_CONTROL
+        )
+        self.register("move", self._move_stub, 2, 2, "Move mouse", Permission.INPUT_CONTROL)
+        self.register("press", self._press_stub, 1, 1, "Press key", Permission.INPUT_CONTROL)
+        self.register("type", self._type_text_stub, 1, 1, "Type text", Permission.INPUT_CONTROL)
+        self.register("scroll", self._scroll_stub, 1, 1, "Scroll wheel", Permission.INPUT_CONTROL)
+        self.register("drag", self._drag_stub, 4, 4, "Drag from to", Permission.INPUT_CONTROL)
+        self.register(
+            "hotkey", self._hotkey_stub, 1, 1, "Key combination", Permission.INPUT_CONTROL
+        )
 
     # ─────────────────────────────────────────────────────────────
     # Implementation functions
@@ -182,7 +196,7 @@ class BuiltinRegistry:
         # Handle duration - could be ms or have suffix
         if isinstance(duration, str):
             duration = self._parse_duration(duration)
-        elif isinstance(duration, (int, float)):
+        elif isinstance(duration, (int, float)):  # noqa: SIM102
             # Assume milliseconds if small, seconds if < 1
             if duration > 100:  # Likely milliseconds
                 duration = duration / 1000
@@ -208,11 +222,13 @@ class BuiltinRegistry:
     def _floor(self, x: float) -> int:
         """Floor value."""
         import math
+
         return math.floor(x)
 
     def _ceil(self, x: float) -> int:
         """Ceiling value."""
         import math
+
         return math.ceil(x)
 
     def _to_int(self, x: Any) -> int:

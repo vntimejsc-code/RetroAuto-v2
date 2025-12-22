@@ -57,7 +57,7 @@ def load_script(path: Path | str) -> Script:
         with open(path, encoding="utf-8") as f:
             data = yaml.load(f)
     except Exception as e:
-        raise ScriptLoadError(f"Invalid YAML: {e}")
+        raise ScriptLoadError(f"Invalid YAML: {e}") from e
 
     if data is None:
         data = {}
@@ -70,7 +70,7 @@ def load_script(path: Path | str) -> Script:
             loc = ".".join(str(x) for x in err["loc"])
             msg = err["msg"]
             errors.append(f"{loc}: {msg}")
-        raise ScriptLoadError("Validation failed", errors)
+        raise ScriptLoadError("Validation failed", errors) from None
 
     # Validate references
     ref_errors = script.validate_references()
@@ -108,7 +108,7 @@ def save_script(script: Script, path: Path | str) -> None:
 
         logger.info("Saved script: %s", path)
     except Exception as e:
-        raise ScriptSaveError(f"Failed to save: {e}")
+        raise ScriptSaveError(f"Failed to save: {e}") from e
 
 
 def create_empty_script(name: str = "Untitled") -> Script:
@@ -136,7 +136,7 @@ def load_script_dict(data: dict[str, Any]) -> Script:
         script = Script.model_validate(data)
     except ValidationError as e:
         errors = [f"{'.'.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors()]
-        raise ScriptLoadError("Validation failed", errors)
+        raise ScriptLoadError("Validation failed", errors) from None
 
     ref_errors = script.validate_references()
     if ref_errors:

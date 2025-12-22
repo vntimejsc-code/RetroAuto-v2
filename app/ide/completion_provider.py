@@ -52,12 +52,18 @@ KEYWORDS = [
     CompletionItem("if", CompletionKind.KEYWORD, "Conditional", "if ${1:condition} {\n\t$0\n}"),
     CompletionItem("elif", CompletionKind.KEYWORD, "Else if"),
     CompletionItem("else", CompletionKind.KEYWORD, "Else branch"),
-    CompletionItem("while", CompletionKind.KEYWORD, "While loop", "while ${1:condition} {\n\t$0\n}"),
-    CompletionItem("for", CompletionKind.KEYWORD, "For loop", "for ${1:i} in ${2:range(10)} {\n\t$0\n}"),
+    CompletionItem(
+        "while", CompletionKind.KEYWORD, "While loop", "while ${1:condition} {\n\t$0\n}"
+    ),
+    CompletionItem(
+        "for", CompletionKind.KEYWORD, "For loop", "for ${1:i} in ${2:range(10)} {\n\t$0\n}"
+    ),
     # RetroScript Phase 1
     CompletionItem("repeat", CompletionKind.KEYWORD, "Repeat N times", "repeat ${1:3} {\n\t$0\n}"),
     CompletionItem("retry", CompletionKind.KEYWORD, "Retry on error", "retry ${1:5} {\n\t$0\n}"),
-    CompletionItem("match", CompletionKind.KEYWORD, "Pattern matching", "match ${1:$result}: {\n\t$0\n}"),
+    CompletionItem(
+        "match", CompletionKind.KEYWORD, "Pattern matching", "match ${1:$result}: {\n\t$0\n}"
+    ),
     CompletionItem("and", CompletionKind.KEYWORD, "Logical AND"),
     CompletionItem("or", CompletionKind.KEYWORD, "Logical OR"),
     CompletionItem("not", CompletionKind.KEYWORD, "Logical NOT"),
@@ -67,7 +73,9 @@ KEYWORDS = [
     CompletionItem("mock", CompletionKind.KEYWORD, "Mock function"),
     CompletionItem("assert", CompletionKind.KEYWORD, "Assertion"),
     # Phase 3
-    CompletionItem("import", CompletionKind.KEYWORD, "Import module", "import \"${1:path}\" as ${2:alias}"),
+    CompletionItem(
+        "import", CompletionKind.KEYWORD, "Import module", 'import "${1:path}" as ${2:alias}'
+    ),
     CompletionItem("as", CompletionKind.KEYWORD, "Alias"),
     # Control
     CompletionItem("break", CompletionKind.KEYWORD, "Break loop"),
@@ -84,7 +92,9 @@ KEYWORDS = [
 BUILTINS = [
     # Image functions
     CompletionItem("find", CompletionKind.BUILTIN, "Find image on screen", "find(${1:image})"),
-    CompletionItem("wait", CompletionKind.BUILTIN, "Wait for image", "wait(${1:image}, timeout=${2:10s})"),
+    CompletionItem(
+        "wait", CompletionKind.BUILTIN, "Wait for image", "wait(${1:image}, timeout=${2:10s})"
+    ),
     CompletionItem("wait_image", CompletionKind.BUILTIN, "Wait for image (legacy)"),
     CompletionItem("find_image", CompletionKind.BUILTIN, "Find image (legacy)"),
     CompletionItem("image_exists", CompletionKind.BUILTIN, "Check if image exists"),
@@ -92,23 +102,27 @@ BUILTINS = [
     # Mouse actions
     CompletionItem("click", CompletionKind.BUILTIN, "Click at position", "click(${1:x}, ${2:y})"),
     CompletionItem("move", CompletionKind.BUILTIN, "Move mouse", "move(${1:x}, ${2:y})"),
-    CompletionItem("drag", CompletionKind.BUILTIN, "Drag from to", "drag(${1:x1}, ${2:y1}, ${3:x2}, ${4:y2})"),
+    CompletionItem(
+        "drag", CompletionKind.BUILTIN, "Drag from to", "drag(${1:x1}, ${2:y1}, ${3:x2}, ${4:y2})"
+    ),
     CompletionItem("scroll", CompletionKind.BUILTIN, "Scroll wheel", "scroll(${1:amount})"),
     # Keyboard actions
-    CompletionItem("type", CompletionKind.BUILTIN, "Type text", "type(\"${1:text}\")"),
-    CompletionItem("press", CompletionKind.BUILTIN, "Press key", "press(\"${1:key}\")"),
-    CompletionItem("hotkey", CompletionKind.BUILTIN, "Key combination", "hotkey(\"${1:ctrl+c}\")"),
+    CompletionItem("type", CompletionKind.BUILTIN, "Type text", 'type("${1:text}")'),
+    CompletionItem("press", CompletionKind.BUILTIN, "Press key", 'press("${1:key}")'),
+    CompletionItem("hotkey", CompletionKind.BUILTIN, "Key combination", 'hotkey("${1:ctrl+c}")'),
     # Utility
     CompletionItem("sleep", CompletionKind.BUILTIN, "Pause execution", "sleep(${1:1s})"),
-    CompletionItem("log", CompletionKind.BUILTIN, "Log message", "log(\"${1:message}\")"),
+    CompletionItem("log", CompletionKind.BUILTIN, "Log message", 'log("${1:message}")'),
     CompletionItem("run", CompletionKind.BUILTIN, "Run another flow", "run(${1:flow_name})"),
     CompletionItem("range", CompletionKind.BUILTIN, "Generate range", "range(${1:10})"),
 ]
 
 DECORATORS = [
-    CompletionItem("@test", CompletionKind.SNIPPET, "Test block", "@test \"${1:name}\" {\n\t$0\n}"),
+    CompletionItem("@test", CompletionKind.SNIPPET, "Test block", '@test "${1:name}" {\n\t$0\n}'),
     CompletionItem("@config", CompletionKind.SNIPPET, "Configuration", "@config {\n\t$0\n}"),
-    CompletionItem("@permissions", CompletionKind.SNIPPET, "Permissions", "@permissions {\n\t$0\n}"),
+    CompletionItem(
+        "@permissions", CompletionKind.SNIPPET, "Permissions", "@permissions {\n\t$0\n}"
+    ),
     CompletionItem("@meta", CompletionKind.SNIPPET, "Metadata", "@meta {\n\t$0\n}"),
 ]
 
@@ -174,30 +188,36 @@ class CompletionProvider:
             var_prefix = prefix[1:].lower()
             for var in self._variables:
                 if var.lower().startswith(var_prefix):
-                    results.append(CompletionItem(
-                        f"${var}",
-                        CompletionKind.VARIABLE,
-                        "Variable",
-                    ))
+                    results.append(
+                        CompletionItem(
+                            f"${var}",
+                            CompletionKind.VARIABLE,
+                            "Variable",
+                        )
+                    )
 
         # Add flows
         if include_flows:
             for flow in self._flows:
                 if flow.lower().startswith(prefix_lower):
-                    results.append(CompletionItem(
-                        flow,
-                        CompletionKind.FLOW,
-                        "Flow",
-                    ))
+                    results.append(
+                        CompletionItem(
+                            flow,
+                            CompletionKind.FLOW,
+                            "Flow",
+                        )
+                    )
 
         # Add imports
         for alias in self._imports:
             if alias.lower().startswith(prefix_lower):
-                results.append(CompletionItem(
-                    alias,
-                    CompletionKind.IMPORT,
-                    f"import \"{self._imports[alias]}\"",
-                ))
+                results.append(
+                    CompletionItem(
+                        alias,
+                        CompletionKind.IMPORT,
+                        f'import "{self._imports[alias]}"',
+                    )
+                )
 
         return results
 

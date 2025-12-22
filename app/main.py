@@ -12,10 +12,10 @@ _project_root = Path(__file__).parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
-from PySide6.QtWidgets import QApplication, QStyleFactory
+from PySide6.QtWidgets import QApplication, QStyleFactory  # noqa: E402
 
-from app.ui.main_window import MainWindow
-from infra import setup_logging
+from app.ui.main_window import MainWindow  # noqa: E402
+from infra import setup_logging  # noqa: E402
 
 
 def main() -> int:

@@ -4,6 +4,7 @@ RetroAuto v2 - Screen Capture
 Fast screen capture using mss library.
 """
 
+import cv2
 import numpy as np
 from mss import mss
 from mss.base import MSSBase
@@ -90,15 +91,10 @@ class ScreenCapture:
         return img[:, :, :3]
 
     def _to_grayscale(self, img: np.ndarray) -> np.ndarray:
-        """Convert BGRA/BGR to grayscale using luminance formula."""
+        """Convert BGRA/BGR to grayscale using OpenCV (optimized)."""
         if img.shape[2] == 4:
-            # BGRA
-            b, g, r = img[:, :, 0], img[:, :, 1], img[:, :, 2]
-        else:
-            # BGR
-            b, g, r = img[:, :, 0], img[:, :, 1], img[:, :, 2]
-        # Standard luminance formula
-        return (0.299 * r + 0.587 * g + 0.114 * b).astype(np.uint8)
+            return cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
+        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     def close(self) -> None:
         """Release mss resources."""

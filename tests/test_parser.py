@@ -2,7 +2,6 @@
 Tests for DSL Parser.
 """
 
-
 from core.dsl.ast import (
     BinaryExpr,
     CallExpr,
@@ -221,7 +220,7 @@ class TestParserExpressions:
         }
         """
         parser = Parser(source)
-        program = parser.parse()
+        parser.parse()
         assert len(parser.errors) == 0
 
     def test_array_literal(self) -> None:
@@ -232,7 +231,7 @@ class TestParserExpressions:
         }
         """
         parser = Parser(source)
-        program = parser.parse()
+        parser.parse()
         assert len(parser.errors) == 0
 
 
@@ -313,7 +312,7 @@ class TestParserErrorRecovery:
             log("test");
         """
         parser = Parser(source)
-        program = parser.parse()
+        parser.parse()
         assert len(parser.errors) > 0
 
 

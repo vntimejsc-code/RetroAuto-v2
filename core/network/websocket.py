@@ -7,17 +7,20 @@ Part of RetroScript Phase 16 - Network Features.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import queue
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable
+from typing import Any
 
 # Try to import websocket-client
 try:
     import websocket
+
     HAS_WEBSOCKET = True
 except ImportError:
     HAS_WEBSOCKET = False
@@ -122,10 +125,8 @@ class WebSocketClient:
         self.auto_reconnect = False
 
         if self._ws:
-            try:
+            with contextlib.suppress(Exception):
                 self._ws.close()
-            except Exception:
-                pass
 
         self._state = ConnectionState.DISCONNECTED
 
@@ -296,10 +297,8 @@ class WebSocketServer:
             data = json.dumps(data)
 
         for client in self._clients:
-            try:
+            with contextlib.suppress(Exception):
                 client.send(data)
-            except Exception:
-                pass
 
     def send_to(self, client: Any, data: str | dict) -> bool:
         """Send message to specific client."""

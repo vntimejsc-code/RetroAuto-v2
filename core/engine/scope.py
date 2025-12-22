@@ -17,7 +17,7 @@ class Scope:
 
     name: str  # Scope name (e.g., "global", "flow:main")
     variables: dict[str, Any] = field(default_factory=dict)
-    parent: "Scope | None" = None
+    parent: Scope | None = None
     is_flow: bool = False  # True if this is a flow scope
 
     def get(self, name: str) -> tuple[Any, bool]:
@@ -182,6 +182,9 @@ class ScopeManager:
         self._stack = [self._global]
 
 
+from core.security.policy import SecurityPolicy  # noqa: E402
+
+
 class ExecutionContext:
     """Execution context combining scope and control state.
 
@@ -189,10 +192,13 @@ class ExecutionContext:
     - Variable scope management
     - Control flow flags (break, continue, return)
     - Flow call stack
+    - Security policy (Phase 15)
     """
 
     def __init__(self) -> None:
         self.scope = ScopeManager()
+        self.policy = SecurityPolicy.unsafe()  # Default to unsafe for now
+        self.call_depth: int = 0  # Recursion Guard
         self._return_value: Any = None
         self._should_return = False
         self._should_break = False

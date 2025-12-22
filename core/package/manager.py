@@ -10,10 +10,9 @@ from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
 
-from .manifest import Manifest, Dependency, create_default
-from .resolver import DependencyResolver, VersionReq
+from .manifest import Dependency, Manifest, create_default
+from .resolver import DependencyResolver
 
 
 class PackageManager:
@@ -23,7 +22,7 @@ class PackageManager:
         self.root_dir = Path(root_dir).resolve()
         self.packages_dir = self.root_dir / "packages"
         self.manifest_path = self.root_dir / "retro.toml"
-        
+
         self.resolver = DependencyResolver()
 
     def init(self, name: str) -> None:
@@ -31,7 +30,7 @@ class PackageManager:
         if self.manifest_path.exists():
             print(f"Package already exists at {self.root_dir}")
             return
-        
+
         manifest = create_default(name)
         manifest.save(self.manifest_path)
         print(f"Initialized package '{name}' in {self.root_dir}")
@@ -47,11 +46,11 @@ class PackageManager:
         print(f"Installing dependencies for {manifest.package.name}...")
 
         self.packages_dir.mkdir(exist_ok=True)
-        
+
         # Install dependencies
         self._install_list(manifest.dependencies)
         self._install_list(manifest.dev_dependencies, dev=True)
-        
+
         print("Done.")
 
     def add(self, name: str, version: str = "*", dev: bool = False, git: str = "") -> None:
@@ -63,7 +62,7 @@ class PackageManager:
         manifest = Manifest.load(self.manifest_path)
         manifest.add_dependency(name, version, dev, git)
         manifest.save(self.manifest_path)
-        
+
         print(f"Added {name} ({version})")
         self.install()
 
@@ -73,7 +72,7 @@ class PackageManager:
             return
 
         manifest = Manifest.load(self.manifest_path)
-        
+
         if name in manifest.dependencies:
             del manifest.dependencies[name]
             print(f"Removed {name}")
@@ -83,7 +82,7 @@ class PackageManager:
         else:
             print(f"Package {name} not found.")
             return
-            
+
         manifest.save(self.manifest_path)
         self._remove_package_dir(name)
 
@@ -91,7 +90,7 @@ class PackageManager:
         """Install a list of dependencies."""
         for name, dep in dependencies.items():
             print(f"  - {name} ({dep.version_req})...")
-            
+
             if dep.source == "git":
                 self._install_git(name, dep.path, dep.git_ref)
             elif dep.source == "local":
@@ -102,7 +101,7 @@ class PackageManager:
     def _install_git(self, name: str, url: str, ref: str) -> None:
         """Install from Git."""
         target_dir = self.packages_dir / name
-        
+
         if target_dir.exists():
             # In a real PM, we'd check if it's correct/update it
             return
@@ -111,7 +110,7 @@ class PackageManager:
             cmd = ["git", "clone", "--depth", "1", url, str(target_dir)]
             if ref:
                 cmd = ["git", "clone", "--branch", ref, "--depth", "1", url, str(target_dir)]
-                
+
             subprocess.run(cmd, check=True, capture_output=True)
         except subprocess.CalledProcessError as e:
             print(f"Failed to clone {name}: {e}")
@@ -120,11 +119,11 @@ class PackageManager:
         """Install local path (symlink)."""
         target_dir = self.packages_dir / name
         src_path = Path(path).resolve()
-        
+
         if not src_path.exists():
             print(f"Local path not found: {src_path}")
             return
-            
+
         if target_dir.exists() or target_dir.is_symlink():
             if target_dir.resolve() == src_path:
                 return
@@ -144,7 +143,7 @@ class PackageManager:
         target_dir = self.packages_dir / name
         if target_dir.exists():
             return
-        
+
         target_dir.mkdir(parents=True)
         manifest = create_default(name)
         manifest.package.description = "Installed from registry (mock)"
@@ -163,7 +162,7 @@ class PackageManager:
         """Create package structure."""
         (self.root_dir / "src").mkdir(exist_ok=True)
         (self.root_dir / "tests").mkdir(exist_ok=True)
-        
+
         main_file = self.root_dir / "src/main.retro"
         if not main_file.exists():
             with open(main_file, "w") as f:
@@ -172,6 +171,7 @@ class PackageManager:
 
 # Global instance
 _manager: PackageManager | None = None
+
 
 def get_manager() -> PackageManager:
     global _manager

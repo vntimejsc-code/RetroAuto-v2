@@ -7,7 +7,6 @@ Part of RetroScript Phase 7 - Tools + Productivity.
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
@@ -90,25 +89,25 @@ class ProjectScaffold:
     def _write_config(self, path: Path, config: ProjectConfig) -> None:
         """Write retro.toml configuration file."""
         lines = [
-            f'[project]',
+            "[project]",
             f'name = "{config.name}"',
             f'version = "{config.version}"',
             f'description = "{config.description}"',
             f'author = "{config.author}"',
-            f'',
-            f'[script]',
+            "",
+            "[script]",
             f'entry_point = "{config.entry_point}"',
             f'assets_dir = "{config.assets_dir}"',
             f'timeout = "{config.timeout}"',
-            f'',
-            f'[permissions]',
+            "",
+            "[permissions]",
         ]
 
         for perm in config.permissions or ["mouse", "keyboard", "screen"]:
-            lines.append(f'{perm} = true')
+            lines.append(f"{perm} = true")
 
-        lines.append('')
-        lines.append('[dependencies]')
+        lines.append("")
+        lines.append("[dependencies]")
         for dep, ver in config.dependencies.items():
             lines.append(f'{dep} = "{ver}"')
 
@@ -196,7 +195,7 @@ Thumbs.db
 
     def _get_basic_template(self, name: str) -> str:
         """Get basic project template."""
-        return f'''# {name} - Main Script
+        return f"""# {name} - Main Script
 # Created with RetroAuto
 
 @config {{
@@ -205,20 +204,20 @@ Thumbs.db
 
 flow main {{
     log("Starting {name}...")
-    
+
     # Your automation code here
     $target = find(button_img)
     if $target {{
         click($target.x, $target.y)
     }}
-    
+
     log("Done!")
 }}
-'''
+"""
 
     def _get_game_bot_template(self, name: str) -> str:
         """Get game bot project template."""
-        return f'''# {name} - Game Bot
+        return f"""# {name} - Game Bot
 # Created with RetroAuto
 
 import "lib/utils" as utils
@@ -240,7 +239,7 @@ const COMBAT_DELAY = 500ms
 # Main entry point
 flow main {{
     log("Starting {name}...")
-    
+
     repeat 100 {{
         run(combat_loop)
         run(check_health)
@@ -254,7 +253,7 @@ flow combat_loop {{
     if $enemy {{
         click($enemy.x, $enemy.y)
         sleep(COMBAT_DELAY)
-        
+
         # Use skills
         press("1")
         sleep(200ms)
@@ -270,11 +269,11 @@ flow check_health {{
         sleep(1s)
     }}
 }}
-'''
+"""
 
     def _get_scraper_template(self, name: str) -> str:
         """Get scraper project template."""
-        return f'''# {name} - Data Scraper
+        return f"""# {name} - Data Scraper
 # Created with RetroAuto
 
 @config {{
@@ -283,20 +282,20 @@ flow check_health {{
 
 flow main {{
     log("Starting {name} scraper...")
-    
+
     # Navigate to target
     $nav = find(nav_button)
     if $nav {{
         click($nav.x, $nav.y)
         sleep(2s)
     }}
-    
+
     # Collect data
     repeat 10 {{
         run(collect_item)
         run(next_page)
     }}
-    
+
     log("Scraping complete!")
 }}
 
@@ -317,11 +316,11 @@ flow next_page {{
         sleep(1s)
     }}
 }}
-'''
+"""
 
     def _get_testing_template(self, name: str) -> str:
         """Get testing project template."""
-        return f'''# {name} - With Tests
+        return f"""# {name} - With Tests
 # Created with RetroAuto
 
 @config {{
@@ -343,11 +342,11 @@ flow do_action {{
     }}
     return "not_found"
 }}
-'''
+"""
 
     def _get_test_template(self) -> str:
         """Get test file template."""
-        return '''# Test suite for main script
+        return """# Test suite for main script
 
 @test "do_action finds button" {
     mock find(button_img) -> Found(100, 200)
@@ -360,11 +359,11 @@ flow do_action {{
     $result = run(do_action)
     assert $result == "not_found"
 }
-'''
+"""
 
     def _get_utils_template(self) -> str:
         """Get utility library template."""
-        return '''# Utility functions
+        return """# Utility functions
 
 # Random pause for anti-detection
 flow random_pause {
@@ -397,7 +396,7 @@ flow wait_any_of($targets) {
     }
     return null
 }
-'''
+"""
 
 
 def create_project(

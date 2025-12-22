@@ -7,18 +7,17 @@ Part of RetroScript Phase 10 - Image Recognition.
 
 from __future__ import annotations
 
-import hashlib
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
-from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 # Try to import optional dependencies
 try:
     import cv2
     import numpy as np
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
@@ -27,6 +26,7 @@ except ImportError:
 
 try:
     import mss
+
     HAS_MSS = True
 except ImportError:
     HAS_MSS = False
@@ -61,7 +61,7 @@ class MatchResult:
     height: int = 0
     score: float = 0.0
     scale: float = 1.0
-    error: str | None = None
+    error_message: str | None = None
 
     @property
     def found(self) -> bool:
@@ -97,7 +97,7 @@ class MatchResult:
         height: int = 0,
         score: float = 1.0,
         scale: float = 1.0,
-    ) -> "MatchResult":
+    ) -> MatchResult:
         """Create a Found result."""
         return cls(
             result_type=ResultType.FOUND,
@@ -110,19 +110,19 @@ class MatchResult:
         )
 
     @classmethod
-    def not_found(cls) -> "MatchResult":
+    def not_found(cls) -> MatchResult:
         """Create a NotFound result."""
         return cls(result_type=ResultType.NOT_FOUND)
 
     @classmethod
-    def timeout(cls) -> "MatchResult":
+    def timeout(cls) -> MatchResult:
         """Create a Timeout result."""
         return cls(result_type=ResultType.TIMEOUT)
 
     @classmethod
-    def error(cls, message: str) -> "MatchResult":
+    def error(cls, message: str) -> MatchResult:
         """Create an Error result."""
-        return cls(result_type=ResultType.ERROR, error=message)
+        return cls(result_type=ResultType.ERROR, error_message=message)
 
 
 @dataclass
@@ -136,8 +136,7 @@ class ROI:
 
     def contains(self, x: int, y: int) -> bool:
         """Check if point is in ROI."""
-        return (self.x <= x < self.x + self.width and
-                self.y <= y < self.y + self.height)
+        return self.x <= x < self.x + self.width and self.y <= y < self.y + self.height
 
     def to_tuple(self) -> tuple[int, int, int, int]:
         """Convert to tuple (x, y, w, h)."""
@@ -318,7 +317,7 @@ class ImageMatcher:
         else:
             locations = np.where(match_result >= confidence)
 
-        for pt in zip(*locations[::-1]):
+        for pt in zip(*locations[::-1], strict=False):
             if len(results) >= max_results:
                 break
 
@@ -462,6 +461,7 @@ class ImageMatcher:
             # Fallback: try PIL
             try:
                 from PIL import ImageGrab
+
                 screen = ImageGrab.grab()
                 screen = np.array(screen)
                 screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
@@ -470,8 +470,8 @@ class ImageMatcher:
                     if isinstance(roi, tuple):
                         roi = ROI(*roi)
                     screen = screen[
-                        roi.y:roi.y + roi.height,
-                        roi.x:roi.x + roi.width,
+                        roi.y : roi.y + roi.height,
+                        roi.x : roi.x + roi.width,
                     ]
 
                 return screen

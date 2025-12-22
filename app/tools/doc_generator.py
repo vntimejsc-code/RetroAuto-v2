@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.dsl.ast import FlowDecl, Program
+    pass
 
 
 @dataclass
@@ -48,8 +48,8 @@ class DocGenerator:
     """
 
     def __init__(self) -> None:
-        self._doc_comment_pattern = re.compile(r'^\s*#\s*(.*)$')
-        self._tag_pattern = re.compile(r'@(\w+)\s*(.*)')
+        self._doc_comment_pattern = re.compile(r"^\s*#\s*(.*)$")
+        self._tag_pattern = re.compile(r"@(\w+)\s*(.*)")
 
     def generate(self, source: str) -> ModuleDoc:
         """Generate documentation from source code.
@@ -111,7 +111,7 @@ class DocGenerator:
     def _parse_flow(self, line: str, comments: list[str]) -> FlowDoc:
         """Parse a flow definition with its doc comments."""
         # Extract flow name
-        match = re.match(r'flow\s+(\w+)', line)
+        match = re.match(r"flow\s+(\w+)", line)
         name = match.group(1) if match else "unknown"
 
         flow_doc = FlowDoc(name=name)
@@ -148,7 +148,7 @@ class DocGenerator:
         comments: list[str],
     ) -> tuple[str, str, str] | None:
         """Parse a constant definition."""
-        match = re.match(r'const\s+(\w+)\s*=\s*(.+)', line)
+        match = re.match(r"const\s+(\w+)\s*=\s*(.+)", line)
         if not match:
             return None
 

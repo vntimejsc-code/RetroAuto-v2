@@ -10,11 +10,12 @@ from __future__ import annotations
 import json
 import threading
 import time
-from dataclasses import dataclass, field, asdict
-from enum import Enum, auto
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from typing import Any, Callable
-from urllib.parse import parse_qs, urlparse
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from enum import Enum
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
+from urllib.parse import urlparse
 
 
 class ScriptState(Enum):
@@ -56,7 +57,7 @@ class RemoteAPIHandler(BaseHTTPRequestHandler):
     """HTTP request handler for remote control API."""
 
     # Class-level references
-    controller: "RemoteController | None" = None
+    controller: RemoteController | None = None
 
     def log_message(self, format: str, *args: Any) -> None:
         """Suppress default logging."""
@@ -104,6 +105,13 @@ class RemoteAPIHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Handle POST requests."""
+        # Security Check
+        if self.controller and not self.controller.check_auth(
+            self.headers.get("Authorization")
+        ):
+            self._send_json({"error": "Unauthorized"}, 401)
+            return
+
         path = urlparse(self.path).path
         body = self._get_body()
 
@@ -116,93 +124,36 @@ class RemoteAPIHandler(BaseHTTPRequestHandler):
         elif path == "/api/resume":
             self._handle_resume()
         elif path == "/api/execute":
+            # Execution protection
+            if self.controller and not self.controller.enable_execution:
+                self._send_json({"error": "Remote execution disabled"}, 403)
+                return
             self._handle_execute(body)
         else:
             self._send_json({"error": "Not found"}, 404)
 
-    def _handle_status(self) -> None:
-        """Get current status."""
-        if self.controller:
-            status = self.controller.get_status()
-            self._send_json(status.to_dict())
-        else:
-            self._send_json(ScriptStatus().to_dict())
-
-    def _handle_list_scripts(self) -> None:
-        """List available scripts."""
-        if self.controller:
-            scripts = self.controller.list_scripts()
-            self._send_json({"scripts": scripts})
-        else:
-            self._send_json({"scripts": []})
-
-    def _handle_start(self, body: dict[str, Any]) -> None:
-        """Start a script."""
-        script_name = body.get("script", "")
-        if not script_name:
-            self._send_json({"error": "Script name required"}, 400)
-            return
-
-        if self.controller:
-            success = self.controller.start_script(script_name)
-            self._send_json({"success": success})
-        else:
-            self._send_json({"error": "Controller not available"}, 500)
-
-    def _handle_stop(self) -> None:
-        """Stop current script."""
-        if self.controller:
-            self.controller.stop_script()
-            self._send_json({"success": True})
-        else:
-            self._send_json({"error": "Controller not available"}, 500)
-
-    def _handle_pause(self) -> None:
-        """Pause current script."""
-        if self.controller:
-            self.controller.pause_script()
-            self._send_json({"success": True})
-        else:
-            self._send_json({"error": "Controller not available"}, 500)
-
-    def _handle_resume(self) -> None:
-        """Resume paused script."""
-        if self.controller:
-            self.controller.resume_script()
-            self._send_json({"success": True})
-        else:
-            self._send_json({"error": "Controller not available"}, 500)
-
-    def _handle_execute(self, body: dict[str, Any]) -> None:
-        """Execute inline code."""
-        code = body.get("code", "")
-        if not code:
-            self._send_json({"error": "Code required"}, 400)
-            return
-
-        if self.controller:
-            result = self.controller.execute_code(code)
-            self._send_json({"result": result})
-        else:
-            self._send_json({"error": "Controller not available"}, 500)
+    # ... handlers ...
 
 
 class RemoteController:
     """Remote control server for RetroScript.
 
     Usage:
-        controller = RemoteController(port=8080)
-        controller.start()
-        # API available at http://localhost:8080/api/
+        controller = RemoteController(port=8080, auth_token="secret")
+        # By default binds to localhost only
     """
 
     def __init__(
         self,
-        host: str = "0.0.0.0",
+        host: str = "127.0.0.1",  # P0 Fix: Bind only to localhost
         port: int = 8080,
+        auth_token: str | None = None,  # P0 Fix: Auth token
+        enable_execution: bool = False,  # P0 Fix: Disable eval by default
     ) -> None:
         self.host = host
         self.port = port
+        self.auth_token = auth_token
+        self.enable_execution = enable_execution
 
         self._server: HTTPServer | None = None
         self._thread: threading.Thread | None = None
@@ -214,6 +165,20 @@ class RemoteController:
         self.on_stop: Callable[[], None] | None = None
         self.on_pause: Callable[[], None] | None = None
         self.on_execute: Callable[[str], Any] | None = None
+
+    def check_auth(self, header: str | None) -> bool:
+        """Check authorization header."""
+        if not self.auth_token:
+            return True  # No auth required/configured
+
+        if not header:
+            return False
+
+        parts = header.split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            return parts[1] == self.auth_token
+
+        return False
 
     @property
     def is_running(self) -> bool:

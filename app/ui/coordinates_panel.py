@@ -80,7 +80,8 @@ class CoordinatesPanel(QWidget):
         self.coord_list.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.coord_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.coord_list.customContextMenuRequested.connect(self._show_context_menu)
-        self.coord_list.setStyleSheet("""
+        self.coord_list.setStyleSheet(
+            """
             QListWidget {
                 background-color: #2B2B2B;
                 border: 2px inset #808080;
@@ -99,7 +100,8 @@ class CoordinatesPanel(QWidget):
             QListWidget::item:hover {
                 background-color: #3C3C3C;
             }
-        """)
+        """
+        )
         group_layout.addWidget(self.coord_list)
 
         # Buttons

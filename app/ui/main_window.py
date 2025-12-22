@@ -6,6 +6,7 @@ Bottom: Log panel
 Full engine integration with QThread.
 """
 
+import contextlib
 import json
 from pathlib import Path
 
@@ -134,6 +135,18 @@ class MainWindow(QMainWindow):
 
         # Connect panel signals
         self._connect_panel_signals()
+
+        # Variable Watch Dock
+        from PySide6.QtWidgets import QDockWidget
+
+        from app.ui.variable_watch import VariableWatchDock
+
+        self.watch_dock = QDockWidget("Variables", self)
+        self.watch_dock.setWidget(VariableWatchDock())
+        self.watch_dock.setAllowedAreas(
+            Qt.DockWidgetArea.RightDockWidgetArea | Qt.DockWidgetArea.BottomDockWidgetArea
+        )
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.watch_dock)
 
     def _init_toolbar(self) -> None:
         """Create toolbar with actions."""
@@ -397,13 +410,12 @@ class MainWindow(QMainWindow):
     def _on_open_ide(self) -> None:
         """Open the DSL IDE window with current script code."""
         from app.ui.ide_main_window import IDEMainWindow
-        from app.ui.win95_style import generate_stylesheet
         from core.dsl.adapter import action_to_ir
         from core.dsl.ir import FlowIR, ScriptIR, ir_to_code
 
         # Generate DSL code from current actions
         actions = self.actions_panel.get_actions()
-        
+
         # Build IR from actions
         ir = ScriptIR()
         main_flow = FlowIR(name="main")
@@ -411,20 +423,159 @@ class MainWindow(QMainWindow):
             action_ir = action_to_ir(action)
             main_flow.actions.append(action_ir)
         ir.flows.append(main_flow)
-        
+
         # Generate code
         code = ir_to_code(ir)
-        
+
         # Create and show IDE window
         self._ide_window = IDEMainWindow()
-        self._ide_window.setStyleSheet(generate_stylesheet())
-        
+
+        # Apply dark theme matching Main Window
+        dark_stylesheet = self._get_ide_dark_stylesheet()
+        self._ide_window.setStyleSheet(dark_stylesheet)
+
         # Set the generated code in editor
-        if hasattr(self._ide_window, 'editor') and self._ide_window.editor:
+        if hasattr(self._ide_window, "editor") and self._ide_window.editor:
             self._ide_window.editor.setPlainText(code)
-        
+            # Reset modified flag since this is initial content, not user edit
+            self._ide_window._is_modified = False
+            self._ide_window._update_title()
+
         self._ide_window.show()
         logger.info("Opened IDE window with %d actions", len(actions))
+
+    def _get_ide_dark_stylesheet(self) -> str:
+        """Get dark theme stylesheet for IDE Editor matching Main Window."""
+        return """
+        /* Dark Theme for IDE Editor - Matches Main Window */
+        QMainWindow, QWidget {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        QMenuBar {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border-bottom: 1px solid #3c3c3c;
+        }
+        QMenuBar::item:selected {
+            background-color: #404040;
+        }
+        QMenu {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #3c3c3c;
+        }
+        QMenu::item:selected {
+            background-color: #0078d4;
+        }
+
+        QToolBar {
+            background-color: #2d2d2d;
+            border: none;
+            spacing: 4px;
+            padding: 2px;
+        }
+        QToolButton {
+            background-color: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: #e0e0e0;
+        }
+        QToolButton:hover {
+            background-color: #404040;
+        }
+        QToolButton:pressed {
+            background-color: #0078d4;
+        }
+
+        QPlainTextEdit, QTextEdit {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            selection-background-color: #264f78;
+            selection-color: #ffffff;
+        }
+
+        QTreeWidget, QListWidget {
+            background-color: #252526;
+            color: #e0e0e0;
+            border: 1px solid #3c3c3c;
+        }
+        QTreeWidget::item:selected, QListWidget::item:selected {
+            background-color: #0078d4;
+        }
+
+        QTabWidget::pane {
+            background-color: #1e1e1e;
+            border: 1px solid #3c3c3c;
+        }
+        QTabBar::tab {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            padding: 6px 12px;
+            border: 1px solid #3c3c3c;
+        }
+        QTabBar::tab:selected {
+            background-color: #1e1e1e;
+            border-bottom: none;
+        }
+
+        QSplitter::handle {
+            background-color: #3c3c3c;
+        }
+
+        QStatusBar {
+            background-color: #007acc;
+            color: white;
+        }
+
+        QLabel {
+            color: #e0e0e0;
+        }
+
+        QGroupBox {
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            margin-top: 8px;
+            color: #e0e0e0;
+        }
+        QGroupBox::title {
+            color: #e0e0e0;
+        }
+
+        QScrollBar:vertical {
+            background: #1e1e1e;
+            width: 12px;
+        }
+        QScrollBar::handle:vertical {
+            background: #5a5a5a;
+            border-radius: 6px;
+            min-height: 20px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #808080;
+        }
+
+        QPushButton {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+        }
+        QPushButton:hover {
+            background-color: #1084d8;
+        }
+        QPushButton:pressed {
+            background-color: #006cc1;
+        }
+        QPushButton:disabled {
+            background-color: #3c3c3c;
+            color: #808080;
+        }
+        """
 
     def _save_draft(self) -> None:
         """Auto-save actions draft to file."""
@@ -488,10 +639,8 @@ class MainWindow(QMainWindow):
             for action_data in draft_data.get("actions", []):
                 action_type = action_data.get("action")
                 if action_type in action_map:
-                    try:
+                    with contextlib.suppress(Exception):
                         actions.append(action_map[action_type](**action_data))
-                    except Exception:
-                        pass
 
             if actions:
                 self.actions_panel._actions = actions

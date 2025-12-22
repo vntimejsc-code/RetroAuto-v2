@@ -17,14 +17,14 @@ from app.ui.win95_style import apply_win95_style
 def main() -> int:
     """Main entry point."""
     app = QApplication(sys.argv)
-    
+
     # Apply Win95/98 styling
     apply_win95_style(app)
-    
+
     # Create and show main window
     window = IDEMainWindow()
     window.show()
-    
+
     return app.exec()
 
 

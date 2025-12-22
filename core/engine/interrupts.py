@@ -111,9 +111,11 @@ class InterruptWatcher:
         for rule in rules:
             # Check cooldown
             cooldown_key = rule.when_image
-            if cooldown_key in self._triggered_cooldown:
-                if time.time() - self._triggered_cooldown[cooldown_key] < 1.0:
-                    continue  # Skip, still in cooldown
+            if (
+                cooldown_key in self._triggered_cooldown
+                and time.time() - self._triggered_cooldown[cooldown_key] < 1.0
+            ):
+                continue  # Skip, still in cooldown
 
             # Check if image is present
             match = self._ctx.matcher.find(rule.when_image, rule.roi_override)

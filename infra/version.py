@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Current version - update this when releasing
 __version__ = "2.0.0"
-__build__ = "20241221.001"
+__build__ = "20251222.001"
 
 VERSION_FILE = Path(__file__).parent.parent / "VERSION"
 CHANGELOG_FILE = Path(__file__).parent.parent / "CHANGELOG.md"
@@ -19,6 +19,34 @@ CHANGELOG_FILE = Path(__file__).parent.parent / "CHANGELOG.md"
 def get_version() -> str:
     """Get current version string."""
     return f"{__version__}+{__build__}"
+
+
+def bump_build() -> str:
+    """
+    Auto-increment build number and update version.py file.
+
+    Build format: YYYYMMDD.NNN (date + daily increment)
+    Returns:
+        New build string
+    """
+    from datetime import datetime
+
+    today = datetime.now().strftime("%Y%m%d")
+    current_date = __build__.split(".")[0]
+
+    # Same day - increment counter, new day - reset to 1
+    counter = int(__build__.split(".")[1]) + 1 if today == current_date else 1
+
+    new_build = f"{today}.{counter:03d}"
+
+    # Update this file
+    version_file = Path(__file__)
+    content = version_file.read_text(encoding="utf-8")
+    content = content.replace(f'__build__ = "{__build__}"', f'__build__ = "{new_build}"')
+    version_file.write_text(content, encoding="utf-8")
+
+    print(f"📦 Build updated: {__build__} -> {new_build}")
+    return new_build
 
 
 def get_version_tuple() -> tuple[int, int, int]:

@@ -52,7 +52,7 @@ class LineNumberArea(QWidget):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle click to toggle breakpoint."""
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:  # noqa: SIM102
             # Check if click is in breakpoint margin
             if event.position().x() < self.BREAKPOINT_MARGIN:
                 # Find which line was clicked
@@ -128,20 +128,22 @@ class DSLCodeEditor(QPlainTextEdit):
         # Tab width
         self.setTabStopDistance(self.fontMetrics().horizontalAdvance(" ") * self.TAB_SIZE)
 
-        # Colors
-        self.setStyleSheet(f"""
+        # Colors - Dark theme
+        self.setStyleSheet(
+            f"""
             QPlainTextEdit {{
                 background-color: {COLORS["editor_bg"]};
-                color: {COLORS["window_text"]};
-                border: 2px inset {COLORS["shadow_dark"]};
+                color: #d4d4d4;
+                border: 1px solid {COLORS["shadow_dark"]};
                 selection-background-color: {COLORS["highlight"]};
                 selection-color: {COLORS["highlight_text"]};
             }}
-        """)
+        """
+        )
 
-        # Current line highlight color
-        self.current_line_color = QColor("#FFFFCC")  # Light yellow
-        self.debug_line_color = QColor("#FFFF00")  # Bright yellow for debug
+        # Current line highlight color - dark theme
+        self.current_line_color = QColor("#2d2d2d")  # Subtle dark highlight
+        self.debug_line_color = QColor("#3a3a00")  # Dark yellow for debug
 
     def _init_line_numbers(self) -> None:
         """Set up line number gutter."""
@@ -289,9 +291,8 @@ class DSLCodeEditor(QPlainTextEdit):
             return
 
         # Backspace -> smart unindent
-        if event.key() == Qt.Key.Key_Backspace:
-            if self._smart_backspace():
-                return
+        if event.key() == Qt.Key.Key_Backspace and self._smart_backspace():
+            return
 
         super().keyPressEvent(event)
 

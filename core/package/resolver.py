@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class Version:
     """Semantic version (Major.Minor.Patch)."""
+
     major: int
     minor: int
     patch: int
@@ -29,7 +29,7 @@ class Version:
             s += f"+{self.build}"
         return s
 
-    def __lt__(self, other: "Version") -> bool:
+    def __lt__(self, other: Version) -> bool:
         if self.major != other.major:
             return self.major < other.major
         if self.minor != other.minor:
@@ -42,23 +42,23 @@ class Version:
         if not isinstance(other, Version):
             return False
         return (
-            self.major == other.major and
-            self.minor == other.minor and
-            self.patch == other.patch and
-            self.pre_release == other.pre_release
+            self.major == other.major
+            and self.minor == other.minor
+            and self.patch == other.patch
+            and self.pre_release == other.pre_release
         )
-    
+
     @classmethod
-    def parse(cls, version_str: str) -> "Version":
+    def parse(cls, version_str: str) -> Version:
         """Parse semantic version string."""
         # Simple regex for SemVer
         match = re.match(
             r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-.]+))?(?:\+([0-9A-Za-z-.]+))?$",
-            version_str.strip()
+            version_str.strip(),
         )
         if not match:
             raise ValueError(f"Invalid version: {version_str}")
-        
+
         return cls(
             major=int(match.group(1)),
             minor=int(match.group(2)),
@@ -74,7 +74,7 @@ class VersionReq:
     def __init__(self, req_str: str) -> None:
         self.req_str = req_str
         self.kind = "exact"
-        self.version: Optional[Version] = None
+        self.version: Version | None = None
 
         self._parse()
 
@@ -83,7 +83,7 @@ class VersionReq:
         if s == "*":
             self.kind = "any"
             return
-        
+
         if s.startswith("^"):
             self.kind = "caret"
             self.version = Version.parse(s[1:])
@@ -110,7 +110,7 @@ class VersionReq:
         """Check if version matches requirement."""
         if self.kind == "any":
             return True
-        
+
         if not self.version:
             return False
 
@@ -118,7 +118,7 @@ class VersionReq:
 
         if self.kind == "exact":
             return version == v
-        
+
         elif self.kind == "caret":
             # ^1.2.3 := >=1.2.3 <2.0.0
             if v.major != 0:
@@ -129,28 +129,24 @@ class VersionReq:
             else:
                 # ^0.0.3 := 0.0.3
                 return version == v
-        
+
         elif self.kind == "tilde":
             # ~1.2.3 := >=1.2.3 <1.3.0
-            return (
-                version.major == v.major and
-                version.minor == v.minor and
-                version >= v
-            )
-        
+            return version.major == v.major and version.minor == v.minor and version >= v
+
         elif self.kind == "gte":
             return version >= v
-        
+
         elif self.kind == "gt":
             # Since we implemented only <, create proper > logic
             return not (version < v) and version != v
 
         elif self.kind == "lte":
             return version < v or version == v
-            
+
         elif self.kind == "lt":
             return version < v
-            
+
         return False
 
 
@@ -159,12 +155,12 @@ class DependencyResolver:
 
     def resolve(self, dependencies: dict[str, str]) -> dict[str, Version]:
         """Resolve dependencies (simplified).
-        
+
         In a real implementation, this would build a graph and handle transitive dependencies.
         For now, we just validate versions.
         """
         resolved = {}
-        
+
         for name, req_str in dependencies.items():
             # Mock resolution: just pick the required version if exact/caret
             # In real system: query registry, find best match
@@ -174,8 +170,9 @@ class DependencyResolver:
             else:
                 # Fallback for * or unknown
                 resolved[name] = Version(0, 0, 0)
-        
+
         return resolved
+
 
 # Convenience
 def check_version(req: str, version: str) -> bool:

@@ -10,12 +10,13 @@ from __future__ import annotations
 import random
 import time
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 from typing import Any
 
 # Try to import optional dependencies
 try:
     import pyautogui
+
     pyautogui.FAILSAFE = True
     pyautogui.PAUSE = 0.05
     HAS_PYAUTOGUI = True
@@ -39,7 +40,7 @@ class Point:
     x: int
     y: int
 
-    def offset(self, dx: int, dy: int) -> "Point":
+    def offset(self, dx: int, dy: int) -> Point:
         """Return new point with offset."""
         return Point(self.x + dx, self.y + dy)
 
@@ -173,7 +174,7 @@ class MouseController:
         # Calculate distance
         dx = x - current.x
         dy = y - current.y
-        distance = (dx ** 2 + dy ** 2) ** 0.5
+        distance = (dx**2 + dy**2) ** 0.5
 
         # Duration based on distance
         duration = min(0.5, max(0.1, distance / 2000))

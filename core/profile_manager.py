@@ -7,7 +7,7 @@ Manage profiles with preset settings for different games/applications.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +20,7 @@ logger = get_logger("ProfileManager")
 class GameProfile:
     """
     Profile preset for a specific game/application.
-    
+
     Contains default settings like:
     - Window title pattern
     - Default ROI
@@ -31,32 +31,32 @@ class GameProfile:
 
     name: str
     description: str = ""
-    
+
     # Target application
     window_title: str = ""
     process_name: str = ""
-    
+
     # Vision settings
     default_threshold: float = 0.8
     grayscale: bool = True
     default_roi: dict[str, int] | None = None  # x, y, w, h
-    
+
     # Timing settings
     default_delay_ms: int = 100
     click_delay_ms: int = 50
-    
+
     # Hotkey overrides
     hotkey_start: str = "F5"
     hotkey_stop: str = "F6"
     hotkey_pause: str = "F7"
-    
+
     # Screen resolution (for coordinate scaling)
     target_width: int = 1920
     target_height: int = 1080
-    
+
     # Custom variables for scripts
     variables: dict[str, Any] = field(default_factory=dict)
-    
+
     # Script-specific settings
     scripts: list[str] = field(default_factory=list)  # Associated script paths
 
@@ -64,20 +64,20 @@ class GameProfile:
 class ProfileManager:
     """
     Manage game profiles.
-    
+
     Profiles are stored as JSON files in profiles directory.
-    
+
     Usage:
         manager = ProfileManager(Path("./profiles"))
-        
+
         # Create profile
         profile = manager.create("MU Online", window_title="MU Legend")
         profile.default_threshold = 0.85
         manager.save(profile)
-        
+
         # Load profile
         profile = manager.load("MU Online")
-        
+
         # Apply to script
         manager.apply_to_script(profile, script)
     """
@@ -85,7 +85,7 @@ class ProfileManager:
     def __init__(self, profiles_dir: Path) -> None:
         """
         Initialize profile manager.
-        
+
         Args:
             profiles_dir: Directory to store profile files
         """
@@ -128,13 +128,13 @@ class ProfileManager:
     ) -> GameProfile:
         """
         Create new profile.
-        
+
         Args:
             name: Profile name
             description: Profile description
             window_title: Target window title pattern
             **kwargs: Additional profile settings
-            
+
         Returns:
             New GameProfile
         """
@@ -151,10 +151,10 @@ class ProfileManager:
     def save(self, profile: GameProfile) -> bool:
         """
         Save profile to disk.
-        
+
         Args:
             profile: Profile to save
-            
+
         Returns:
             True if saved successfully
         """
@@ -172,10 +172,10 @@ class ProfileManager:
     def delete(self, name: str) -> bool:
         """
         Delete profile.
-        
+
         Args:
             name: Profile name
-            
+
         Returns:
             True if deleted
         """
@@ -196,11 +196,11 @@ class ProfileManager:
     def duplicate(self, name: str, new_name: str) -> GameProfile | None:
         """
         Duplicate existing profile.
-        
+
         Args:
             name: Source profile name
             new_name: New profile name
-            
+
         Returns:
             New profile or None if source not found
         """
@@ -218,7 +218,7 @@ class ProfileManager:
     def apply_to_script(self, profile: GameProfile, script: Any) -> None:
         """
         Apply profile settings to a script.
-        
+
         Args:
             profile: Profile to apply
             script: Script to modify

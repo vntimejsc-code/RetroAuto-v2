@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import random
 import time
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 # Try to import pyautogui
 try:
     import pyautogui
+
     HAS_PYAUTOGUI = True
 except ImportError:
     HAS_PYAUTOGUI = False
@@ -245,7 +247,7 @@ class HumanBehavior:
             print(f"[HUMAN] type({text})")
             return
 
-        for i, char in enumerate(text):
+        for _i, char in enumerate(text):
             # Maybe make typo
             if with_typos and random.random() < self.profile.typo_chance:
                 # Type wrong char then backspace
@@ -317,7 +319,7 @@ class AntiDetection:
     Usage:
         anti = AntiDetection()
         anti.wrap(my_function)()  # Wrap function with delays
-        
+
         with anti.guard():
             # Actions within guard get random delays
             pass
@@ -344,6 +346,7 @@ class AntiDetection:
         Returns:
             Wrapped function
         """
+
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             if self._enabled:
                 self.human.random_delay()
@@ -354,7 +357,7 @@ class AntiDetection:
 
         return wrapped
 
-    def guard(self) -> "DetectionGuard":
+    def guard(self) -> DetectionGuard:
         """Context manager for anti-detection.
 
         Usage:
@@ -372,7 +375,7 @@ class DetectionGuard:
         self._human = human
         self._enabled = enabled
 
-    def __enter__(self) -> "DetectionGuard":
+    def __enter__(self) -> DetectionGuard:
         if self._enabled:
             self._human.random_delay()
         return self

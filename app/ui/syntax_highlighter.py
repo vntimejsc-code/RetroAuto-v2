@@ -15,20 +15,20 @@ from PySide6.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
 
 class SyntaxColors:
-    """Color definitions for syntax highlighting."""
+    """Color definitions for syntax highlighting - DARK THEME."""
 
-    KEYWORD = QColor("#00007F")  # Dark blue
-    STRING = QColor("#7F0000")  # Dark red
-    COMMENT = QColor("#007F00")  # Green
-    NUMBER = QColor("#7F007F")  # Purple
-    DURATION = QColor("#7F007F")  # Purple (same as number)
-    FUNCTION = QColor("#000000")  # Black (bold)
-    BUILTIN = QColor("#00007F")  # Dark blue (italic)
-    OPERATOR = QColor("#000000")  # Black
-    ERROR = QColor("#FF0000")  # Red
+    KEYWORD = QColor("#569cd6")  # Light blue
+    STRING = QColor("#ce9178")  # Orange/tan
+    COMMENT = QColor("#6a9955")  # Green
+    NUMBER = QColor("#b5cea8")  # Light green
+    DURATION = QColor("#b5cea8")  # Light green (same as number)
+    FUNCTION = QColor("#dcdcaa")  # Yellow
+    BUILTIN = QColor("#4ec9b0")  # Cyan
+    OPERATOR = QColor("#d4d4d4")  # Light gray
+    ERROR = QColor("#f14c4c")  # Red
     # Phase 4: RetroScript specific
-    VARIABLE = QColor("#006666")  # Teal for $variables
-    DECORATOR = QColor("#9932CC")  # Purple for @decorators
+    VARIABLE = QColor("#9cdcfe")  # Light blue for $variables
+    DECORATOR = QColor("#c586c0")  # Purple for @decorators
 
 
 # ─────────────────────────────────────────────────────────────

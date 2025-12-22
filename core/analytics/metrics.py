@@ -10,21 +10,22 @@ from __future__ import annotations
 import json
 import statistics
 import time
-from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable
-
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────
 # Metric Types
 # ─────────────────────────────────────────────────────────────
 
+
 class MetricType(Enum):
     """Types of metrics."""
+
     COUNTER = auto()
     GAUGE = auto()
     TIMER = auto()
@@ -34,6 +35,7 @@ class MetricType(Enum):
 @dataclass
 class Counter:
     """A counter metric (always increases)."""
+
     name: str
     value: int = 0
     labels: dict[str, str] = field(default_factory=dict)
@@ -57,6 +59,7 @@ class Counter:
 @dataclass
 class Gauge:
     """A gauge metric (can go up or down)."""
+
     name: str
     value: float = 0.0
     labels: dict[str, str] = field(default_factory=dict)
@@ -85,6 +88,7 @@ class Gauge:
 @dataclass
 class Timer:
     """A timer metric for measuring durations."""
+
     name: str
     values: list[float] = field(default_factory=list)
     labels: dict[str, str] = field(default_factory=dict)
@@ -123,7 +127,11 @@ class Timer:
             "min": min(self.values),
             "max": max(self.values),
             "p50": sorted_values[len(sorted_values) // 2],
-            "p95": sorted_values[int(len(sorted_values) * 0.95)] if len(sorted_values) >= 20 else sorted_values[-1],
+            "p95": (
+                sorted_values[int(len(sorted_values) * 0.95)]
+                if len(sorted_values) >= 20
+                else sorted_values[-1]
+            ),
         }
 
 
@@ -133,7 +141,7 @@ class TimerContext:
     def __init__(self, timer: Timer) -> None:
         self._timer = timer
 
-    def __enter__(self) -> "TimerContext":
+    def __enter__(self) -> TimerContext:
         self._timer.start()
         return self
 
@@ -145,18 +153,19 @@ class TimerContext:
 # Metrics Registry
 # ─────────────────────────────────────────────────────────────
 
+
 class MetricsRegistry:
     """Registry for all metrics.
 
     Usage:
         metrics = MetricsRegistry()
-        
+
         # Counter
         metrics.counter("requests_total").inc()
-        
+
         # Gauge
         metrics.gauge("active_scripts").set(5)
-        
+
         # Timer
         with metrics.timer("request_duration").time():
             do_something()
@@ -234,6 +243,7 @@ class MetricsRegistry:
 # ─────────────────────────────────────────────────────────────
 # Script Metrics
 # ─────────────────────────────────────────────────────────────
+
 
 class ScriptMetrics:
     """Pre-defined metrics for script execution.
@@ -341,8 +351,10 @@ class ScriptMetrics:
 # Structured Logger
 # ─────────────────────────────────────────────────────────────
 
+
 class LogLevel(Enum):
     """Log levels."""
+
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -353,6 +365,7 @@ class LogLevel(Enum):
 @dataclass
 class LogEntry:
     """A structured log entry."""
+
     timestamp: str
     level: str
     message: str
@@ -362,14 +375,16 @@ class LogEntry:
 
     def to_json(self) -> str:
         """Convert to JSON string."""
-        return json.dumps({
-            "timestamp": self.timestamp,
-            "level": self.level,
-            "message": self.message,
-            "data": self.data,
-            "source": self.source,
-            "script": self.script,
-        })
+        return json.dumps(
+            {
+                "timestamp": self.timestamp,
+                "level": self.level,
+                "message": self.message,
+                "data": self.data,
+                "source": self.source,
+                "script": self.script,
+            }
+        )
 
 
 class StructuredLogger:
@@ -467,6 +482,7 @@ class StructuredLogger:
 # Dashboard Stats
 # ─────────────────────────────────────────────────────────────
 
+
 class DashboardStats:
     """Aggregated statistics for dashboard display.
 
@@ -503,7 +519,11 @@ class DashboardStats:
         """Get health status."""
         success_rate = self.metrics.get_success_rate()
         return {
-            "status": "healthy" if success_rate >= 0.9 else "degraded" if success_rate >= 0.7 else "unhealthy",
+            "status": (
+                "healthy"
+                if success_rate >= 0.9
+                else "degraded" if success_rate >= 0.7 else "unhealthy"
+            ),
             "success_rate": success_rate,
             "uptime": time.time() - self._start_time,
         }

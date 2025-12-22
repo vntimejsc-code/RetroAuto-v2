@@ -8,13 +8,13 @@ Part of RetroScript Phase 4 - Visual IDE + Plugins.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from core.dsl.ast import Program
+    pass
 
 
 class PluginEvent(Enum):
@@ -82,13 +82,16 @@ class Plugin(ABC):
         ...
 
     @abstractmethod
-    def on_load(self, registry: "PluginRegistry") -> None:
+    def on_load(self, registry: PluginRegistry) -> None:
         """Called when plugin is loaded. Register hooks here."""
         ...
 
-    def on_unload(self) -> None:
-        """Called when plugin is unloaded. Clean up resources here."""
-        pass
+    def on_unload(self) -> None:  # noqa: B027
+        """Called when plugin is unloaded. Clean up resources here.
+
+        Override this method in subclasses to perform cleanup.
+        """
+        ...
 
 
 class PluginRegistry:

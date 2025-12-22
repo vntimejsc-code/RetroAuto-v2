@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import hashlib
 import time
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from threading import Thread, Event
-from typing import Callable, Any
+from threading import Event, Thread
+from typing import Any
 
 
 @dataclass

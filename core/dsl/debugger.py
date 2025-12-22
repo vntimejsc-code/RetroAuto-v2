@@ -317,12 +317,11 @@ class Debugger:
                 return False
 
         # Check step mode
-        if self._state == DebugState.STEPPING:
-            if self._step_mode == StepMode.OVER:
-                self._state = DebugState.PAUSED
-                if self._on_paused:
-                    self._on_paused("step", line)
-                return False
+        if self._state == DebugState.STEPPING and self._step_mode == StepMode.OVER:
+            self._state = DebugState.PAUSED
+            if self._on_paused:
+                self._on_paused("step", line)
+            return False
 
         return True
 

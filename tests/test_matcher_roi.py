@@ -106,7 +106,7 @@ class TestMatcher:
         mock_capture = MockCapture(screen_modified)
         matcher_strict = Matcher(store, mock_capture)
 
-        match = matcher_strict.find("btn_strict")
+        matcher_strict.find("btn_strict")
         # May or may not match depending on threshold
         # This is mainly to test threshold logic works
 

@@ -14,6 +14,7 @@ from typing import Any
 try:
     import mss
     import numpy as np
+
     HAS_MSS = True
 except ImportError:
     HAS_MSS = False
@@ -22,6 +23,7 @@ except ImportError:
 
 try:
     from PIL import ImageGrab
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -37,16 +39,16 @@ class Color:
     b: int
     tolerance: int = 10
 
-    def matches(self, other: "Color") -> bool:
+    def matches(self, other: Color) -> bool:
         """Check if colors match within tolerance."""
         return (
-            abs(self.r - other.r) <= self.tolerance and
-            abs(self.g - other.g) <= self.tolerance and
-            abs(self.b - other.b) <= self.tolerance
+            abs(self.r - other.r) <= self.tolerance
+            and abs(self.g - other.g) <= self.tolerance
+            and abs(self.b - other.b) <= self.tolerance
         )
 
     @classmethod
-    def from_hex(cls, hex_color: str, tolerance: int = 10) -> "Color":
+    def from_hex(cls, hex_color: str, tolerance: int = 10) -> Color:
         """Create color from hex string like '#FF0000'."""
         hex_color = hex_color.lstrip("#")
         r = int(hex_color[0:2], 16)
@@ -55,7 +57,7 @@ class Color:
         return cls(r, g, b, tolerance)
 
     @classmethod
-    def from_tuple(cls, rgb: tuple[int, int, int], tolerance: int = 10) -> "Color":
+    def from_tuple(cls, rgb: tuple[int, int, int], tolerance: int = 10) -> Color:
         """Create color from (r, g, b) tuple."""
         return cls(rgb[0], rgb[1], rgb[2], tolerance)
 
@@ -95,14 +97,14 @@ class PixelChecker:
 
     Usage:
         checker = PixelChecker()
-        
+
         # Get pixel color
         color = checker.get_pixel(100, 200)
-        
+
         # Check if pixel matches color
         if checker.check_pixel(100, 200, Color(255, 0, 0)):
             print("Red pixel found!")
-        
+
         # Find pixel with color
         result = checker.find_pixel(Color(255, 0, 0), region=(0, 0, 500, 500))
     """
@@ -281,11 +283,13 @@ class PixelChecker:
                         b, g, r = screen[y, x, :3]
                         color = Color(int(r), int(g), int(b))
                         if target.matches(color):
-                            results.append(PixelResult(
-                                x=x + offset_x,
-                                y=y + offset_y,
-                                color=color,
-                            ))
+                            results.append(
+                                PixelResult(
+                                    x=x + offset_x,
+                                    y=y + offset_y,
+                                    color=color,
+                                )
+                            )
         except Exception:
             pass
 

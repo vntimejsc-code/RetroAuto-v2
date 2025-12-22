@@ -10,6 +10,7 @@ from threading import Event, Lock
 from typing import Any
 
 from core.models import Match, Script
+from core.security.policy import SecurityPolicy
 from core.templates import TemplateStore
 from infra import get_logger
 from input import KeyboardController, MouseController
@@ -39,6 +40,9 @@ class ExecutionContext:
     # Script and templates
     script: Script
     templates: TemplateStore
+
+    # Security
+    policy: SecurityPolicy = field(default_factory=SecurityPolicy.unsafe)
 
     # Services
     capture: ScreenCapture = field(default_factory=ScreenCapture)

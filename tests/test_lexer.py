@@ -2,7 +2,6 @@
 Tests for DSL Lexer.
 """
 
-
 from core.dsl.lexer import Lexer
 from core.dsl.tokens import TokenType
 
@@ -248,8 +247,8 @@ class TestLexerErrors:
 
     def test_unknown_character(self) -> None:
         """Unknown character produces error."""
-        lexer = Lexer("@#$")
-        tokens = lexer.tokenize()
+        lexer = Lexer("`~")  # Backtick and tilde are not valid tokens
+        lexer.tokenize()
         assert len(lexer.errors) > 0
 
 
@@ -301,5 +300,5 @@ class TestLexerRealCode:
         }
         """
         lexer = Lexer(source)
-        tokens = lexer.tokenize()
+        lexer.tokenize()
         assert len(lexer.errors) == 0

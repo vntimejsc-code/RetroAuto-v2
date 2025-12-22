@@ -94,12 +94,15 @@ class OutputPanel(QWidget):
         self.log_output = QPlainTextEdit()
         self.log_output.setReadOnly(True)
         self.log_output.setFont(QFont("Courier New", 9))
-        self.log_output.setStyleSheet("""
+        self.log_output.setStyleSheet(
+            """
             QPlainTextEdit {
-                background-color: #FFFFFF;
-                border: 2px inset #808080;
+                background-color: #3c3c3c;
+                color: #e0e0e0;
+                border: 1px solid #555555;
             }
-        """)
+        """
+        )
         layout.addWidget(self.log_output)
 
         return widget
@@ -117,44 +120,54 @@ class OutputPanel(QWidget):
         self.problems_tree.setColumnWidth(0, 30)
         self.problems_tree.setColumnWidth(1, 400)
         self.problems_tree.itemDoubleClicked.connect(self._on_problem_clicked)
-        self.problems_tree.setStyleSheet("""
+        self.problems_tree.setStyleSheet(
+            """
             QTreeWidget {
-                background-color: #FFFFFF;
-                border: 2px inset #808080;
+                background-color: #3c3c3c;
+                color: #e0e0e0;
+                border: 1px solid #555555;
             }
             QTreeWidget::item:selected {
-                background-color: #000080;
+                background-color: #0078d4;
                 color: #FFFFFF;
             }
-        """)
+            QHeaderView::section {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                border: 1px solid #555555;
+                padding: 4px;
+            }
+        """
+        )
         layout.addWidget(self.problems_tree)
 
         return widget
 
     def _apply_style(self) -> None:
-        """Apply Win95 tab styling."""
-        self.tabs.setStyleSheet("""
+        """Apply dark tab styling."""
+        self.tabs.setStyleSheet(
+            """
             QTabWidget::pane {
-                border: 2px inset #808080;
-                background-color: #C0C0C0;
+                border: 1px solid #555555;
+                background-color: #2d2d2d;
             }
             QTabBar::tab {
-                background-color: #C0C0C0;
-                border: 2px outset #FFFFFF;
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                border: 1px solid #555555;
                 border-bottom: none;
-                padding: 4px 12px;
+                padding: 6px 12px;
                 margin-right: 2px;
             }
             QTabBar::tab:selected {
-                background-color: #C0C0C0;
-                border-bottom: 2px solid #C0C0C0;
-                margin-bottom: -2px;
+                background-color: #3c3c3c;
+                border-bottom: 1px solid #3c3c3c;
             }
             QTabBar::tab:!selected {
-                background-color: #808080;
-                margin-top: 2px;
+                background-color: #252526;
             }
-        """)
+        """
+        )
 
     # ─────────────────────────────────────────────────────────────
     # Output Logging

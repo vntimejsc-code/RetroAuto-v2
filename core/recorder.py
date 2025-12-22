@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from infra import get_logger
 
@@ -23,6 +23,7 @@ logger = get_logger("Recorder")
 
 class RecordState(Enum):
     """Recorder state."""
+
     IDLE = auto()
     RECORDING = auto()
     PAUSED = auto()
@@ -31,20 +32,20 @@ class RecordState(Enum):
 @dataclass
 class RecordedEvent:
     """A recorded mouse/keyboard event."""
-    
+
     event_type: str  # click, double_click, right_click, key, hotkey, type
     timestamp: float
-    
+
     # Mouse data
     x: int | None = None
     y: int | None = None
     button: str | None = None
-    
+
     # Keyboard data
     key: str | None = None
     keys: list[str] = field(default_factory=list)
     text: str | None = None
-    
+
     # Computed delay from previous event
     delay_ms: int = 0
 
@@ -52,22 +53,22 @@ class RecordedEvent:
 class ActionRecorder:
     """
     Record user actions and convert to script actions.
-    
+
     Features:
     - Record mouse clicks (left, right, double)
     - Record keyboard input (keys, hotkeys, text)
     - Calculate delays between actions
     - Convert to script actions
     - Filter noise (accidental clicks, etc.)
-    
+
     Usage:
         recorder = ActionRecorder()
         recorder.on_event(callback)  # Receive events
-        
+
         recorder.start()
         # ... user performs actions ...
         recorder.stop()
-        
+
         actions = recorder.to_actions()
     """
 
@@ -79,7 +80,7 @@ class ActionRecorder:
     ) -> None:
         """
         Initialize recorder.
-        
+
         Args:
             min_delay_ms: Minimum delay to record (filter fast clicks)
             max_delay_ms: Cap delays at this value
@@ -88,22 +89,22 @@ class ActionRecorder:
         self._min_delay = min_delay_ms
         self._max_delay = max_delay_ms
         self._merge_clicks = merge_clicks
-        
+
         self._state = RecordState.IDLE
         self._events: list[RecordedEvent] = []
         self._start_time: float = 0
         self._last_event_time: float = 0
-        
+
         self._callbacks: list[Callable[[RecordedEvent], None]] = []
-        
+
         # pynput listeners (lazy import)
         self._mouse_listener = None
         self._keyboard_listener = None
-        
+
         # For text accumulation
         self._text_buffer: list[str] = []
         self._text_start_time: float = 0
-        
+
         # Lock for thread safety
         self._lock = threading.Lock()
 
@@ -164,19 +165,19 @@ class ActionRecorder:
     def _start_listeners(self) -> None:
         """Start mouse and keyboard listeners."""
         try:
-            from pynput import mouse, keyboard
-            
+            from pynput import keyboard, mouse
+
             self._mouse_listener = mouse.Listener(
                 on_click=self._on_mouse_click,
             )
             self._mouse_listener.start()
-            
+
             self._keyboard_listener = keyboard.Listener(
                 on_press=self._on_key_press,
                 on_release=self._on_key_release,
             )
             self._keyboard_listener.start()
-            
+
         except ImportError:
             logger.error("pynput not installed. Run: pip install pynput")
             raise
@@ -186,7 +187,7 @@ class ActionRecorder:
         if self._mouse_listener:
             self._mouse_listener.stop()
             self._mouse_listener = None
-            
+
         if self._keyboard_listener:
             self._keyboard_listener.stop()
             self._keyboard_listener = None
@@ -200,16 +201,16 @@ class ActionRecorder:
             # Calculate delay from last event
             now = time.time()
             delay_ms = int((now - self._last_event_time) * 1000)
-            
+
             # Apply delay limits
             if delay_ms < self._min_delay:
                 delay_ms = 0
             elif delay_ms > self._max_delay:
                 delay_ms = self._max_delay
-            
+
             event.delay_ms = delay_ms
             event.timestamp = now
-            
+
             self._events.append(event)
             self._last_event_time = now
 
@@ -229,7 +230,7 @@ class ActionRecorder:
         self._flush_text_buffer()
 
         button_name = str(button).split(".")[-1]  # 'Button.left' -> 'left'
-        
+
         event = RecordedEvent(
             event_type="click",
             timestamp=time.time(),
@@ -237,7 +238,7 @@ class ActionRecorder:
             y=y,
             button=button_name,
         )
-        
+
         self._record_event(event)
 
     def _on_key_press(self, key: Any) -> None:
@@ -252,9 +253,9 @@ class ActionRecorder:
             else:
                 # Special key - flush text buffer first
                 self._flush_text_buffer()
-                
+
                 key_name = str(key).replace("Key.", "").upper()
-                
+
                 # Check for hotkey (Ctrl/Alt/Shift + key)
                 # This is simplified - full implementation would track modifiers
                 event = RecordedEvent(
@@ -263,7 +264,7 @@ class ActionRecorder:
                     key=key_name,
                 )
                 self._record_event(event)
-                
+
         except Exception as e:
             logger.debug("Key event error: %s", e)
 
@@ -289,10 +290,10 @@ class ActionRecorder:
 
         self._text_start_time = 0
 
-    def to_actions(self) -> list["Action"]:
+    def to_actions(self) -> list[Action]:
         """
         Convert recorded events to script actions.
-        
+
         Returns:
             List of Action objects
         """
@@ -308,20 +309,22 @@ class ActionRecorder:
             if event.event_type == "click":
                 clicks = 1
                 button = event.button or "left"
-                
+
                 # Check for double-click (next event same position)
                 # This is simplified - production would check timing
-                
-                actions.append(Click(
-                    x=event.x,
-                    y=event.y,
-                    button=button,
-                    clicks=clicks,
-                ))
-                
+
+                actions.append(
+                    Click(
+                        x=event.x,
+                        y=event.y,
+                        button=button,
+                        clicks=clicks,
+                    )
+                )
+
             elif event.event_type == "key":
                 actions.append(Hotkey(keys=[event.key or ""]))
-                
+
             elif event.event_type == "type":
                 actions.append(TypeText(text=event.text or ""))
 
@@ -330,12 +333,12 @@ class ActionRecorder:
     def export_to_dsl(self) -> str:
         """
         Export recorded events as DSL code.
-        
+
         Returns:
             DSL code string
         """
         lines = ["flow recorded {"]
-        
+
         for event in self._events:
             if event.delay_ms >= 100:
                 lines.append(f"    delay({event.delay_ms});")
@@ -346,10 +349,10 @@ class ActionRecorder:
                     lines.append(f"    click({event.x}, {event.y});")
                 elif button == "right":
                     lines.append(f"    right_click({event.x}, {event.y});")
-                    
+
             elif event.event_type == "key":
                 lines.append(f'    hotkey("{event.key}");')
-                
+
             elif event.event_type == "type":
                 lines.append(f'    type_text("{event.text}");')
 

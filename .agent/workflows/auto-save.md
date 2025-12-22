@@ -1,87 +1,42 @@
 ---
-description: Quy trình lưu thay đổi code với version và git
+description: Auto-save code changes with version bump and git commit
 ---
 
-# Auto-Save Workflow
+# Auto-Save Workflow (Cho AI Agent)
 
-Mỗi khi thay đổi code, sử dụng một trong các cách sau:
+**QUAN TRỌNG:** Sau mỗi khi hoàn thành thay đổi code, AI Agent PHẢI thực hiện các bước sau:
 
-## Quick Save (Lưu nhanh + Check code)
-
-Cho các thay đổi nhỏ, tự động check code và commit:
-
+## Bước 1: Check Code
 ```bash
-cd c:\Auto\Newauto
-
-# 1. Check code trước
+// turbo
 python check_code.py
-
-# 2. Nếu pass, commit
-git add -A
-git commit -m "[YYYYMMDD_HHMMSS] Mô tả thay đổi"
 ```
 
-Hoặc chạy tất cả:
+## Bước 2: Bump Build Version
 ```bash
-# // turbo
-python check_code.py; if ($?) { git add -A; git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Quick save" }
+// turbo
+python -c "from infra.version import bump_build; bump_build()"
 ```
 
-## Quick Save với Auto-fix
-
+## Bước 3: Commit với Mô tả
 ```bash
-# Fix lỗi ruff tự động
-python check_code.py --fix
-
-# Commit sau khi fix
-git add -A
-git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Fixed: Mô tả"
+// turbo
+git add -A && git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Mô tả thay đổi"
 ```
 
-## Release (Phát hành version mới)
-
-Cho các thay đổi lớn, cần bump version:
-
-```python
-from infra.version import release
-
-release(
-    changes=[
-        "Thêm chức năng OCR",
-        "Sửa lỗi capture overlay",
-    ],
-    bump="minor",  # major, minor, patch
-    category="Added",  # Added, Changed, Fixed, Removed
-)
-# -> v2.1.0, cập nhật CHANGELOG.md, commit và tag
-```
-
-## Check Code Options
-
+## Quick Save (One-liner)
 ```bash
-python check_code.py           # Quick check (stop on first failure)
-python check_code.py --full    # Full check (run all tests)
-python check_code.py --fix     # Auto-fix ruff issues
+// turbo-all
+python check_code.py; if ($?) { python -c "from infra.version import bump_build; bump_build()"; git add -A; git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Mô tả thay đổi" }
 ```
 
 ## Rollback
-
 ```bash
-# Xem lịch sử
-git log --oneline -10
-
-# Rollback về commit cũ
-git reset --hard <commit_hash>
-
-# Xem các version đã tag
-git tag -l
-
-# Checkout version cụ thể
-git checkout v2.0.0
+git log --oneline -10    # Xem lịch sử
+git reset --hard <hash>  # Rollback về commit cũ
 ```
 
-## Lưu ý
-
-- **Luôn check_code.py trước khi commit**
-- Sử dụng `release()` khi hoàn thành feature
-- Commit message nên rõ ràng, ngắn gọn
+## Lưu ý cho AI Agent
+- **SAU MỖI LẦN EDIT CODE**: Chạy workflow này
+- **SAU MỖI LẦN THÊM FILE MỚI**: git add -A trước
+- **COMMIT MESSAGE**: Phải mô tả rõ ràng thay đổi

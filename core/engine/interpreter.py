@@ -17,14 +17,12 @@ from core.dsl.ast import (
     BlockStmt,
     BreakStmt,
     CallExpr,
-    ConstStmt,
     ContinueStmt,
     ExprStmt,
     FlowDecl,
     ForStmt,
     Identifier,
     IfStmt,
-    ImportStmt,
     LetStmt,
     Literal,
     Program,
@@ -34,7 +32,7 @@ from core.dsl.ast import (
     WhileStmt,
 )
 from core.engine.builtins import BuiltinRegistry, get_builtins
-from core.engine.scope import ExecutionContext, ScopeManager
+from core.engine.scope import ExecutionContext
 
 if TYPE_CHECKING:
     pass
@@ -48,6 +46,9 @@ class InterpreterError(Exception):
         super().__init__(message)
 
 
+from core.security.policy import Permission, SecurityPolicy  # noqa: E402
+
+
 class Interpreter:
     """AST interpreter for RetroScript.
 
@@ -59,7 +60,33 @@ class Interpreter:
     def __init__(self, builtins: BuiltinRegistry | None = None) -> None:
         self.builtins = builtins or get_builtins()
         self.context = ExecutionContext()
+        self.builtins.set_context(self.context)  # Bind context for security checks
         self._flows: dict[str, FlowDecl] = {}
+
+        # Optimization: Dispatch tables
+        self._stmt_dispatch = {
+            LetStmt: self._execute_let,
+            AssignStmt: self._execute_assign,
+            IfStmt: self._execute_if,
+            WhileStmt: self._execute_while,
+            ForStmt: self._execute_for,
+            TryStmt: self._execute_try,
+            ReturnStmt: self._execute_return,
+            BreakStmt: lambda n: self.context.set_break(),
+            ContinueStmt: lambda n: self.context.set_continue(),
+            BlockStmt: self._execute_block,
+            ExprStmt: lambda n: self._eval(n.expr),
+            CallExpr: self._eval_call,
+        }
+
+        self._expr_dispatch = {
+            Literal: self._eval_literal,
+            Identifier: self._eval_identifier,
+            BinaryExpr: self._eval_binary,
+            UnaryExpr: self._eval_unary,
+            CallExpr: self._eval_call,
+            ArrayExpr: self._eval_array,
+        }
 
     def execute(self, program: Program) -> Any:
         """Execute a program.
@@ -70,6 +97,24 @@ class Interpreter:
         Returns:
             Result of main flow, if any
         """
+        # Phase 15: Apply Security Policy
+        if program.permissions:
+            # Parse permissions list ["FS_READ", "NET_ALL"]
+            allowed = Permission.NONE
+            for perm_str in program.permissions:
+                try:
+                    # Support single flags (FS_READ) and combined (FS_ALL)
+                    p = getattr(Permission, perm_str)
+                    allowed |= p
+                except AttributeError:
+                    print(f"[WARN] Unknown permission: {perm_str}")
+
+            # Update policy (restrictive)
+            self.context.policy = SecurityPolicy(permissions=allowed)
+        else:
+            # Default policy (Safe or Unsafe depending on config - defaulting to Unsafe for now to not break existing scripts)
+            pass
+
         # Register constants
         for const in program.constants:
             value = self._eval(const.initializer)
@@ -88,12 +133,19 @@ class Interpreter:
 
     def _execute_flow(self, flow: FlowDecl) -> Any:
         """Execute a flow."""
+        self.context.call_depth += 1
+        if self.context.call_depth > 500:
+            # Reset to avoid lock-up state if caught
+            self.context.call_depth -= 1
+            raise InterpreterError("Stack Overflow: Max recursion depth exceeded (500)")
+
         self.context.enter_flow(flow.name)
         try:
             self._execute_block(flow.body)
             return self.context.get_return()
         finally:
             self.context.exit_flow()
+            self.context.call_depth -= 1
 
     def _execute_block(self, block: BlockStmt) -> None:
         """Execute a block of statements."""
@@ -101,39 +153,20 @@ class Interpreter:
             self._execute_stmt(stmt)
 
             # Check for control flow
-            if (self.context.should_return() or
-                self.context.should_break() or
-                self.context.should_continue()):
+            if (
+                self.context.should_return()
+                or self.context.should_break()
+                or self.context.should_continue()
+            ):
                 break
 
     def _execute_stmt(self, node: ASTNode) -> None:
-        """Execute a statement."""
-        if isinstance(node, LetStmt):
-            self._execute_let(node)
-        elif isinstance(node, AssignStmt):
-            self._execute_assign(node)
-        elif isinstance(node, IfStmt):
-            self._execute_if(node)
-        elif isinstance(node, WhileStmt):
-            self._execute_while(node)
-        elif isinstance(node, ForStmt):
-            self._execute_for(node)
-        elif isinstance(node, TryStmt):
-            self._execute_try(node)
-        elif isinstance(node, ReturnStmt):
-            self._execute_return(node)
-        elif isinstance(node, BreakStmt):
-            self.context.set_break()
-        elif isinstance(node, ContinueStmt):
-            self.context.set_continue()
-        elif isinstance(node, BlockStmt):
-            self._execute_block(node)
-        elif isinstance(node, ExprStmt):
-            self._eval(node.expr)
-        elif isinstance(node, CallExpr):
-            self._eval_call(node)
+        """Execute a statement using dispatch table."""
+        handler = self._stmt_dispatch.get(type(node))
+        if handler:
+            handler(node)
         else:
-            # Unknown/expression statement
+            # Fallback for expression statements or unknown nodes
             self._eval(node)
 
     def _execute_let(self, node: LetStmt) -> None:
@@ -225,21 +258,12 @@ class Interpreter:
         self.context.set_return(value)
 
     def _eval(self, node: ASTNode) -> Any:
-        """Evaluate an expression."""
-        if isinstance(node, Literal):
-            return self._eval_literal(node)
-        elif isinstance(node, Identifier):
-            return self._eval_identifier(node)
-        elif isinstance(node, BinaryExpr):
-            return self._eval_binary(node)
-        elif isinstance(node, UnaryExpr):
-            return self._eval_unary(node)
-        elif isinstance(node, CallExpr):
-            return self._eval_call(node)
-        elif isinstance(node, ArrayExpr):
-            return self._eval_array(node)
-        else:
-            raise InterpreterError(f"Unknown expression type: {type(node)}", node)
+        """Evaluate an expression using dispatch table."""
+        handler = self._expr_dispatch.get(type(node))
+        if handler:
+            return handler(node)
+
+        raise InterpreterError(f"Unknown expression type: {type(node)}", node)
 
     def _eval_literal(self, node: Literal) -> Any:
         """Evaluate literal value."""
@@ -339,11 +363,10 @@ class Interpreter:
             return self.builtins.call(name, *args, **kwargs)
 
         # Check special built-in "run"
-        if name == "run":
-            if node.args:
-                flow_name = self._eval(node.args[0])
-                if isinstance(flow_name, str) and flow_name in self._flows:
-                    return self._call_flow(flow_name, node.args[1:])
+        if name == "run" and node.args:
+            flow_name = self._eval(node.args[0])
+            if isinstance(flow_name, str) and flow_name in self._flows:
+                return self._call_flow(flow_name, node.args[1:])
 
         raise InterpreterError(f"Unknown function: {name}", node)
 

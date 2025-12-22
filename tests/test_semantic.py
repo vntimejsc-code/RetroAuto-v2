@@ -2,7 +2,6 @@
 Tests for DSL Semantic Analyzer.
 """
 
-
 from core.dsl.diagnostics import Severity
 from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
@@ -282,10 +281,7 @@ class TestSemanticCompleteScript:
         """
         parser = Parser(source)
         program = parser.parse()
-        diagnostics = analyze(
-            program,
-            known_assets=["btn_ready", "btn_done", "error_popup"]
-        )
+        diagnostics = analyze(program, known_assets=["btn_ready", "btn_done", "error_popup"])
 
         errors = [d for d in diagnostics if d.severity == Severity.ERROR]
         assert len(errors) == 0

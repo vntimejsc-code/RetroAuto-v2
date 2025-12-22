@@ -144,6 +144,7 @@ class TestScriptIO:
 
             # Reload (use dict loading to skip reference validation)
             from ruamel.yaml import YAML
+
             yaml = YAML()
             with open(path, encoding="utf-8") as f:
                 data = yaml.load(f)

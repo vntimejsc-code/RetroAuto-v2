@@ -10,18 +10,19 @@ from __future__ import annotations
 import json
 import re
 import sys
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import IntEnum
-from pathlib import Path
-from typing import Any, Callable
-
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────
 # LSP Protocol Types
 # ─────────────────────────────────────────────────────────────
 
+
 class MessageType(IntEnum):
     """LSP message types."""
+
     ERROR = 1
     WARNING = 2
     INFO = 3
@@ -30,6 +31,7 @@ class MessageType(IntEnum):
 
 class DiagnosticSeverity(IntEnum):
     """LSP diagnostic severity."""
+
     ERROR = 1
     WARNING = 2
     INFORMATION = 3
@@ -38,6 +40,7 @@ class DiagnosticSeverity(IntEnum):
 
 class CompletionItemKind(IntEnum):
     """LSP completion item kinds."""
+
     TEXT = 1
     METHOD = 2
     FUNCTION = 3
@@ -55,6 +58,7 @@ class CompletionItemKind(IntEnum):
 @dataclass
 class Position:
     """LSP position (0-indexed)."""
+
     line: int
     character: int
 
@@ -65,6 +69,7 @@ class Position:
 @dataclass
 class Range:
     """LSP range."""
+
     start: Position
     end: Position
 
@@ -75,6 +80,7 @@ class Range:
 @dataclass
 class Location:
     """LSP location."""
+
     uri: str
     range: Range
 
@@ -85,6 +91,7 @@ class Location:
 @dataclass
 class Diagnostic:
     """LSP diagnostic."""
+
     range: Range
     message: str
     severity: DiagnosticSeverity = DiagnosticSeverity.ERROR
@@ -102,6 +109,7 @@ class Diagnostic:
 @dataclass
 class CompletionItem:
     """LSP completion item."""
+
     label: str
     kind: CompletionItemKind = CompletionItemKind.TEXT
     detail: str = ""
@@ -122,6 +130,7 @@ class CompletionItem:
 @dataclass
 class Hover:
     """LSP hover result."""
+
     contents: str
     range: Range | None = None
 
@@ -136,9 +145,11 @@ class Hover:
 # Document Management
 # ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class TextDocument:
     """A text document being edited."""
+
     uri: str
     text: str
     version: int = 0
@@ -202,6 +213,7 @@ class DocumentStore:
 # ─────────────────────────────────────────────────────────────
 # Language Server
 # ─────────────────────────────────────────────────────────────
+
 
 class RetroScriptLanguageServer:
     """Language Server for RetroScript.
@@ -383,7 +395,7 @@ class RetroScriptLanguageServer:
             return []
 
         line = doc.get_line(position.line)
-        prefix = line[:position.character].split()[-1] if line else ""
+        prefix = line[: position.character].split()[-1] if line else ""
 
         return self._get_completions(prefix)
 
@@ -433,17 +445,20 @@ class RetroScriptLanguageServer:
         # Use the formatter
         try:
             from app.ide.formatter import CodeFormatter
+
             formatter = CodeFormatter()
             formatted = formatter.format(doc.text)
 
             lines = doc.text.count("\n")
-            return [{
-                "range": Range(
-                    Position(0, 0),
-                    Position(lines, len(doc.get_line(lines))),
-                ).to_dict(),
-                "newText": formatted,
-            }]
+            return [
+                {
+                    "range": Range(
+                        Position(0, 0),
+                        Position(lines, len(doc.get_line(lines))),
+                    ).to_dict(),
+                    "newText": formatted,
+                }
+            ]
         except Exception:
             return []
 
@@ -526,13 +541,15 @@ class RetroScriptLanguageServer:
         for doc_uri, doc in self.documents._documents.items():
             for i, line in enumerate(doc.text.split("\n")):
                 for match in re.finditer(rf"\b{re.escape(word)}\b", line):
-                    references.append(Location(
-                        uri=doc_uri,
-                        range=Range(
-                            Position(i, match.start()),
-                            Position(i, match.end()),
-                        ),
-                    ))
+                    references.append(
+                        Location(
+                            uri=doc_uri,
+                            range=Range(
+                                Position(i, match.start()),
+                                Position(i, match.end()),
+                            ),
+                        )
+                    )
 
         return [ref.to_dict() for ref in references]
 
@@ -543,14 +560,16 @@ class RetroScriptLanguageServer:
 
     def _publish_diagnostics(self, uri: str, diagnostics: list[Diagnostic]) -> None:
         """Publish diagnostics to client."""
-        self._write_message({
-            "jsonrpc": "2.0",
-            "method": "textDocument/publishDiagnostics",
-            "params": {
-                "uri": uri,
-                "diagnostics": [d.to_dict() for d in diagnostics],
-            },
-        })
+        self._write_message(
+            {
+                "jsonrpc": "2.0",
+                "method": "textDocument/publishDiagnostics",
+                "params": {
+                    "uri": uri,
+                    "diagnostics": [d.to_dict() for d in diagnostics],
+                },
+            }
+        )
 
 
 def main() -> None:

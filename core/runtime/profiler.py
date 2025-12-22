@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass
@@ -20,7 +21,7 @@ class TimingEntry:
     name: str
     start_time: float
     end_time: float = 0.0
-    children: list["TimingEntry"] = field(default_factory=list)
+    children: list[TimingEntry] = field(default_factory=list)
 
     @property
     def duration(self) -> float:
@@ -59,15 +60,15 @@ class Profiler:
 
     Usage:
         profiler = Profiler()
-        
+
         with profiler.measure("my_operation"):
             do_something()
-        
+
         # Or manually
         profiler.start("operation")
         do_something()
         profiler.stop("operation")
-        
+
         report = profiler.get_report()
     """
 
@@ -132,7 +133,7 @@ class Profiler:
 
         return entry.duration
 
-    def measure(self, name: str) -> "ProfileContext":
+    def measure(self, name: str) -> ProfileContext:
         """Context manager for measuring a section.
 
         Usage:
@@ -197,6 +198,7 @@ class Profiler:
 
     def get_flame_data(self) -> list[dict[str, Any]]:
         """Get data suitable for flame graph visualization."""
+
         def entry_to_dict(entry: TimingEntry, depth: int = 0) -> dict[str, Any]:
             return {
                 "name": entry.name,
@@ -216,7 +218,7 @@ class ProfileContext:
         self._profiler = profiler
         self._name = name
 
-    def __enter__(self) -> "ProfileContext":
+    def __enter__(self) -> ProfileContext:
         self._profiler.start(self._name)
         return self
 
@@ -244,6 +246,7 @@ def profile(name: str | None = None) -> Callable:
         def my_function():
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         func_name = name or func.__name__
 

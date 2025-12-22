@@ -135,7 +135,7 @@ def check_mypy() -> bool:
 
     if code != 0:
         # Filter to show only errors (not notes)
-        lines = [l for l in output.strip().split("\n") if ": error:" in l]
+        lines = [line for line in output.strip().split("\n") if ": error:" in line]
         if len(lines) > 10:
             print("\n".join(lines[:10]))
             print(f"  ... and {len(lines) - 10} more errors")

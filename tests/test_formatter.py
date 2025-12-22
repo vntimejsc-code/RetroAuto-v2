@@ -2,7 +2,6 @@
 Tests for DSL Formatter.
 """
 
-
 from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
 
@@ -62,8 +61,8 @@ class TestFormatterIndentation:
         result = format_code(source)
         lines = result.split("\n")
         # Content line should start with 2 spaces
-        content_lines = [l for l in lines if l.strip().startswith("log")]
-        assert all(l.startswith("  ") for l in content_lines)
+        content_lines = [line for line in lines if line.strip().startswith("log")]
+        assert all(line.startswith("  ") for line in content_lines)
 
     def test_nested_indent(self) -> None:
         """Nested blocks have correct indentation."""
@@ -76,7 +75,7 @@ class TestFormatterIndentation:
         """
         result = format_code(source)
         lines = result.split("\n")
-        log_line = [l for l in lines if "log" in l][0]
+        log_line = [line for line in lines if "log" in line][0]
         # Should be 4 spaces (2 for flow + 2 for if)
         assert log_line.startswith("    ")
 

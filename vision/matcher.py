@@ -155,7 +155,7 @@ class Matcher:
             confidences = result[locations]
 
         matches = []
-        for i, (y, x) in enumerate(zip(locations[0], locations[1])):
+        for i, (y, x) in enumerate(zip(locations[0], locations[1], strict=False)):
             if len(matches) >= max_matches:
                 break
             matches.append(

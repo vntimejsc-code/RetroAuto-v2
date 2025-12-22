@@ -25,7 +25,6 @@ from core.models import (
     Label,
     Loop,
     PixelColor,
-    ROI,
     RunFlow,
     Script,
     ScriptHotkeys,
@@ -35,7 +34,6 @@ from core.models import (
     WaitPixel,
     WhileImage,
 )
-
 
 
 class DSLToYAMLAdapter:
@@ -79,9 +77,11 @@ class DSLToYAMLAdapter:
             assets=assets,
             flows=flows,
             interrupts=interrupts,
-            main_flow="main"
-            if any(f.name == "main" for f in flows)
-            else (flows[0].name if flows else "main"),
+            main_flow=(
+                "main"
+                if any(f.name == "main" for f in flows)
+                else (flows[0].name if flows else "main")
+            ),
         )
 
     @staticmethod
@@ -197,12 +197,12 @@ def ir_to_script(ir: ScriptIR) -> Script:
 def action_to_ir(action: Action) -> ActionIR:
     """
     Convert Action model to ActionIR for GUI → IR sync.
-    
+
     This enables the Actions Panel to update the IR when
     the user modifies actions via the GUI.
     """
     action_type = action.action.lower()  # WaitImage -> wait_image
-    
+
     # Convert action_type to snake_case
     type_mapping = {
         "WaitImage": "wait_image",
@@ -222,17 +222,17 @@ def action_to_ir(action: Action) -> ActionIR:
         "Loop": "loop",
         "WhileImage": "while_image",
     }
-    
+
     action_type = type_mapping.get(action.action, action.action.lower())
-    
+
     # Build params dict from action fields
     params: dict = {}
-    
+
     if isinstance(action, WaitImage):
         params["arg0"] = action.asset_id
         params["timeout"] = action.timeout_ms
         params["appear"] = action.appear
-        
+
     elif isinstance(action, WaitPixel):
         params["x"] = action.x
         params["y"] = action.y
@@ -241,69 +241,69 @@ def action_to_ir(action: Action) -> ActionIR:
         params["b"] = action.color.b
         params["tolerance"] = action.color.tolerance
         params["appear"] = action.appear
-        
+
     elif isinstance(action, Click):
         params["x"] = action.x
         params["y"] = action.y
         params["button"] = action.button
         params["clicks"] = action.clicks
         params["use_match"] = action.use_match
-        
+
     elif isinstance(action, IfImage):
         params["arg0"] = action.asset_id
         # Nested actions would need recursive conversion
-        
+
     elif isinstance(action, IfPixel):
         params["x"] = action.x
         params["y"] = action.y
         params["r"] = action.color.r
         params["g"] = action.color.g
         params["b"] = action.color.b
-        
+
     elif isinstance(action, Hotkey):
         params["arg0"] = "+".join(action.keys)
-        
+
     elif isinstance(action, TypeText):
         params["arg0"] = action.text
         params["paste"] = action.paste_mode
         params["enter"] = action.enter
-        
+
     elif isinstance(action, Label):
         params["name"] = action.name
-        
+
     elif isinstance(action, Goto):
         params["target"] = action.label
-        
+
     elif isinstance(action, RunFlow):
         params["arg0"] = action.flow_name
-        
+
     elif isinstance(action, Delay):
         params["arg0"] = action.ms
-        
+
     elif isinstance(action, DelayRandom):
         params["min_ms"] = action.min_ms
         params["max_ms"] = action.max_ms
-        
+
     elif isinstance(action, Drag):
         params["from_x"] = action.from_x
         params["from_y"] = action.from_y
         params["to_x"] = action.to_x
         params["to_y"] = action.to_y
         params["duration_ms"] = action.duration_ms
-        
+
     elif isinstance(action, Scroll):
         params["x"] = action.x
         params["y"] = action.y
         params["amount"] = action.amount
-        
+
     elif isinstance(action, Loop):
         params["count"] = action.count
         # Nested actions would need recursive conversion
-        
+
     elif isinstance(action, WhileImage):
         params["arg0"] = action.asset_id
         params["while_present"] = action.while_present
-        
+
     return ActionIR(
         action_type=action_type,
         params=params,
@@ -314,13 +314,13 @@ def action_to_ir(action: Action) -> ActionIR:
 def ir_to_action(ir: ActionIR) -> Action | None:
     """
     Convert ActionIR to Action model for IR → GUI sync.
-    
+
     This enables the Actions Panel to refresh when
     the IR is updated from code changes.
     """
     params = ir.params
     action_type = ir.action_type.lower()
-    
+
     try:
         if action_type == "wait_image":
             return WaitImage(
@@ -328,7 +328,7 @@ def ir_to_action(ir: ActionIR) -> Action | None:
                 timeout_ms=params.get("timeout", 10000),
                 appear=params.get("appear", True),
             )
-            
+
         if action_type == "wait_pixel":
             return WaitPixel(
                 x=params.get("x", 0),
@@ -341,7 +341,7 @@ def ir_to_action(ir: ActionIR) -> Action | None:
                 ),
                 appear=params.get("appear", True),
             )
-            
+
         if action_type == "click":
             return Click(
                 x=params.get("arg0", params.get("x", 0)),
@@ -350,12 +350,12 @@ def ir_to_action(ir: ActionIR) -> Action | None:
                 clicks=params.get("clicks", 1),
                 use_match=params.get("use_match", False),
             )
-            
+
         if action_type == "if_image":
             return IfImage(
                 asset_id=params.get("arg0", ""),
             )
-            
+
         if action_type == "if_pixel":
             return IfPixel(
                 x=params.get("x", 0),
@@ -366,40 +366,40 @@ def ir_to_action(ir: ActionIR) -> Action | None:
                     b=params.get("b", 0),
                 ),
             )
-            
+
         if action_type == "hotkey":
             keys_str = params.get("arg0", "")
             keys = keys_str.split("+") if keys_str else []
             return Hotkey(keys=keys)
-            
+
         if action_type in ("type_text", "typetext"):
             return TypeText(
                 text=params.get("arg0", params.get("text", "")),
                 paste_mode=params.get("paste", True),
                 enter=params.get("enter", False),
             )
-            
+
         if action_type == "label":
             return Label(name=params.get("name", ""))
-            
+
         if action_type == "goto":
             return Goto(label=params.get("target", ""))
-            
+
         if action_type in ("run_flow", "runflow"):
             return RunFlow(flow_name=params.get("arg0", ""))
-            
+
         if action_type in ("sleep", "delay"):
             ms = params.get("arg0", params.get("ms", 1000))
             if isinstance(ms, str):
                 ms = DSLToYAMLAdapter._parse_duration(ms)
             return Delay(ms=ms)
-            
+
         if action_type == "delay_random":
             return DelayRandom(
                 min_ms=params.get("min_ms", 500),
                 max_ms=params.get("max_ms", 1500),
             )
-            
+
         if action_type == "drag":
             return Drag(
                 from_x=params.get("from_x", 0),
@@ -408,27 +408,26 @@ def ir_to_action(ir: ActionIR) -> Action | None:
                 to_y=params.get("to_y", 100),
                 duration_ms=params.get("duration_ms", 500),
             )
-            
+
         if action_type == "scroll":
             return Scroll(
                 x=params.get("x"),
                 y=params.get("y"),
                 amount=params.get("amount", 3),
             )
-            
+
         if action_type == "loop":
             return Loop(
                 count=params.get("count"),
             )
-            
+
         if action_type == "while_image":
             return WhileImage(
                 asset_id=params.get("arg0", ""),
                 while_present=params.get("while_present", True),
             )
-            
+
     except Exception:
         pass
-    
-    return None
 
+    return None

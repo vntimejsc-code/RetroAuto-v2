@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from core.dsl.ast import Program
+    pass
 
 
 @dataclass
@@ -56,7 +56,6 @@ class Formatter:
         lines = source.split("\n")
         result: list[str] = []
         indent_level = 0
-        in_multiline_comment = False
         last_line_blank = False
         last_was_block_end = False
 
@@ -74,9 +73,9 @@ class Formatter:
 
             # Handle multiline comments
             if "/*" in stripped and "*/" not in stripped:
-                in_multiline_comment = True
+                pass
             if "*/" in stripped:
-                in_multiline_comment = False
+                pass
 
             # Check for block end
             is_block_end = stripped.startswith("}") or stripped == "end"
@@ -87,7 +86,7 @@ class Formatter:
 
             # Format the line
             formatted_line = self._format_line(stripped, indent_level)
-            
+
             # Add blank line before flow if needed
             if stripped.startswith("flow ") and result and not last_was_block_end:
                 for _ in range(self.options.blank_lines_between_flows):
@@ -129,9 +128,15 @@ class Formatter:
         if ":" in result and not result.startswith("#") and not result.startswith("//"):
             parts = result.split(":")
             if len(parts) == 2 and not parts[1].startswith("/"):  # Not a URL
-                before = parts[0].rstrip() if not self.options.space_before_colon else parts[0].rstrip() + " "
-                after = " " + parts[1].strip() if self.options.space_after_colon else parts[1].strip()
-                if parts[1].strip():  # Only if there's content after
+                before = (
+                    parts[0].rstrip()
+                    if not self.options.space_before_colon
+                    else parts[0].rstrip() + " "
+                )
+                after = (
+                    " " + parts[1].strip() if self.options.space_after_colon else parts[1].strip()
+                )
+                if parts[1].strip():  # Only if there's content after  # noqa: SIM108
                     result = before + ":" + after
                 else:
                     result = before + ":"
@@ -156,7 +161,7 @@ class Formatter:
         Preserves structure outside the selection.
         """
         lines = source.split("\n")
-        
+
         # Calculate base indent from first selected line
         if start_line < len(lines):
             first_line = lines[start_line]
@@ -165,7 +170,7 @@ class Formatter:
             base_indent = 0
 
         # Format selected lines
-        selected = "\n".join(lines[start_line:end_line + 1])
+        selected = "\n".join(lines[start_line : end_line + 1])
         formatted_selected = self.format(selected)
         formatted_lines = formatted_selected.split("\n")
 
@@ -178,7 +183,7 @@ class Formatter:
                 reindented.append("")
 
         # Combine with rest
-        result = lines[:start_line] + reindented + lines[end_line + 1:]
+        result = lines[:start_line] + reindented + lines[end_line + 1 :]
         return "\n".join(result)
 
     def get_indent(self, line: str) -> int:

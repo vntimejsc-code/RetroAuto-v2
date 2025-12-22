@@ -45,7 +45,7 @@ class BundleManifest:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "BundleManifest":
+    def from_dict(cls, data: dict[str, Any]) -> BundleManifest:
         """Create from dictionary."""
         return cls(
             name=data.get("name", "unknown"),
@@ -256,10 +256,7 @@ class Bundler:
             raise BundleError(f"Bundle not found: {bundle_path}")
 
         # Determine output directory
-        if not output_dir:
-            output_dir = bundle_path.parent / bundle_path.stem
-        else:
-            output_dir = Path(output_dir)
+        output_dir = bundle_path.parent / bundle_path.stem if not output_dir else Path(output_dir)
 
         output_dir.mkdir(parents=True, exist_ok=True)
 

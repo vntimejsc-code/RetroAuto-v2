@@ -285,37 +285,62 @@ class IRMapper:
 
     @staticmethod
     def ir_to_code(ir: ScriptIR) -> str:
-        """Generate DSL code from IR."""
+        """Generate DSL code from IR using RetroScript 9.0 syntax."""
         lines: list[str] = []
 
-        # Hotkeys
-        lines.append("hotkeys {")
+        # Header comment
+        lines.append("// RetroScript 9.0")
+        lines.append("// Press F5 to run, F6 to stop")
+        lines.append("")
+
+        # Config block
+        lines.append("@config")
+        lines.append("  timeout = 30s")
+        lines.append("  loop_limit = 1000")
+        lines.append("  click_delay = 50..100ms")
+        lines.append("  on_error = pause")
+        lines.append("")
+
+        # Hotkeys block
+        lines.append("@hotkeys")
         lines.append(f'  start = "{ir.hotkeys.start}"')
         lines.append(f'  stop = "{ir.hotkeys.stop}"')
         lines.append(f'  pause = "{ir.hotkeys.pause}"')
-        lines.append("}")
         lines.append("")
 
-        # Flows
-        for flow in ir.flows:
-            lines.append(f"flow {flow.name} {{")
-            for action in flow.actions:
-                code = IRMapper._action_to_code(action)
-                lines.append(f"  {code}")
-            lines.append("}")
+        # Main flow (first flow or named 'main')
+        main_flow = next((f for f in ir.flows if f.name == "main"), None)
+        if main_flow is None and ir.flows:
+            main_flow = ir.flows[0]
+
+        if main_flow:
+            lines.append("@main:")
+            if main_flow.actions:
+                for action in main_flow.actions:
+                    code = IRMapper._action_to_code_v9(action)
+                    lines.append(f"  {code}")
+            else:
+                lines.append("  // Add your automation actions here")
             lines.append("")
 
+        # Other flows (not main)
+        for flow in ir.flows:
+            if flow.name != "main" and (main_flow is None or flow != ir.flows[0]):
+                lines.append(f"@flow {flow.name}:")
+                for action in flow.actions:
+                    code = IRMapper._action_to_code_v9(action)
+                    lines.append(f"  {code}")
+                lines.append("")
+
         # Interrupts
-        for interrupt in ir.interrupts:
-            lines.append("interrupt {")
-            lines.append(f"  priority {interrupt.priority}")
-            lines.append(f'  when image "{interrupt.when_asset}"')
-            lines.append("  {")
-            for action in interrupt.actions:
-                code = IRMapper._action_to_code(action)
-                lines.append(f"    {code}")
-            lines.append("  }")
-            lines.append("}")
+        if ir.interrupts:
+            lines.append("@interrupts:")
+            for interrupt in ir.interrupts:
+                action_code = "pass"
+                if interrupt.actions:
+                    action_code = IRMapper._action_to_code_v9(interrupt.actions[0])
+                lines.append(f"  {interrupt.when_asset} -> {action_code}")
+            lines.append("")
 
         return "\n".join(lines)
 
@@ -351,6 +376,39 @@ class IRMapper:
 
         all_args = ", ".join(args + kwargs)
         return f"{action.action_type}({all_args});"
+
+    @staticmethod
+    def _action_to_code_v9(action: ActionIR) -> str:
+        """Convert action IR to RetroScript 9.0 code (no semicolons)."""
+        if action.action_type == "label":
+            return f"label {action.params.get('name', 'unnamed')}:"
+
+        if action.action_type == "goto":
+            return f"goto {action.params.get('target', 'unknown')}"
+
+        if action.action_type in ("break", "continue", "return"):
+            return action.action_type
+
+        # Function call - build args
+        args = []
+        kwargs = []
+
+        for key, value in action.params.items():
+            if key.startswith("arg"):
+                if isinstance(value, str):
+                    args.append(f'"{value}"')
+                else:
+                    args.append(str(value))
+            else:
+                if isinstance(value, str):
+                    kwargs.append(f'{key}: "{value}"')
+                elif isinstance(value, bool):
+                    kwargs.append(f"{key}: {str(value).lower()}")
+                else:
+                    kwargs.append(f"{key}: {value}")
+
+        all_args = ", ".join(args + kwargs)
+        return f"{action.action_type}({all_args})"
 
 
 def parse_to_ir(source: str) -> tuple[ScriptIR, list[str]]:

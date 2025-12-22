@@ -198,7 +198,7 @@ class Loop(ActionBase):
 
     action: Literal["Loop"] = "Loop"
     count: int | None = Field(default=None, description="Times to repeat (None=infinite)")
-    actions: list["Action"] = Field(default_factory=list)
+    actions: list[Action] = Field(default_factory=list)
 
 
 class WhileImage(ActionBase):
@@ -207,7 +207,7 @@ class WhileImage(ActionBase):
     action: Literal["WhileImage"] = "WhileImage"
     asset_id: str = Field(description="Asset to check")
     while_present: bool = Field(default=True, description="True=while exists")
-    actions: list["Action"] = Field(default_factory=list)
+    actions: list[Action] = Field(default_factory=list)
     max_iterations: int = Field(default=100, description="Safety limit")
     roi_override: ROI | None = Field(default=None)
 
@@ -248,8 +248,8 @@ class IfPixel(ActionBase):
     x: int = Field(description="X coordinate")
     y: int = Field(description="Y coordinate")
     color: PixelColor = Field(description="Color to check")
-    then_actions: list["Action"] = Field(default_factory=list)
-    else_actions: list["Action"] = Field(default_factory=list)
+    then_actions: list[Action] = Field(default_factory=list)
+    else_actions: list[Action] = Field(default_factory=list)
 
 
 # Discriminated union type
@@ -337,15 +337,13 @@ class Script(BaseModel):
         def check_actions(actions: list[Action], context: str) -> None:
             for i, action in enumerate(actions):
                 loc = f"{context}[{i}]"
-                if isinstance(action, (WaitImage, IfImage)):
-                    if action.asset_id not in asset_ids:
-                        errors.append(f"{loc}: Unknown asset '{action.asset_id}'")
+                if isinstance(action, (WaitImage, IfImage)) and action.asset_id not in asset_ids:
+                    errors.append(f"{loc}: Unknown asset '{action.asset_id}'")
                 if isinstance(action, IfImage):
                     check_actions(action.then_actions, f"{loc}.then")
                     check_actions(action.else_actions, f"{loc}.else")
-                if isinstance(action, RunFlow):
-                    if action.flow_name not in flow_names:
-                        errors.append(f"{loc}: Unknown flow '{action.flow_name}'")
+                if isinstance(action, RunFlow) and action.flow_name not in flow_names:
+                    errors.append(f"{loc}: Unknown flow '{action.flow_name}'")
                 if isinstance(action, Goto):
                     # Label validation would need full flow context
                     pass

@@ -9,15 +9,17 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass, field, asdict
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from threading import Thread, Event
-from typing import Any, Callable
+from threading import Event, Thread
+from typing import Any
 
 # Try to import pynput for recording
 try:
-    from pynput import mouse, keyboard
+    from pynput import keyboard, mouse
+
     HAS_PYNPUT = True
 except ImportError:
     HAS_PYNPUT = False
@@ -27,6 +29,7 @@ except ImportError:
 # Try to import pyautogui for playback
 try:
     import pyautogui
+
     HAS_PYAUTOGUI = True
 except ImportError:
     HAS_PYAUTOGUI = False
@@ -69,7 +72,7 @@ class MacroAction:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "MacroAction":
+    def from_dict(cls, data: dict[str, Any]) -> MacroAction:
         """Create from dictionary."""
         return cls(
             action_type=ActionType[data["type"]],
@@ -110,7 +113,7 @@ class Macro:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Macro":
+    def from_dict(cls, data: dict[str, Any]) -> Macro:
         """Create from dictionary."""
         return cls(
             name=data["name"],
@@ -205,24 +208,28 @@ class MacroRecorder:
         if not self._recording or not pressed:
             return
 
-        self._add_action(MacroAction(
-            action_type=ActionType.CLICK,
-            x=x,
-            y=y,
-            button=button.name if hasattr(button, "name") else str(button),
-        ))
+        self._add_action(
+            MacroAction(
+                action_type=ActionType.CLICK,
+                x=x,
+                y=y,
+                button=button.name if hasattr(button, "name") else str(button),
+            )
+        )
 
     def _on_scroll(self, x: int, y: int, dx: int, dy: int) -> None:
         """Handle mouse scroll."""
         if not self._recording:
             return
 
-        self._add_action(MacroAction(
-            action_type=ActionType.SCROLL,
-            x=x,
-            y=y,
-            delta=dy,
-        ))
+        self._add_action(
+            MacroAction(
+                action_type=ActionType.SCROLL,
+                x=x,
+                y=y,
+                delta=dy,
+            )
+        )
 
     def _on_key_press(self, key: Any) -> None:
         """Handle key press."""
@@ -231,10 +238,12 @@ class MacroRecorder:
 
         key_str = str(key).replace("Key.", "").replace("'", "")
 
-        self._add_action(MacroAction(
-            action_type=ActionType.KEY_PRESS,
-            key=key_str,
-        ))
+        self._add_action(
+            MacroAction(
+                action_type=ActionType.KEY_PRESS,
+                key=key_str,
+            )
+        )
 
     def _on_key_release(self, key: Any) -> None:
         """Handle key release."""
@@ -278,7 +287,7 @@ class MacroPlayer:
 
         loops = loop or macro.loop_count
 
-        for i in range(loops):
+        for _i in range(loops):
             if self._stop_event.is_set():
                 break
 
@@ -379,7 +388,7 @@ class MacroManager:
         if not filepath.exists():
             return None
 
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
 
         return Macro.from_dict(data)

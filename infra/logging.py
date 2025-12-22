@@ -27,11 +27,11 @@ class LogEmitter:
 
     def emit(self, level: str, timestamp: str, message: str) -> None:
         """Emit log to all registered callbacks."""
+        import contextlib
+
         for cb in self._callbacks:
-            try:
+            with contextlib.suppress(Exception):
                 cb(level, timestamp, message)
-            except Exception:
-                pass  # Don't let GUI errors crash logging
 
 
 # Global emitter for GUI integration

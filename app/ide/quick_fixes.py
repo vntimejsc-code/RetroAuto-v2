@@ -8,9 +8,10 @@ Part of RetroScript Phase 6 - Error Handling + Templates.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from difflib import get_close_matches
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.dsl.diagnostics import Diagnostic
@@ -43,17 +44,60 @@ class ErrorPattern:
 # ─────────────────────────────────────────────────────────────
 
 KEYWORDS = [
-    "flow", "interrupt", "hotkeys", "const", "let", "if", "elif", "else",
-    "while", "for", "in", "try", "catch", "break", "continue", "return",
-    "repeat", "retry", "match", "and", "or", "not", "end", "import", "as",
-    "test", "mock", "assert", "config", "permissions", "meta",
-    "true", "false", "null",
+    "flow",
+    "interrupt",
+    "hotkeys",
+    "const",
+    "let",
+    "if",
+    "elif",
+    "else",
+    "while",
+    "for",
+    "in",
+    "try",
+    "catch",
+    "break",
+    "continue",
+    "return",
+    "repeat",
+    "retry",
+    "match",
+    "and",
+    "or",
+    "not",
+    "end",
+    "import",
+    "as",
+    "test",
+    "mock",
+    "assert",
+    "config",
+    "permissions",
+    "meta",
+    "true",
+    "false",
+    "null",
 ]
 
 BUILTINS = [
-    "find", "wait", "click", "type", "press", "sleep", "scroll", "drag",
-    "run", "log", "range", "wait_image", "find_image", "image_exists",
-    "move", "hotkey", "type_text",
+    "find",
+    "wait",
+    "click",
+    "type",
+    "press",
+    "sleep",
+    "scroll",
+    "drag",
+    "run",
+    "log",
+    "range",
+    "wait_image",
+    "find_image",
+    "image_exists",
+    "move",
+    "hotkey",
+    "type_text",
 ]
 
 
@@ -72,32 +116,40 @@ class QuickFixProvider:
     def _init_patterns(self) -> None:
         """Initialize error patterns."""
         # Undefined variable/function
-        self._patterns.append(ErrorPattern(
-            code="E1001",
-            pattern=r"Unexpected token '(\w+)'",
-            fixer=self._fix_typo,
-        ))
+        self._patterns.append(
+            ErrorPattern(
+                code="E1001",
+                pattern=r"Unexpected token '(\w+)'",
+                fixer=self._fix_typo,
+            )
+        )
 
         # Missing semicolon
-        self._patterns.append(ErrorPattern(
-            code="E1002",
-            pattern=r"Expected ';'",
-            fixer=self._fix_missing_semicolon,
-        ))
+        self._patterns.append(
+            ErrorPattern(
+                code="E1002",
+                pattern=r"Expected ';'",
+                fixer=self._fix_missing_semicolon,
+            )
+        )
 
         # Missing brace
-        self._patterns.append(ErrorPattern(
-            code="E1003",
-            pattern=r"Expected '\}'",
-            fixer=self._fix_missing_brace,
-        ))
+        self._patterns.append(
+            ErrorPattern(
+                code="E1003",
+                pattern=r"Expected '\}'",
+                fixer=self._fix_missing_brace,
+            )
+        )
 
         # Missing colon
-        self._patterns.append(ErrorPattern(
-            code="E1004",
-            pattern=r"Expected ':'",
-            fixer=self._fix_missing_colon,
-        ))
+        self._patterns.append(
+            ErrorPattern(
+                code="E1004",
+                pattern=r"Expected ':'",
+                fixer=self._fix_missing_colon,
+            )
+        )
 
     def get_fixes(
         self,
@@ -146,7 +198,7 @@ class QuickFixProvider:
         fixes: list[QuickFix] = []
 
         # Extract word at error position
-        words = re.findall(r'\b\w+\b', source_line)
+        words = re.findall(r"\b\w+\b", source_line)
         if not words:
             return fixes
 
@@ -171,15 +223,17 @@ class QuickFixProvider:
         matches = get_close_matches(typo_word.lower(), all_words, n=3, cutoff=0.6)
 
         for match in matches:
-            fixes.append(QuickFix(
-                title=f"Change to '{match}'",
-                description=f"Did you mean '{match}'?",
-                replacement=match,
-                start_line=line,
-                end_line=line,
-                start_col=typo_start,
-                end_col=typo_start + len(typo_word),
-            ))
+            fixes.append(
+                QuickFix(
+                    title=f"Change to '{match}'",
+                    description=f"Did you mean '{match}'?",
+                    replacement=match,
+                    start_line=line,
+                    end_line=line,
+                    start_col=typo_start,
+                    end_col=typo_start + len(typo_word),
+                )
+            )
 
         return fixes
 
@@ -190,13 +244,15 @@ class QuickFixProvider:
         col: int,
     ) -> list[QuickFix]:
         """Suggest adding missing semicolon."""
-        return [QuickFix(
-            title="Add semicolon",
-            description="Add ';' at end of statement",
-            replacement=source_line.rstrip() + ";",
-            start_line=line,
-            end_line=line,
-        )]
+        return [
+            QuickFix(
+                title="Add semicolon",
+                description="Add ';' at end of statement",
+                replacement=source_line.rstrip() + ";",
+                start_line=line,
+                end_line=line,
+            )
+        ]
 
     def _fix_missing_brace(
         self,
@@ -210,13 +266,15 @@ class QuickFixProvider:
         closes = source_line.count("}")
 
         if opens > closes:
-            return [QuickFix(
-                title="Add closing brace",
-                description="Add '}' to close block",
-                replacement=source_line.rstrip() + "\n}",
-                start_line=line,
-                end_line=line,
-            )]
+            return [
+                QuickFix(
+                    title="Add closing brace",
+                    description="Add '}' to close block",
+                    replacement=source_line.rstrip() + "\n}",
+                    start_line=line,
+                    end_line=line,
+                )
+            ]
         return []
 
     def _fix_missing_colon(
@@ -231,14 +289,20 @@ class QuickFixProvider:
         block_keywords = ["repeat", "retry", "match", "if", "elif", "else", "while", "for"]
 
         for kw in block_keywords:
-            if stripped.startswith(kw) and not stripped.endswith(":") and not stripped.endswith("{"):
-                return [QuickFix(
-                    title="Add colon",
-                    description="Add ':' after block keyword",
-                    replacement=stripped + ":",
-                    start_line=line,
-                    end_line=line,
-                )]
+            if (
+                stripped.startswith(kw)
+                and not stripped.endswith(":")
+                and not stripped.endswith("{")
+            ):
+                return [
+                    QuickFix(
+                        title="Add colon",
+                        description="Add ':' after block keyword",
+                        replacement=stripped + ":",
+                        start_line=line,
+                        end_line=line,
+                    )
+                ]
         return []
 
 
@@ -270,7 +334,7 @@ class LiveValidator:
         self._defined_flows.clear()
 
         # First pass: collect definitions
-        for i, line in enumerate(lines, 1):
+        for _, line in enumerate(lines, 1):
             self._collect_definitions(line)
 
         # Second pass: validate usage
@@ -286,17 +350,17 @@ class LiveValidator:
 
         # Flow definitions
         if stripped.startswith("flow "):
-            match = re.match(r'flow\s+(\w+)', stripped)
+            match = re.match(r"flow\s+(\w+)", stripped)
             if match:
                 self._defined_flows.add(match.group(1))
 
         # Variable assignments
-        var_match = re.match(r'\$(\w+)\s*=', stripped)
+        var_match = re.match(r"\$(\w+)\s*=", stripped)
         if var_match:
             self._defined_variables.add(var_match.group(1))
 
         # let declarations
-        let_match = re.match(r'let\s+(\w+)', stripped)
+        let_match = re.match(r"let\s+(\w+)", stripped)
         if let_match:
             self._defined_variables.add(let_match.group(1))
 
@@ -310,41 +374,45 @@ class LiveValidator:
             return errors
 
         # Check for undefined variables
-        var_uses = re.findall(r'\$(\w+)', stripped)
+        var_uses = re.findall(r"\$(\w+)", stripped)
         for var in var_uses:
             # Skip if it's an assignment
-            if re.match(rf'\${var}\s*=', stripped):
+            if re.match(rf"\${var}\s*=", stripped):
                 continue
             if var not in self._defined_variables:
-                errors.append(ValidationError(
-                    message=f"Undefined variable: ${var}",
-                    line=line_num,
-                    severity="warning",
-                    suggestion=f"Did you mean to define it? Use: ${var} = value",
-                ))
+                errors.append(
+                    ValidationError(
+                        message=f"Undefined variable: ${var}",
+                        line=line_num,
+                        severity="warning",
+                        suggestion=f"Did you mean to define it? Use: ${var} = value",
+                    )
+                )
 
         # Check for unclosed braces
-        if stripped.count("{") > stripped.count("}"):
-            # Only warn if line doesn't end with {
-            if not stripped.endswith("{"):
-                errors.append(ValidationError(
+        if stripped.count("{") > stripped.count("}") and not stripped.endswith("{"):
+            errors.append(
+                ValidationError(
                     message="Possible unclosed brace",
                     line=line_num,
                     severity="warning",
-                ))
+                )
+            )
 
         # Check for typos in keywords
-        words = re.findall(r'\b([a-z_]+)\b', stripped.lower())
+        words = re.findall(r"\b([a-z_]+)\b", stripped.lower())
         all_keywords = set(KEYWORDS + BUILTINS)
         for word in words:
             if len(word) > 3 and word not in all_keywords:
                 matches = get_close_matches(word, list(all_keywords), n=1, cutoff=0.85)
                 if matches and matches[0] != word:
-                    errors.append(ValidationError(
-                        message=f"Possible typo: '{word}'. Did you mean '{matches[0]}'?",
-                        line=line_num,
-                        severity="hint",
-                    ))
+                    errors.append(
+                        ValidationError(
+                            message=f"Possible typo: '{word}'. Did you mean '{matches[0]}'?",
+                            line=line_num,
+                            severity="hint",
+                        )
+                    )
 
         return errors
 

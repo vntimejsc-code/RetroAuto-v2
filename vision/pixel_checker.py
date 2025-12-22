@@ -7,7 +7,6 @@ Fast pixel color checking for automation triggers.
 from __future__ import annotations
 
 import ctypes
-from ctypes import wintypes
 from dataclasses import dataclass
 
 from infra import get_logger
@@ -33,10 +32,10 @@ class PixelResult:
 class PixelChecker:
     """
     Fast pixel color checking using Windows API.
-    
+
     Much faster than capturing screen and extracting pixel.
     Uses GetPixel directly from screen DC.
-    
+
     Usage:
         checker = PixelChecker()
         result = checker.get_pixel(100, 200)
@@ -56,21 +55,21 @@ class PixelChecker:
     def get_pixel(self, x: int, y: int) -> PixelResult:
         """
         Get pixel color at coordinates.
-        
+
         Args:
             x: X coordinate
             y: Y coordinate
-            
+
         Returns:
             PixelResult with RGB values
         """
         color = gdi32.GetPixel(self._hdc, x, y)
-        
+
         # Extract RGB from COLORREF (0x00BBGGRR)
         r = color & 0xFF
         g = (color >> 8) & 0xFF
         b = (color >> 16) & 0xFF
-        
+
         return PixelResult(x=x, y=y, r=r, g=g, b=b)
 
     def check_color(
@@ -84,17 +83,17 @@ class PixelChecker:
     ) -> bool:
         """
         Check if pixel matches expected color.
-        
+
         Args:
             x, y: Coordinates
             r, g, b: Expected RGB values
             tolerance: Allowed difference per channel
-            
+
         Returns:
             True if color matches within tolerance
         """
         pixel = self.get_pixel(x, y)
-        
+
         return (
             abs(pixel.r - r) <= tolerance
             and abs(pixel.g - g) <= tolerance
@@ -115,7 +114,7 @@ class PixelChecker:
     ) -> bool:
         """
         Wait for pixel color to appear or disappear.
-        
+
         Args:
             x, y: Coordinates
             r, g, b: Expected RGB values
@@ -123,7 +122,7 @@ class PixelChecker:
             timeout_ms: Maximum wait time
             poll_ms: Time between checks
             appear: True = wait for color, False = wait until color gone
-            
+
         Returns:
             True if condition met, False if timeout
         """
@@ -135,12 +134,10 @@ class PixelChecker:
 
         while time.time() - start < timeout_sec:
             matches = self.check_color(x, y, r, g, b, tolerance)
-            
-            if appear and matches:
+
+            if appear and matches or not appear and not matches:
                 return True
-            elif not appear and not matches:
-                return True
-            
+
             time.sleep(poll_sec)
 
         return False
@@ -159,13 +156,13 @@ class PixelChecker:
     ) -> PixelResult | None:
         """
         Find first occurrence of color in region.
-        
+
         Args:
             x1, y1, x2, y2: Region bounds
             r, g, b: Target color
             tolerance: Color tolerance
             step: Pixel step for faster scanning
-            
+
         Returns:
             PixelResult if found, None otherwise
         """
@@ -173,7 +170,7 @@ class PixelChecker:
             for x in range(x1, x2, step):
                 if self.check_color(x, y, r, g, b, tolerance):
                     return self.get_pixel(x, y)
-        
+
         return None
 
 

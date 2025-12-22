@@ -118,7 +118,8 @@ class DebugPanel(QWidget):
 
         self.stack_list = QListWidget()
         self.stack_list.itemDoubleClicked.connect(self._on_stack_item_clicked)
-        self.stack_list.setStyleSheet("""
+        self.stack_list.setStyleSheet(
+            """
             QListWidget {
                 background-color: #FFFFFF;
                 border: 2px inset #808080;
@@ -127,7 +128,8 @@ class DebugPanel(QWidget):
                 background-color: #000080;
                 color: #FFFFFF;
             }
-        """)
+        """
+        )
         layout.addWidget(self.stack_list)
 
         return widget
@@ -144,7 +146,8 @@ class DebugPanel(QWidget):
         self.variables_tree.setHeaderLabels(["Name", "Value", "Type"])
         self.variables_tree.setColumnWidth(0, 150)
         self.variables_tree.setColumnWidth(1, 200)
-        self.variables_tree.setStyleSheet("""
+        self.variables_tree.setStyleSheet(
+            """
             QTreeWidget {
                 background-color: #FFFFFF;
                 border: 2px inset #808080;
@@ -153,7 +156,8 @@ class DebugPanel(QWidget):
                 background-color: #000080;
                 color: #FFFFFF;
             }
-        """)
+        """
+        )
         layout.addWidget(self.variables_tree)
 
         # Watch expression input
@@ -179,7 +183,8 @@ class DebugPanel(QWidget):
 
         self.breakpoints_list = QListWidget()
         self.breakpoints_list.itemDoubleClicked.connect(self._on_breakpoint_clicked)
-        self.breakpoints_list.setStyleSheet("""
+        self.breakpoints_list.setStyleSheet(
+            """
             QListWidget {
                 background-color: #FFFFFF;
                 border: 2px inset #808080;
@@ -188,7 +193,8 @@ class DebugPanel(QWidget):
                 background-color: #000080;
                 color: #FFFFFF;
             }
-        """)
+        """
+        )
         layout.addWidget(self.breakpoints_list)
 
         # Buttons
@@ -213,7 +219,8 @@ class DebugPanel(QWidget):
 
     def _apply_style(self) -> None:
         """Apply Win95 tab styling."""
-        self.tabs.setStyleSheet("""
+        self.tabs.setStyleSheet(
+            """
             QTabWidget::pane {
                 border: 2px inset #808080;
                 background-color: #C0C0C0;
@@ -234,7 +241,8 @@ class DebugPanel(QWidget):
                 background-color: #808080;
                 margin-top: 2px;
             }
-        """)
+        """
+        )
 
     def _update_button_states(self) -> None:
         """Update button enabled states based on debugger state."""

@@ -101,7 +101,7 @@ class ROICanvas(QWidget):
         # Draw resize handles
         handles = self._get_handles()
         painter.setBrush(QColor(0, 200, 0))
-        for name, rect in handles.items():
+        for _name, rect in handles.items():
             painter.drawRect(rect)
 
         # Size label

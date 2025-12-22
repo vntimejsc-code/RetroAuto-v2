@@ -22,24 +22,24 @@ COLORS = {
     "window_dark": "#808080",  # Darker variant
     "window_text": "#000000",  # Text color
     # Selection
-    "highlight": "#000080",  # Navy blue selection
+    "highlight": "#0078d4",  # Blue selection
     "highlight_text": "#FFFFFF",  # White text on selection
     # Borders (3D effect)
-    "shadow_dark": "#404040",  # Bottom/Right shadow
-    "shadow_light": "#FFFFFF",  # Top/Left highlight
-    "border": "#808080",  # Normal border
+    "shadow_dark": "#3c3c3c",  # Dark border
+    "shadow_light": "#555555",  # Light border
+    "border": "#555555",  # Normal border
     # Disabled state
     "gray_text": "#808080",  # Disabled text
-    # Editor
-    "editor_bg": "#FFFFFF",  # White editor background
-    "gutter_bg": "#E0E0E0",  # Gutter background
-    "line_number": "#808080",  # Line number color
-    # Syntax highlighting (minimal, classic)
-    "keyword": "#00007F",  # Dark blue for keywords
-    "string": "#7F0000",  # Dark red for strings
-    "comment": "#007F00",  # Green for comments
-    "number": "#7F007F",  # Purple for numbers
-    "function": "#000000",  # Black for function names (bold)
+    # Editor - DARK THEME
+    "editor_bg": "#1e1e1e",  # Dark editor background
+    "gutter_bg": "#252526",  # Gutter background
+    "line_number": "#858585",  # Line number color
+    # Syntax highlighting - BRIGHT for dark background
+    "keyword": "#569cd6",  # Light blue for keywords
+    "string": "#ce9178",  # Orange/tan for strings
+    "comment": "#6a9955",  # Green for comments
+    "number": "#b5cea8",  # Light green for numbers
+    "function": "#dcdcaa",  # Yellow for function names
 }
 
 

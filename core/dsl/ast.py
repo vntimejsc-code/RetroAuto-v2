@@ -37,13 +37,17 @@ class Span:
         """Merge two spans to cover both ranges."""
         return Span(
             min(self.start_line, other.start_line),
-            min(self.start_col, other.start_col)
-            if self.start_line == other.start_line
-            else (self.start_col if self.start_line < other.start_line else other.start_col),
+            (
+                min(self.start_col, other.start_col)
+                if self.start_line == other.start_line
+                else (self.start_col if self.start_line < other.start_line else other.start_col)
+            ),
             max(self.end_line, other.end_line),
-            max(self.end_col, other.end_col)
-            if self.end_line == other.end_line
-            else (self.end_col if self.end_line > other.end_line else other.end_col),
+            (
+                max(self.end_col, other.end_col)
+                if self.end_line == other.end_line
+                else (self.end_col if self.end_line > other.end_line else other.end_col)
+            ),
         )
 
 
@@ -311,6 +315,7 @@ class HotkeysDecl(ASTNode):
 class Program(ASTNode):
     """Root AST node containing all declarations."""
 
+    permissions: list[str] = field(default_factory=list)  # Phase 15
     imports: list[ImportStmt] = field(default_factory=list)  # Phase 3
     hotkeys: HotkeysDecl | None = None
     flows: list[FlowDecl] = field(default_factory=list)
@@ -319,7 +324,7 @@ class Program(ASTNode):
 
     @property
     def main_flow(self) -> FlowDecl | None:
-        """Get the main flow."""
+        """Get the main flow if it exists."""
         for flow in self.flows:
             if flow.name == "main":
                 return flow

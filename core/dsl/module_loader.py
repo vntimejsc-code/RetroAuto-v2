@@ -7,7 +7,6 @@ Part of RetroScript Phase 3 - Package Manager + Ecosystem.
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING

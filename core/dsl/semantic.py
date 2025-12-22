@@ -281,9 +281,7 @@ class SemanticAnalyzer:
                     self._collect_labels(flow_name, elif_body)
                 if stmt.else_branch:
                     self._collect_labels(flow_name, stmt.else_branch)
-            elif isinstance(stmt, WhileStmt):
-                self._collect_labels(flow_name, stmt.body)
-            elif isinstance(stmt, ForStmt):
+            elif isinstance(stmt, (WhileStmt, ForStmt)):
                 self._collect_labels(flow_name, stmt.body)
             elif isinstance(stmt, TryStmt):
                 self._collect_labels(flow_name, stmt.try_block)
@@ -376,9 +374,9 @@ class SemanticAnalyzer:
         elif isinstance(expr, ArrayExpr):
             for elem in expr.elements:
                 self._validate_expression(elem)
-        elif isinstance(expr, Identifier):
+        elif isinstance(expr, Identifier):  # noqa: SIM102
             # Check if variable exists
-            if not self.scope.lookup(expr.name):
+            if not self.scope.lookup(expr.name):  # noqa: SIM102
                 # Could be a constant
                 if expr.name not in self.symbols.constants:
                     # Unknown variable - could add warning here
@@ -407,13 +405,13 @@ class SemanticAnalyzer:
                     if asset_id not in self.known_assets:
                         self.diagnostics.append(unknown_asset(asset_id, call.span))
 
-        elif call.callee == "wait_any":
+        elif call.callee == "wait_any":  # noqa: SIM102
             # Validate asset list
             if call.args:
                 list_arg = call.args[0]
                 if isinstance(list_arg, ArrayExpr):
-                    for elem in list_arg.elements:
-                        if isinstance(elem, Literal) and elem.literal_type == "string":
+                    for elem in list_arg.elements:  # noqa: SIM102
+                        if isinstance(elem, Literal) and elem.literal_type == "string":  # noqa: SIM102
                             if elem.value not in self.known_assets:
                                 self.diagnostics.append(unknown_asset(elem.value, elem.span))
 

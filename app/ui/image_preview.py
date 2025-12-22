@@ -9,9 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
-from PySide6.QtCore import QPoint, QRect, QSize, Qt, Signal
+from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -171,7 +170,7 @@ class ImagePreviewWidget(QLabel):
         """Handle mouse press for panning."""
         if event.button() == Qt.MouseButton.MiddleButton:
             self._pan_start = event.position().toPoint()
-        elif event.button() == Qt.MouseButton.LeftButton:
+        elif event.button() == Qt.MouseButton.LeftButton:  # noqa: SIM102
             # Calculate click position on original image
             if self._pixmap:
                 pos = event.position().toPoint()
@@ -182,7 +181,7 @@ class ImagePreviewWidget(QLabel):
     def mouseMoveEvent(self, event) -> None:
         """Handle mouse move for panning."""
         if self._pan_start:
-            delta = event.position().toPoint() - self._pan_start
+            event.position().toPoint() - self._pan_start
             # Pan is handled by scroll area
             self._pan_start = event.position().toPoint()
 
@@ -260,7 +259,8 @@ class ImagePreview(QWidget):
         layout.addWidget(self._info_label)
 
         # Style
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QPushButton {
                 border: 1px solid #3c3c3c;
                 border-radius: 4px;
@@ -270,7 +270,8 @@ class ImagePreview(QWidget):
             QPushButton:hover {
                 background: #404040;
             }
-        """)
+        """
+        )
 
     def load_image(self, path: str | Path) -> None:
         """Load an image from file."""
@@ -308,9 +309,7 @@ class ImagePreview(QWidget):
             pm = self._image_widget._pixmap
             zoom = int(self._image_widget._zoom * 100)
             self._info_label.setText(
-                f"{self._current_path or 'Image'} | "
-                f"{pm.width()}x{pm.height()} | "
-                f"{zoom}%"
+                f"{self._current_path or 'Image'} | " f"{pm.width()}x{pm.height()} | " f"{zoom}%"
             )
         else:
             self._info_label.setText("No image loaded")
