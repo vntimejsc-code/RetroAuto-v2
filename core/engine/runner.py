@@ -10,6 +10,7 @@ from collections.abc import Callable
 from core.engine.context import EngineState, ExecutionContext
 from core.models import (
     Click,
+    ClickImage,
     ClickRandom,
     Delay,
     DelayRandom,
@@ -322,6 +323,29 @@ class Runner:
              # For now, we just execute simple actions.
              self._execute_action(sub_action, flow, labels)
 
+    def _exec_click_image(self, action: ClickImage) -> None:
+        """Execute ClickImage with wait."""
+        result = self._ctx.wait_for_image(
+            action.asset_id, timeout_ms=action.timeout_ms, appear=True
+        )
+        if not result or not result.found:
+            raise RuntimeError(f"Image not found: {action.asset_id}")
+
+        # Click with offset
+        x = result.location[0] + action.offset_x
+        y = result.location[1] + action.offset_y
+        
+        logger.info(f"ClickImage '{action.asset_id}' at ({x},{y}) button={action.button} clicks={action.clicks}")
+        
+        # Perform clicks
+        for i in range(action.clicks):
+            if i > 0:
+                # Wait interval between clicks
+                import time
+                time.sleep(action.interval_ms / 1000.0)
+            
+            self._ctx.mouse.click(x, y, button=action.button)
+
     def _exec_wait_image(self, action: WaitImage) -> bool | None:
         """Execute WaitImage action."""
         logger.info(
@@ -357,17 +381,26 @@ class Runner:
             return False  # Cancelled
 
     def _exec_click(self, action: Click) -> None:
-        """Execute Click action."""
-        if action.use_match and self._ctx.last_match:
-            x, y = self._ctx.last_match.center
-        elif action.x is not None and action.y is not None:
+        """Execute click action."""
+        if action.x is not None and action.y is not None:
             x, y = action.x, action.y
         else:
-            logger.warning("Click: No coordinates and no match")
-            return None
+            # Use last match
+            x, y = self._ctx.last_match_center()
+            if x is None or y is None:
+                logger.warning("Click: No coordinates and no match")
+                return None
 
-        logger.info("Click: (%d, %d) button=%s clicks=%d", x, y, action.button, action.clicks)
-        self._ctx.mouse.click(x, y, action.button, action.clicks, action.interval_ms)
+        logger.info(f"Clicking at ({x}, {y}) button={action.button} clicks={action.clicks}")
+        
+        # Perform clicks
+        for i in range(action.clicks):
+            if i > 0:
+                # Wait interval between clicks
+                import time
+                time.sleep(action.interval_ms / 1000.0)
+            
+            self._ctx.mouse.click(x, y, button=action.button)
         return None
 
     def _exec_if_image(

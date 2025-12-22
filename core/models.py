@@ -99,27 +99,28 @@ class WaitImage(ActionBase):
 
 
 class Click(ActionBase):
-    """Click at coordinates or previous match."""
+    """Click at coordinates or last found image."""
 
     action: Literal["Click"] = "Click"
-    x: int | None = Field(default=None, description="X coordinate (None=use match)")
-    y: int | None = Field(default=None, description="Y coordinate (None=use match)")
+    x: int | None = Field(default=None, description="X coordinate (None = use last match)")
+    y: int | None = Field(default=None, description="Y coordinate (None = use last match)")
     button: Literal["left", "right", "middle"] = Field(default="left")
-    clicks: int = Field(default=1, ge=1, le=10)
-    interval_ms: int = Field(default=80, ge=0)
+    clicks: int = Field(default=1, ge=1, le=3, description="Number of clicks (1=single, 2=double, 3=triple)")
+    interval_ms: int = Field(default=100, ge=0, description="Interval between clicks in ms")
     use_match: bool = Field(default=False, description="Click at last match center")
 
 
 class ClickImage(ActionBase):
-    """Wait for image and click on it (combo action)."""
+    """Wait for image then click."""
 
     action: Literal["ClickImage"] = "ClickImage"
-    asset_id: str = Field(description="Asset to find and click")
+    asset_id: str = Field(description="Asset to click")
     button: Literal["left", "right", "middle"] = Field(default="left")
-    clicks: int = Field(default=1, ge=1, le=10)
-    timeout_ms: int = Field(default=10000, ge=0)
-    offset_x: int = Field(default=0, description="X offset from center")
-    offset_y: int = Field(default=0, description="Y offset from center")
+    clicks: int = Field(default=1, ge=1, le=3, description="Number of clicks (1=single, 2=double, 3=triple)")
+    timeout_ms: int = Field(default=10000, ge=0, le=300000)
+    offset_x: int = Field(default=0)
+    offset_y: int = Field(default=0)
+    interval_ms: int = Field(default=100, ge=0, description="Interval between clicks in ms")
 
 
 class ClickUntil(ActionBase):

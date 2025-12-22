@@ -129,7 +129,34 @@ ACTION_TEMPLATES = {
         ("Delay", {"ms": 1000}),
         ("ClickImage", {"asset_id": "[step3]"}),
     ],
+    "🎮 Farming Loop": [
+        ("Loop", {"iterations": 999}),
+        ("WaitImage", {"asset_id": "[enemy]", "timeout_ms": 5000}),
+        ("ClickImage", {"asset_id": "[attack]"}),
+        ("Delay", {"ms": 3000}),
+        ("EndLoop", {}),
+    ],
+    "💊 Auto Heal": [
+        ("ReadText", {"variable_name": "$hp", "roi": {"x": 10, "y": 10, "w": 100, "h": 30}}),
+        ("IfText", {"variable_name": "$hp", "operator": "numeric_lt", "value": "30"}),
+        ("ClickImage", {"asset_id": "[potion]"}),
+        ("Delay", {"ms": 500}),
+        ("EndIf", {}),
+    ],
+    "⚔️ Skill Combo": [
+        ("ClickImage", {"asset_id": "[skill1]"}),
+        ("Delay", {"ms": 500}),
+        ("ClickImage", {"asset_id": "[skill2]"}),
+        ("Delay", {"ms": 500}),
+        ("ClickImage", {"asset_id": "[skill3]"}),
+        ("Delay", {"ms": 500}),
+    ],
 }
+
+# Build flattened lookup for backward compatibility
+ACTION_TYPES = []
+for category_name, actions in ACTION_CATEGORIES.items():
+    ACTION_TYPES.extend(actions)
 
 # Action factory functions
 ACTION_DEFAULTS = {
@@ -260,7 +287,7 @@ class ActionListWidget(QListWidget):
     """
 
     asset_dropped_on_item = Signal(str, int)  # asset_id, item_index (update existing)
-    asset_dropped_insert = Signal(str, int)  # asset_id, insert_index (create new)
+    asset_dropped_insert = Signal(str, int, str)  # asset_id, insert_index, action_type (create new)
 
     def __init__(self, parent=None) -> None:  # type: ignore
         super().__init__(parent)
@@ -327,7 +354,7 @@ class ActionListWidget(QListWidget):
         super().dragLeaveEvent(event)
 
     def dropEvent(self, event) -> None:  # type: ignore
-        """Handle drop from Assets panel."""
+        """Handle drop from Assets panel - show action chooser menu."""
         mime = event.mimeData()
         if mime.hasFormat(ASSET_MIME_TYPE):
             asset_id = mime.data(ASSET_MIME_TYPE).data().decode("utf-8")
@@ -336,11 +363,35 @@ class ActionListWidget(QListWidget):
                 # Update existing action
                 self.asset_dropped_on_item.emit(asset_id, self._drop_on_item_index)
             else:
-                # Insert new action
+                # Insert new action - show menu to choose type
                 insert_index = self._drop_indicator_index
                 if insert_index < 0:
                     insert_index = self.count()
-                self.asset_dropped_insert.emit(asset_id, insert_index)
+                
+                # Show menu to choose action type
+                from PySide6.QtWidgets import QMenu
+                from PySide6.QtGui import QCursor
+                
+                menu = QMenu(self)
+                menu.setStyleSheet("QMenu { font-size: 12px; }")
+                
+                # Image-related actions
+                actions_list = [
+                    ("👁️ Wait Image", "WaitImage"),
+                    ("🎯 Click Image", "ClickImage"),
+                    ("❓ If Image", "IfImage"),
+                    ("🔄 While Image", "WhileImage"),
+                ]
+                
+                for label, action_type in actions_list:
+                    action = menu.addAction(label)
+                    action.triggered.connect(
+                        lambda checked=False, aid=asset_id, idx=insert_index, at=action_type:
+                            self.asset_dropped_insert.emit(aid, idx, at)
+                    )
+                
+                # Show menu at cursor
+                menu.exec(QCursor.pos())
 
             self._drop_indicator_index = -1
             self._drop_on_item_index = -1
@@ -482,7 +533,7 @@ class ActionsPanel(QWidget):
         self.action_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.action_list.customContextMenuRequested.connect(self._show_context_menu)
         self.action_list.asset_dropped_on_item.connect(self._on_asset_dropped_on_item)
-        self.action_list.asset_dropped_insert.connect(self._on_asset_dropped_insert)
+        self.action_list.asset_dropped_insert.connect(self._on_asset_drop_insert)
         group_layout.addWidget(self.action_list)
 
         # Bottom buttons (Add, Delete, Clear, Move)
@@ -584,6 +635,10 @@ class ActionsPanel(QWidget):
 
     def _refresh_list(self) -> None:
         """Refresh list widget from internal actions with visual indentation and colors."""
+        # SAVE current state to restore after refresh
+        current_row = self.action_list.currentRow()
+        scroll_value = self.action_list.verticalScrollBar().value()
+        
         self.action_list.clear()
 
         # Track block depth for indentation (supports nested blocks)
@@ -624,6 +679,11 @@ class ActionsPanel(QWidget):
             item.setData(259, category)   # Qt.UserRole + 3 - category
 
             self.action_list.addItem(item)
+        
+        # RESTORE scroll position and selection
+        self.action_list.verticalScrollBar().setValue(scroll_value)
+        if current_row >= 0 and current_row < self.action_list.count():
+            self.action_list.setCurrentRow(current_row)
 
     def _get_action_detail(self, action: Action) -> str:
         """Get short detail string for action."""
@@ -771,6 +831,45 @@ class ActionsPanel(QWidget):
             logger.info("Added action: %s", action_type)
     
     def _add_template(self, template_name: str) -> None:
+        """Add a template (multiple actions at once) with smart insertion."""
+        template = ACTION_TEMPLATES.get(template_name)
+        if not template:
+            return
+        
+        self._save_state()
+        
+        # Smart insertion: insert at current position
+        current_row = self.action_list.currentRow()
+        if current_row < 0:
+            insert_pos = len(self._actions)
+        else:
+            insert_pos = current_row + 1
+        
+        # Add all actions from template
+        for i, (action_type, params) in enumerate(template):
+            action = ACTION_DEFAULTS[action_type]()
+            for key, value in params.items():
+                if hasattr(action, key):
+                    setattr(action, key, value)
+            self._actions.insert(insert_pos + i, action)
+        
+        self._refresh_list()
+        
+        # Auto-select all inserted actions
+        self.action_list.clearSelection()
+        for i in range(len(template)):
+            item = self.action_list.item(insert_pos + i)
+            if item:
+                item.setSelected(True)
+        
+        # Scroll to show first inserted action
+        self.action_list.setCurrentRow(insert_pos)
+        self.action_list.scrollToItem(self.action_list.item(insert_pos))
+        
+        self.action_changed.emit()
+        logger.info(f"Added template: {template_name} ({len(template)} actions) at position {insert_pos}")
+    
+    def _add_template(self, template_name: str) -> None:
         """Add a template (multiple actions at once)."""
         template = ACTION_TEMPLATES.get(template_name)
         if not template:
@@ -843,11 +942,20 @@ class ActionsPanel(QWidget):
         self._save_state()  # Save for undo
         # Get indices in reverse order to delete from end
         rows = sorted([self.action_list.row(item) for item in selected], reverse=True)
+        first_deleted_row = min(rows)  # Remember position for reselection
+        
         for row in rows:
             if 0 <= row < len(self._actions):
                 del self._actions[row]
 
         self._refresh_list()
+        
+        # Smart selection: select item at deleted position (or last if beyond end)
+        if self.action_list.count() > 0:
+            new_row = min(first_deleted_row, self.action_list.count() - 1)
+            self.action_list.setCurrentRow(new_row)
+            self.action_list.scrollToItem(self.action_list.item(new_row))
+        
         self.action_changed.emit()
         logger.info("Deleted %d actions", len(rows))
 
@@ -987,9 +1095,19 @@ class ActionsPanel(QWidget):
         self.action_changed.emit()
         logger.info("Updated %s asset_id to: %s", action_type, asset_id)
 
-    def _on_asset_dropped_insert(self, asset_id: str, insert_index: int) -> None:
-        """Handle asset dropped BETWEEN actions - insert new WaitImage."""
-        action = WaitImage(asset_id=asset_id)
+    def _on_asset_drop_insert(self, asset_id: str, insert_index: int, action_type: str) -> None:
+        """Handle asset dropped BETWEEN actions - create chosen action type."""
+        # Create appropriate action based on type
+        if action_type == "WaitImage":
+            action = WaitImage(asset_id=asset_id)
+        elif action_type == "ClickImage":
+            action = ClickImage(asset_id=asset_id)
+        elif action_type == "IfImage":
+            action = IfImage(asset_id=asset_id)
+        elif action_type == "WhileImage":
+            action = WhileImage(asset_id=asset_id)
+        else:
+            action = WaitImage(asset_id=asset_id)  # Fallback
 
         # Insert at specific position
         if insert_index >= len(self._actions):
@@ -1000,7 +1118,7 @@ class ActionsPanel(QWidget):
         self._refresh_list()
         self.action_list.setCurrentRow(insert_index)
         self.action_changed.emit()
-        logger.info("Created WaitImage at index %d with asset: %s", insert_index, asset_id)
+        logger.info(f"Created {action_type} at index {insert_index} with asset: {asset_id}")
 
     def insert_action_for_asset(self, asset_id: str, action_type: str) -> None:
         """Insert action for asset (called from Assets panel context menu)."""
@@ -1068,10 +1186,29 @@ class ActionsPanel(QWidget):
             action_copy = action.model_copy(deep=True)
             self._actions.insert(insert_pos, action_copy)
             insert_pos += 1
+            self.action_changed.emit()
+            logger.info("Pasted %d actions", len(self._clipboard))
 
-        self._refresh_list()
-        self.action_changed.emit()
-        logger.info("Pasted %d actions", len(self._clipboard))
+    def _show_add_menu(self) -> None:
+        """Show categorized add action menu with templates."""
+        menu = QMenu(self)
+
+        # Add Templates submenu first
+        templates_menu = menu.addMenu("✨ Templates")
+        for template_name in ACTION_TEMPLATES.keys():
+            action = templates_menu.addAction(template_name)
+            action.triggered.connect(lambda checked=False, t=template_name: self._add_template(t))
+
+        menu.addSeparator()
+
+        # Add categorized actions
+        for category_name, actions in ACTION_CATEGORIES.items():
+            category_menu = menu.addMenu(category_name)
+            for action_type, label in actions:
+                action = category_menu.addAction(label)
+                action.triggered.connect(lambda checked=False, t=action_type: self._add_action(t))
+
+        menu.exec(self.btn_more.mapToGlobal(self.btn_more.rect().bottomLeft()))
 
     def _insert_action_at(self, position: int) -> None:
         """Show add menu and insert action at specific position."""

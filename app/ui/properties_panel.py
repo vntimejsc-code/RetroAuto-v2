@@ -105,7 +105,8 @@ class PropertiesPanel(QWidget):
         if isinstance(action, ClickImage):
             self._add_text_field("asset_id", action.asset_id)
             self._add_combo_field("button", action.button, ["left", "right", "middle"])
-            self._add_spin_field("clicks", action.clicks, 1, 10)
+            self._add_spin_field("clicks", action.clicks, 1, 3)
+            self._add_spin_field("interval_ms", action.interval_ms, 0, 1000)
             self._add_spin_field("timeout_ms", action.timeout_ms, 0, 60000)
             # Advanced options (collapsible)
             self._add_collapsible_section("▸ Advanced", [
@@ -132,7 +133,8 @@ class PropertiesPanel(QWidget):
             self._add_spin_field("x", action.x or 0, 0, 9999)
             self._add_spin_field("y", action.y or 0, 0, 9999)
             self._add_combo_field("button", action.button, ["left", "right", "middle"])
-            self._add_spin_field("clicks", action.clicks, 1, 10)
+            self._add_spin_field("clicks", action.clicks, 1, 3)
+            self._add_spin_field("interval_ms", action.interval_ms, 0, 1000)
             self._add_bool_field("use_match", action.use_match)
 
         elif isinstance(action, IfImage):

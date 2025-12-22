@@ -18,14 +18,38 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMenu,
     QMessageBox,
     QPushButton,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
     QVBoxLayout,
     QWidget,
 )
+
+class RenameDelegate(QStyledItemDelegate):
+    """Custom delegate to ensure rename editor has enough width."""
+    
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index) -> None:
+        """Update editor geometry to use full available width."""
+        rect = option.rect
+        # Expand width to show full text relative to font size
+        font_metrics = editor.fontMetrics()
+        # Add buffer for padding and emoji
+        text_width = font_metrics.horizontalAdvance(index.data()) + 40
+        
+        # Use wider of item width or text width
+        width = max(rect.width(), text_width)
+        
+        # Constrain to parent widget width so it doesn't go off screen
+        if editor.parentWidget():
+            parent_width = editor.parentWidget().width()
+            width = min(width, parent_width - rect.x())
+            
+        editor.setGeometry(rect.x(), rect.y(), width, rect.height())
 
 from core.models import AssetImage
 from infra import get_logger
@@ -129,7 +153,7 @@ class AssetsPanel(QWidget):
         self.asset_list = AssetListWidget()
         self.asset_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.asset_list.currentItemChanged.connect(self._on_selection_changed)
-        self.asset_list.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.asset_list.itemDoubleClicked.connect(self._on_asset_double_clicked)
         self.asset_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.asset_list.customContextMenuRequested.connect(self._show_context_menu)
         group_layout.addWidget(self.asset_list)
@@ -161,6 +185,15 @@ class AssetsPanel(QWidget):
         self.setAcceptDrops(True)
         self._default_style = self.group.styleSheet()
         self._update_visibility()
+        
+        # F2 shortcut for inline rename
+        from PySide6.QtGui import QShortcut, QKeySequence
+        self.rename_shortcut = QShortcut(QKeySequence(Qt.Key.Key_F2), self.asset_list)
+        self.rename_shortcut.activated.connect(self._start_inline_rename)
+        
+        # Handle inline editing
+        self.asset_list.setItemDelegate(RenameDelegate(self.asset_list))
+        self.asset_list.itemChanged.connect(self._on_item_edited)
 
     def _update_visibility(self) -> None:
         """Show/hide drop hint based on asset count."""
@@ -177,6 +210,10 @@ class AssetsPanel(QWidget):
             self._add_list_item(asset)
 
         self._update_visibility()
+    
+    def get_assets(self) -> list[AssetImage]:
+        """Get current assets list for syncing to script."""
+        return list(self._assets)
 
     def _add_list_item(self, asset: AssetImage) -> None:
         """Add item to list widget."""
@@ -187,8 +224,9 @@ class AssetsPanel(QWidget):
             f"Path: {asset.path}\n"
             f"Threshold: {asset.threshold}\n"
             f"─────────────────\n"
-            f"Double-click to rename\n"
-            f"Right-click for options"
+            f"Double-click: Preview\n"
+            f"F2: Rename\n"
+            f"Right-click: Options"
         )
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
         self.asset_list.addItem(item)
@@ -360,42 +398,75 @@ class AssetsPanel(QWidget):
 
         menu.addSeparator()
 
-        # Insert to Actions
-        insert_menu = menu.addMenu("⬇️ Insert to Actions")
-
-        wait_action = QAction("WaitImage", self)
-        wait_action.triggered.connect(
-            lambda: self.insert_action_requested.emit(asset_id, "WaitImage")
-        )
-        insert_menu.addAction(wait_action)
-
-        if_action = QAction("IfImage", self)
-        if_action.triggered.connect(
-            lambda: self.insert_action_requested.emit(asset_id, "IfImage")
-        )
-        insert_menu.addAction(if_action)
-
-        menu.addSeparator()
-
         # Delete
         delete_action = QAction("🗑️ Delete", self)
         delete_action.triggered.connect(self._on_delete)
         menu.addAction(delete_action)
 
         menu.exec(self.asset_list.mapToGlobal(pos))
+    
+    def _on_asset_double_clicked(self, item: QListWidgetItem) -> None:
+        """Show image preview when double-clicking asset."""
+        asset_id = item.data(Qt.ItemDataRole.UserRole)
+        asset = next((a for a in self._assets if a.id == asset_id), None)
+        
+        if asset and asset.path:
+            # Show image preview in dialog
+            from PySide6.QtWidgets import QDialog, QVBoxLayout
+            from app.ui.image_preview import ImagePreview
+            
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"Preview: {asset_id}")
+            dialog.resize(800, 600)
+            
+            layout = QVBoxLayout(dialog)
+            layout.setContentsMargins(0, 0, 0, 0)
+            
+            preview = ImagePreview()
+            preview.load_image(asset.path)
+            layout.addWidget(preview)
+            
+            dialog.exec()
 
     def _rename_asset(self, old_id: str) -> None:
-        """Rename an asset with validation."""
-        new_id, ok = QInputDialog.getText(
-            self,
-            "Rename Asset",
-            f"New ID for '{old_id}':\n\n"
-            "Naming convention: category_element\n"
-            "Examples: btn_login, dlg_error, icon_ok",
-            text=old_id,
+        """Rename an asset with improved dialog."""
+        # Create custom dialog for better UX
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QDialogButtonBox
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Rename Asset")
+        dialog.setMinimumWidth(450)
+        
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(12)
+        
+        # Current ID and instructions
+        info = QLabel(
+            f"<b>Current ID:</b> {old_id}<br><br>"
+            "<b>Naming Convention:</b> category_element<br>"
+            "Examples: btn_login, icon_close, dlg_confirm"
         )
-
-        if not ok or not new_id or new_id == old_id:
+        layout.addWidget(info)
+        
+        # Input field
+        layout.addWidget(QLabel("<b>New ID:</b>"))
+        input_field = QLineEdit(old_id)
+        input_field.setMinimumHeight(32)
+        input_field.setStyleSheet("QLineEdit { font-size: 13px; padding: 4px; }")
+        input_field.selectAll()
+        layout.addWidget(input_field)
+        
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        
+        new_id = input_field.text().strip()
+        if not new_id or new_id == old_id:
             return
 
         # Validate: only allow a-z, 0-9, _
@@ -436,6 +507,50 @@ class AssetsPanel(QWidget):
 
         self.assets_changed.emit()
         logger.info("Renamed asset: %s -> %s", old_id, clean_id)
+    
+    def _start_inline_rename(self) -> None:
+        """Start inline editing on selected item (F2)."""
+        current_item = self.asset_list.currentItem()
+        if current_item:
+            self.asset_list.editItem(current_item)
+    
+    def _on_item_edited(self, item: QListWidgetItem) -> None:
+        """Handle inline editing completion."""
+        # Get new text without emoji
+        new_text = item.text().replace("🖼️ ", "").strip()
+        old_id = item.data(Qt.ItemDataRole.UserRole)
+        
+        if not new_text or new_text == old_id:
+            # Restore original
+            item.setText(f"🖼️ {old_id}")
+            return
+        
+        # Validate
+        import re
+        clean_id = re.sub(r"[^a-z0-9_]", "_", new_text.lower())
+        clean_id = re.sub(r"_+", "_", clean_id).strip("_")
+        
+        if not clean_id or any(a.id == clean_id for a in self._assets if a.id != old_id):
+            # Invalid - restore
+            item.setText(f"🖼️ {old_id}")
+            if not clean_id:
+                QMessageBox.warning(self, "Invalid ID", "ID cannot be empty.")
+            else:
+                QMessageBox.warning(self, "Duplicate ID", f"'{clean_id}' exists.")
+            return
+        
+        # Update asset
+        for asset in self._assets:
+            if asset.id == old_id:
+                asset.id = clean_id
+                break
+        
+        # Update item
+        item.setText(f"🖼️ {clean_id}")
+        item.setData(Qt.ItemDataRole.UserRole, clean_id)
+        
+        self.assets_changed.emit()
+        logger.info(f"Inline renamed: {old_id} → {clean_id}")
 
     def _copy_id(self, asset_id: str) -> None:
         """Copy asset ID to clipboard."""

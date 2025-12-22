@@ -185,6 +185,9 @@ class MainWindow(QMainWindow):
 
         # When coordinate click added to script
         self.coordinates_panel.add_to_script.connect(self._on_add_click_to_script)
+        
+        # When assets change, sync to script for persistence
+        self.assets_panel.assets_changed.connect(self._on_assets_changed)
 
         # Run step from actions panel
         # self.actions_panel.run_step_requested.connect(self._on_run_step)
@@ -583,11 +586,13 @@ class MainWindow(QMainWindow):
             # Ensure directory exists
             self._draft_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Serialize actions
+            # Serialize actions + assets
             actions = self.actions_panel.get_actions()
+            assets = self.assets_panel.get_assets()
             draft_data = {
                 "version": 1,
                 "actions": [action.model_dump() for action in actions],
+                "assets": [asset.model_dump() for asset in assets],
                 "coordinates": self.coordinates_panel.get_coordinates(),
             }
 
@@ -646,7 +651,20 @@ class MainWindow(QMainWindow):
                 self.actions_panel._actions = actions
                 self.actions_panel._refresh_list()
                 logger.info(f"Loaded draft: {len(actions)} actions")
-                self.status_bar.showMessage(f"Loaded draft: {len(actions)} actions")
+            
+            # Load assets
+            from core.models import AssetImage
+            assets = []
+            for asset_data in draft_data.get("assets", []):
+                with contextlib.suppress(Exception):
+                    assets.append(AssetImage(**asset_data))
+            
+            if assets:
+                self.assets_panel.load_assets(assets)
+                logger.info(f"Loaded draft: {len(assets)} assets")
+            
+            if actions or assets:
+                self.status_bar.showMessage(f"Loaded draft: {len(actions)} actions, {len(assets)} assets")
 
         except Exception as e:
             logger.warning(f"Failed to load draft: {e}")
@@ -655,8 +673,15 @@ class MainWindow(QMainWindow):
         """Handle window close."""
         # Save draft before closing
         self._save_draft()
-
+        
         if self.engine.isRunning():
             self.engine.stop()
             self.engine.wait(2000)
         event.accept()
+        
+    def _on_assets_changed(self) -> None:
+        """Sync assets from UI to script when they change."""
+        if self.engine.script:
+            # Get current assets from panel
+            self.engine.script.assets = self.assets_panel.get_assets()
+            logger.info("Assets synced to script (%d assets)", len(self.engine.script.assets))
