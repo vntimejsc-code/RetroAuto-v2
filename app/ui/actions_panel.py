@@ -363,6 +363,9 @@ class ActionsPanel(QWidget):
         self._actions: list[Action] = []
         self._current_highlight: int = -1
         self._clipboard: list[Action] = []  # For copy/paste
+        self._undo_stack: list[list[Action]] = []  # Undo history
+        self._redo_stack: list[list[Action]] = []  # Redo history
+        self._max_undo = 50  # Max undo steps
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -486,6 +489,21 @@ class ActionsPanel(QWidget):
         self.move_down_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Down"), self.action_list)
         self.move_down_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         self.move_down_shortcut.activated.connect(self._on_move_down)
+
+        # Ctrl+Z to undo
+        self.undo_shortcut = QShortcut(QKeySequence.StandardKey.Undo, self.action_list)
+        self.undo_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.undo_shortcut.activated.connect(self._on_undo)
+
+        # Ctrl+Y to redo
+        self.redo_shortcut = QShortcut(QKeySequence.StandardKey.Redo, self.action_list)
+        self.redo_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.redo_shortcut.activated.connect(self._on_redo)
+
+        # Space to test current step
+        self.test_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Space), self.action_list)
+        self.test_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.test_shortcut.activated.connect(self._on_test_step)
 
     def load_actions(self, actions: list[Action]) -> None:
         """Load actions from script flow."""
@@ -649,6 +667,7 @@ class ActionsPanel(QWidget):
         """Add a new action of given type."""
         factory = ACTION_DEFAULTS.get(action_type)
         if factory:
+            self._save_state()  # Save for undo
             action = factory()
             self._actions.append(action)
             self._refresh_list()
@@ -664,6 +683,7 @@ class ActionsPanel(QWidget):
         if not factory:
             return
 
+        self._save_state()  # Save for undo
         action = factory()
 
         # Insert after current selection, or at end
@@ -689,6 +709,7 @@ class ActionsPanel(QWidget):
         if not selected:
             return
 
+        self._save_state()  # Save for undo
         # Get indices in reverse order to delete from end
         rows = sorted([self.action_list.row(item) for item in selected], reverse=True)
         for row in rows:
@@ -701,6 +722,7 @@ class ActionsPanel(QWidget):
 
     def _on_clear_all(self) -> None:
         """Clear all actions."""
+        self._save_state()  # Save for undo
         self._actions.clear()
         self._refresh_list()
         self.action_changed.emit()
@@ -870,6 +892,7 @@ class ActionsPanel(QWidget):
         if not selected:
             return
 
+        self._save_state()  # Save for undo
         # Get indices sorted
         rows = sorted([self.action_list.row(item) for item in selected])
         insert_pos = rows[-1] + 1
@@ -905,6 +928,7 @@ class ActionsPanel(QWidget):
         if not self._clipboard:
             return
 
+        self._save_state()  # Save for undo
         # Get insert position (after current selection)
         current = self.action_list.currentRow()
         insert_pos = current + 1 if current >= 0 else len(self._actions)
@@ -938,6 +962,7 @@ class ActionsPanel(QWidget):
         """Add new action at specific position."""
         factory = ACTION_DEFAULTS.get(action_type)
         if factory:
+            self._save_state()  # Save for undo
             action = factory()
             if position >= len(self._actions):
                 self._actions.append(action)
@@ -948,3 +973,52 @@ class ActionsPanel(QWidget):
             self.action_changed.emit()
             logger.info("Added %s at position %d", action_type, position)
 
+    def _save_state(self) -> None:
+        """Save current state to undo stack."""
+        # Deep copy all actions
+        state = [action.model_copy(deep=True) for action in self._actions]
+        self._undo_stack.append(state)
+        # Limit stack size
+        if len(self._undo_stack) > self._max_undo:
+            self._undo_stack.pop(0)
+        # Clear redo stack on new action
+        self._redo_stack.clear()
+
+    def _on_undo(self) -> None:
+        """Undo last action."""
+        if not self._undo_stack:
+            logger.debug("Nothing to undo")
+            return
+
+        # Save current state to redo stack
+        current = [action.model_copy(deep=True) for action in self._actions]
+        self._redo_stack.append(current)
+
+        # Restore previous state
+        self._actions = self._undo_stack.pop()
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Undo: restored to %d actions", len(self._actions))
+
+    def _on_redo(self) -> None:
+        """Redo last undone action."""
+        if not self._redo_stack:
+            logger.debug("Nothing to redo")
+            return
+
+        # Save current state to undo stack
+        current = [action.model_copy(deep=True) for action in self._actions]
+        self._undo_stack.append(current)
+
+        # Restore next state
+        self._actions = self._redo_stack.pop()
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Redo: restored to %d actions", len(self._actions))
+
+    def _on_test_step(self) -> None:
+        """Test current step (Space key)."""
+        row = self.action_list.currentRow()
+        if row >= 0:
+            self.run_step_requested.emit(row)
+            logger.info("Test step: %d", row)
