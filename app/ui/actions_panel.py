@@ -91,14 +91,17 @@ ASSET_MIME_TYPE = "application/x-retroauto-asset"
 class ActionListWidget(QListWidget):
     """
     Custom list widget with external drop support from Assets panel.
-    Shows visual indicator for drop position.
+    - Drop ON an item: update that action's asset_id (if applicable)
+    - Drop BETWEEN items: shows blue indicator line (insert position)
     """
 
-    asset_dropped = Signal(str, int)  # asset_id, drop_index
+    asset_dropped_on_item = Signal(str, int)  # asset_id, item_index (update existing)
+    asset_dropped_insert = Signal(str, int)  # asset_id, insert_index (create new)
 
     def __init__(self, parent=None) -> None:  # type: ignore
         super().__init__(parent)
         self._drop_indicator_index = -1
+        self._drop_on_item_index = -1  # -1 = insert mode, >=0 = update mode
         self.setAcceptDrops(True)
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.viewport().setAcceptDrops(True)
@@ -115,21 +118,47 @@ class ActionListWidget(QListWidget):
             event.ignore()
 
     def dragMoveEvent(self, event) -> None:  # type: ignore
-        """Update drop indicator position."""
+        """Update drop indicator - detect if dropping ON item or BETWEEN items."""
         mime = event.mimeData()
         if mime.hasFormat(ASSET_MIME_TYPE):
-            # Calculate drop index based on mouse position
             pos = event.position().toPoint()
-            self._drop_indicator_index = self._get_drop_index(pos)
-            self.viewport().update()  # Trigger repaint
+            item = self.itemAt(pos)
+
+            if item:
+                rect = self.visualItemRect(item)
+                index = self.row(item)
+                # Check if in center 60% of item (update mode) or edge 20% (insert mode)
+                item_height = rect.height()
+                edge_zone = item_height * 0.2
+
+                if pos.y() < rect.top() + edge_zone:
+                    # Top edge - insert before
+                    self._drop_on_item_index = -1
+                    self._drop_indicator_index = index
+                elif pos.y() > rect.bottom() - edge_zone:
+                    # Bottom edge - insert after
+                    self._drop_on_item_index = -1
+                    self._drop_indicator_index = index + 1
+                else:
+                    # Center - update this item
+                    self._drop_on_item_index = index
+                    self._drop_indicator_index = -1
+            else:
+                # Below all items - insert at end
+                self._drop_on_item_index = -1
+                self._drop_indicator_index = self.count()
+
+            self.viewport().update()
             event.acceptProposedAction()
         else:
             self._drop_indicator_index = -1
+            self._drop_on_item_index = -1
             super().dragMoveEvent(event)
 
     def dragLeaveEvent(self, event) -> None:  # type: ignore
-        """Clear drop indicator."""
+        """Clear drop indicators."""
         self._drop_indicator_index = -1
+        self._drop_on_item_index = -1
         self.viewport().update()
         super().dragLeaveEvent(event)
 
@@ -138,40 +167,46 @@ class ActionListWidget(QListWidget):
         mime = event.mimeData()
         if mime.hasFormat(ASSET_MIME_TYPE):
             asset_id = mime.data(ASSET_MIME_TYPE).data().decode("utf-8")
-            drop_index = self._drop_indicator_index
-            if drop_index < 0:
-                drop_index = self.count()  # Append at end
+
+            if self._drop_on_item_index >= 0:
+                # Update existing action
+                self.asset_dropped_on_item.emit(asset_id, self._drop_on_item_index)
+            else:
+                # Insert new action
+                insert_index = self._drop_indicator_index
+                if insert_index < 0:
+                    insert_index = self.count()
+                self.asset_dropped_insert.emit(asset_id, insert_index)
+
             self._drop_indicator_index = -1
+            self._drop_on_item_index = -1
             self.viewport().update()
-            self.asset_dropped.emit(asset_id, drop_index)
             event.acceptProposedAction()
         else:
             self._drop_indicator_index = -1
+            self._drop_on_item_index = -1
             super().dropEvent(event)
 
-    def _get_drop_index(self, pos: QPoint) -> int:
-        """Calculate drop index based on mouse position."""
-        if self.count() == 0:
-            return 0
-
-        # Find the item at position
-        item = self.itemAt(pos)
-        if item:
-            rect = self.visualItemRect(item)
-            index = self.row(item)
-            # If in bottom half of item, insert after
-            if pos.y() > rect.center().y():
-                return index + 1
-            return index
-        else:
-            # Below all items - append at end
-            return self.count()
-
     def paintEvent(self, event) -> None:  # type: ignore
-        """Paint drop indicator line."""
+        """Paint drop indicator line or item highlight."""
         super().paintEvent(event)
 
-        if self._drop_indicator_index >= 0:
+        # Draw item highlight for update mode
+        if self._drop_on_item_index >= 0:
+            item = self.item(self._drop_on_item_index)
+            if item:
+                painter = QPainter(self.viewport())
+                rect = self.visualItemRect(item)
+                # Semi-transparent blue highlight
+                painter.fillRect(rect, QColor(0, 120, 212, 60))  # #0078d4 with alpha
+                # Blue border
+                pen = QPen(QColor("#0078d4"), 2)
+                painter.setPen(pen)
+                painter.drawRect(rect.adjusted(1, 1, -1, -1))
+                painter.end()
+
+        # Draw insert line indicator
+        elif self._drop_indicator_index >= 0:
             painter = QPainter(self.viewport())
             pen = QPen(QColor("#0078d4"), 3)  # Blue line, 3px thick
             painter.setPen(pen)
@@ -238,7 +273,8 @@ class ActionsPanel(QWidget):
         self.action_list.currentItemChanged.connect(self._on_selection_changed)
         self.action_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.action_list.customContextMenuRequested.connect(self._show_context_menu)
-        self.action_list.asset_dropped.connect(self._on_asset_dropped)
+        self.action_list.asset_dropped_on_item.connect(self._on_asset_dropped_on_item)
+        self.action_list.asset_dropped_insert.connect(self._on_asset_dropped_insert)
         group_layout.addWidget(self.action_list)
 
         # Buttons
@@ -498,20 +534,60 @@ class ActionsPanel(QWidget):
             self.action_list.setCurrentRow(idx)
             logger.debug("Updated action %d", idx)
 
-    def _on_asset_dropped(self, asset_id: str, drop_index: int) -> None:
-        """Handle asset dropped from Assets panel to create WaitImage action."""
+    def _on_asset_dropped_on_item(self, asset_id: str, item_index: int) -> None:
+        """Handle asset dropped ON an existing action - update its asset_id."""
+        if item_index < 0 or item_index >= len(self._actions):
+            return
+
+        action = self._actions[item_index]
+        action_type = type(action).__name__
+
+        # Only update actions that have asset_id
+        if isinstance(action, WaitImage):
+            updated = WaitImage(
+                asset_id=asset_id,
+                timeout=action.timeout,
+                threshold=action.threshold,
+            )
+        elif isinstance(action, IfImage):
+            updated = IfImage(
+                asset_id=asset_id,
+                then_actions=action.then_actions,
+                else_actions=action.else_actions,
+                threshold=action.threshold,
+            )
+        elif isinstance(action, WhileImage):
+            updated = WhileImage(
+                asset_id=asset_id,
+                while_present=action.while_present,
+                actions=action.actions,
+                threshold=action.threshold,
+            )
+        else:
+            # Action doesn't support asset_id - ignore drop
+            logger.warning("Cannot set asset_id on action type: %s", action_type)
+            return
+
+        self._actions[item_index] = updated
+        self._refresh_list()
+        self.action_list.setCurrentRow(item_index)
+        self.action_changed.emit()
+        logger.info("Updated %s asset_id to: %s", action_type, asset_id)
+
+    def _on_asset_dropped_insert(self, asset_id: str, insert_index: int) -> None:
+        """Handle asset dropped BETWEEN actions - insert new WaitImage."""
         action = WaitImage(asset_id=asset_id)
-        
+
         # Insert at specific position
-        if drop_index >= len(self._actions):
+        if insert_index >= len(self._actions):
             self._actions.append(action)
         else:
-            self._actions.insert(drop_index, action)
-        
+            self._actions.insert(insert_index, action)
+
         self._refresh_list()
-        self.action_list.setCurrentRow(drop_index)
+        self.action_list.setCurrentRow(insert_index)
         self.action_changed.emit()
-        logger.info("Created WaitImage from dropped asset: %s at index %d", asset_id, drop_index)
+        logger.info("Created WaitImage at index %d with asset: %s", insert_index, asset_id)
 
     def insert_action_for_asset(self, asset_id: str, action_type: str) -> None:
         """Insert action for asset (called from Assets panel context menu)."""
