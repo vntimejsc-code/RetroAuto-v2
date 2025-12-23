@@ -333,17 +333,17 @@ class IRMapper:
         """Convert action IR to code string with validation."""
         action_type = action.action_type
         params = action.params
-        
+
         # Label - validate name
         if action_type == "label":
-            name = params.get('name', '')
+            name = params.get("name", "")
             if not name or not name.strip():
                 return "// label (empty name)"
             return f"label {name}:"
 
         # Goto - validate target
         if action_type == "goto":
-            target = params.get('target', '')
+            target = params.get("target", "")
             if not target or not target.strip():
                 return "// goto (empty target)"
             return f"goto {target};"
@@ -351,38 +351,38 @@ class IRMapper:
         # Control flow
         if action_type in ("break", "continue", "return"):
             return f"{action_type};"
-        
+
         # Block markers (skip - these are structural)
         if action_type in ("end_if", "endif"):
             return "// end_if"
         if action_type == "else":
             return "// else"
-        
+
         # Special action types that need custom handling
         if action_type == "click_image":
-            asset = params.get('asset_id', params.get('arg0', ''))
+            asset = params.get("asset_id", params.get("arg0", ""))
             return f'click_image("{asset}");'
-        
+
         if action_type == "click_random":
-            x1 = params.get('x1', params.get('from_x', 0))
-            y1 = params.get('y1', params.get('from_y', 0))
-            x2 = params.get('x2', params.get('to_x', 100))
-            y2 = params.get('y2', params.get('to_y', 100))
+            x1 = params.get("x1", params.get("from_x", 0))
+            y1 = params.get("y1", params.get("from_y", 0))
+            x2 = params.get("x2", params.get("to_x", 100))
+            y2 = params.get("y2", params.get("to_y", 100))
             return f"click_random({x1}, {y1}, {x2}, {y2});"
-        
+
         if action_type == "read_text":
-            var = params.get('variable_name', 'text')
+            var = params.get("variable_name", "text")
             return f'read_text("{var}");'
-        
+
         if action_type == "if_text":
-            var = params.get('variable_name', '')
-            op = params.get('operator', 'contains')
-            val = params.get('value', '')
+            var = params.get("variable_name", "")
+            op = params.get("operator", "contains")
+            val = params.get("value", "")
             return f'if_text("{var}", "{op}", "{val}");'
-        
+
         if action_type == "notify":
-            msg = params.get('message', params.get('arg0', ''))
-            method = params.get('method', 'popup')
+            msg = params.get("message", params.get("arg0", ""))
+            method = params.get("method", "popup")
             return f'notify("{msg}", method="{method}");'
 
         # Generic function call

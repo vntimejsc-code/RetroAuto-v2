@@ -9,14 +9,15 @@ It checks:
 3. Game Window Visibility & Resolution
 """
 
+import ctypes
 import socket
 import subprocess
 import time
-import ctypes
-from typing import Optional, Tuple
+
 from infra import get_logger
 
 logger = get_logger("SystemWatchdog")
+
 
 class SystemWatchdog:
     def __init__(self):
@@ -24,9 +25,11 @@ class SystemWatchdog:
         self.check_interval = 5.0  # Check every 5 seconds
         self._user32 = ctypes.windll.user32
         self._shcore = ctypes.windll.shcore
-        self._shcore.SetProcessDpiAwareness(1) # Enable DPI awareness for accurate resolution checks
+        self._shcore.SetProcessDpiAwareness(
+            1
+        )  # Enable DPI awareness for accurate resolution checks
 
-    def check_health(self, config: dict) -> Tuple[bool, str]:
+    def check_health(self, config: dict) -> tuple[bool, str]:
         """
         Run all configured health checks.
         Returns: (is_healthy, error_message)
@@ -34,7 +37,7 @@ class SystemWatchdog:
         current_time = time.time()
         if current_time - self.last_check < self.check_interval:
             return True, ""
-        
+
         self.last_check = current_time
 
         # 1. Check Internet
@@ -66,7 +69,7 @@ class SystemWatchdog:
             socket.setdefaulttimeout(timeout)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
             return True
-        except socket.error:
+        except OSError:
             return False
 
     def _check_process(self, process_name: str) -> bool:
@@ -77,17 +80,16 @@ class SystemWatchdog:
         try:
             # Usage of tasklist is fast enough for 5s interval
             output = subprocess.check_output(
-                f'tasklist /FI "IMAGENAME eq {process_name}"', 
-                shell=True
+                f'tasklist /FI "IMAGENAME eq {process_name}"', shell=True
             ).decode(errors="ignore")
-            # If process is found, it appears in the list. 
+            # If process is found, it appears in the list.
             # If not, tasklist usually says "INFO: No tasks are running..."
             return process_name.lower() in output.lower()
         except Exception as e:
             logger.error(f"Error checking process: {e}")
-            return True # Assume true on error to prevent blocking execution due to watchdog bug
+            return True  # Assume true on error to prevent blocking execution due to watchdog bug
 
-    def _check_window(self, partial_title: str) -> Tuple[bool, str]:
+    def _check_window(self, partial_title: str) -> tuple[bool, str]:
         """
         Check if a window with partial_title exists and is not minimized.
         """
@@ -98,10 +100,10 @@ class SystemWatchdog:
             buff = ctypes.create_unicode_buffer(length + 1)
             self._user32.GetWindowTextW(hwnd, buff, length + 1)
             title = buff.value
-            
+
             if partial_title.lower() in title.lower() and self._user32.IsWindowVisible(hwnd):
                 found_window.append(hwnd)
-                return False # Stop enumeration
+                return False  # Stop enumeration
             return True
 
         CMPFUNC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
@@ -109,11 +111,11 @@ class SystemWatchdog:
 
         if not found_window:
             return False, f"⚠️ Window containing '{partial_title}' not found"
-        
+
         hwnd = found_window[0]
-        
+
         # Check if minimized
         if self._user32.IsIconic(hwnd):
             return False, f"⚠️ Window '{partial_title}' is minimized"
-            
+
         return True, ""

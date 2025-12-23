@@ -147,12 +147,27 @@ class ExecutionContext:
         """Wait for image using configured waiter."""
         if not self.waiter:
             return None
-        
+
         if appear:
-            return self.waiter.wait_appear(
-                asset_id, timeout_ms=timeout_ms, smart_wait=smart_wait
-            )
+            return self.waiter.wait_appear(asset_id, timeout_ms=timeout_ms, smart_wait=smart_wait)
         else:
-            return self.waiter.wait_vanish(
-                asset_id, timeout_ms=timeout_ms, smart_wait=smart_wait
-            )
+            return self.waiter.wait_vanish(asset_id, timeout_ms=timeout_ms, smart_wait=smart_wait)
+
+    def get_asset(self, asset_id: str) -> Any | None:
+        """Get asset by ID from script."""
+        if self.script:
+            for asset in self.script.assets:
+                if asset.id == asset_id:
+                    return asset
+        return None
+
+    def last_match_center(self) -> tuple[int | None, int | None]:
+        """Get center coordinates of last match."""
+        if not self.last_match:
+            return None, None
+
+        # Calculate center
+        # Match(x, y, w, h, confidence)
+        cx = self.last_match.x + (self.last_match.w // 2)
+        cy = self.last_match.y + (self.last_match.h // 2)
+        return cx, cy

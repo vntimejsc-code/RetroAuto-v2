@@ -5,35 +5,43 @@ Pillar 2 of "Titan Light" Robustness Strategy.
 Intercepts unhandled exceptions and shows a dialog instead of crashing to desktop.
 """
 
-import sys
-import traceback
 import platform
 import subprocess
+import sys
+import traceback
 from datetime import datetime
+
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, 
-    QPushButton, QApplication, QStyle, QWidget
+    QApplication,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QStyle,
+    QTextEdit,
+    QVBoxLayout,
 )
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon, QFont, QClipboard
 
 from infra import get_logger
 
 logger = get_logger("CrashHandler")
 
+
 class CrashDialog(QDialog):
     """
     Dialog shown when the application crashes.
     """
+
     def __init__(self, exctype, value, tb, parent=None):
         super().__init__(parent)
         self.setWindowTitle("RetroAuto - Critcal Error")
         self.setMinimumSize(600, 400)
         self.setModal(True)
-        
+
         # Get traceback string
         self.traceback_text = "".join(traceback.format_exception(exctype, value, tb))
-        
+
         # Determine restart command
         self.restart_cmd = [sys.executable] + sys.argv
 
@@ -46,29 +54,29 @@ class CrashDialog(QDialog):
 
         # Header
         header_layout = QHBoxLayout()
-        
+
         # Icon (Warning)
         icon_label = QLabel()
         icon = self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical)
         icon_label.setPixmap(icon.pixmap(48, 48))
         header_layout.addWidget(icon_label)
-        
+
         # Message
         msg_layout = QVBoxLayout()
         title_label = QLabel("Oops! RetroAuto encountered a problem.")
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #ff5555;")
-        
+
         desc_label = QLabel(
             "An unhandled exception occurred. You can restart the application or close it.\n"
             f"Error: {exctype.__name__}: {value}"
         )
         desc_label.setWordWrap(True)
-        
+
         msg_layout.addWidget(title_label)
         msg_layout.addWidget(desc_label)
         header_layout.addLayout(msg_layout)
         header_layout.addStretch()
-        
+
         layout.addLayout(header_layout)
 
         # Stack Trace Area
@@ -76,19 +84,21 @@ class CrashDialog(QDialog):
         self.text_edit.setReadOnly(True)
         self.text_edit.setFont(QFont("Consolas", 9))
         self.text_edit.setPlainText(self.traceback_text)
-        self.text_edit.setStyleSheet("background-color: #2b2b2b; color: #f8f8f2; border: 1px solid #444;")
+        self.text_edit.setStyleSheet(
+            "background-color: #2b2b2b; color: #f8f8f2; border: 1px solid #444;"
+        )
         layout.addWidget(self.text_edit)
 
         # Buttons
         btn_layout = QHBoxLayout()
-        
+
         btn_copy = QPushButton("📄 Copy Error")
         btn_copy.clicked.connect(self._copy_error)
-        
+
         btn_restart = QPushButton("🔄 Restart Application")
         btn_restart.clicked.connect(self._restart_app)
         btn_restart.setStyleSheet("background-color: #50fa7b; color: #000; font-weight: bold;")
-        
+
         btn_close = QPushButton("❌ Close")
         btn_close.clicked.connect(self.close)
 
@@ -122,17 +132,18 @@ class CrashHandler:
     """
     Installs global exception hooks to catch crashes.
     """
+
     _installed = False
 
     @classmethod
     def install(cls):
         if cls._installed:
             return
-        
+
         sys.excepthook = cls._handle_exception
         # Also catch calls that are ignored (like in threads mostly, though Qt handles connection errors differently)
-        # sys.unraisablehook = cls._handle_unraisable 
-        
+        # sys.unraisablehook = cls._handle_unraisable
+
         cls._installed = True
         logger.info("Global Crash Handler installed")
 
@@ -141,7 +152,7 @@ class CrashHandler:
         """Handle execution exception."""
         # Log it first
         logger.critical("Uncaught exception!", exc_info=(exctype, value, tb))
-        
+
         # Don't handle KeyboardInterrupt (Ctrl+C)
         if issubclass(exctype, KeyboardInterrupt):
             sys.__excepthook__(exctype, value, tb)
@@ -159,7 +170,7 @@ class CrashHandler:
                 sys.__excepthook__(exctype, value, tb)
         else:
             sys.__excepthook__(exctype, value, tb)
-            
+
     # @classmethod
     # def _handle_unraisable(cls, args):
     #     """Handle unraisable exceptions (e.g. in __del__)."""

@@ -106,7 +106,9 @@ class Click(ActionBase):
     x: int | None = Field(default=None, description="X coordinate (None = use last match)")
     y: int | None = Field(default=None, description="Y coordinate (None = use last match)")
     button: Literal["left", "right", "middle"] = Field(default="left")
-    clicks: int = Field(default=1, ge=1, le=3, description="Number of clicks (1=single, 2=double, 3=triple)")
+    clicks: int = Field(
+        default=1, ge=1, le=3, description="Number of clicks (1=single, 2=double, 3=triple)"
+    )
     interval_ms: int = Field(default=100, ge=0, description="Interval between clicks in ms")
     use_match: bool = Field(default=False, description="Click at last match center")
 
@@ -117,7 +119,9 @@ class ClickImage(ActionBase):
     action: Literal["ClickImage"] = "ClickImage"
     asset_id: str = Field(description="Asset to click")
     button: Literal["left", "right", "middle"] = Field(default="left")
-    clicks: int = Field(default=1, ge=1, le=3, description="Number of clicks (1=single, 2=double, 3=triple)")
+    clicks: int = Field(
+        default=1, ge=1, le=3, description="Number of clicks (1=single, 2=double, 3=triple)"
+    )
     timeout_ms: int = Field(default=10000, ge=0, le=300000)
     offset_x: int = Field(default=0)
     offset_y: int = Field(default=0)
@@ -165,7 +169,9 @@ class IfText(ActionBase):
 
     action: Literal["IfText"] = "IfText"
     variable_name: str = Field(description="Variable to check (e.g. $hp)")
-    operator: Literal["contains", "equals", "starts_with", "ends_with", "numeric_lt", "numeric_gt"] = "contains"
+    operator: Literal[
+        "contains", "equals", "starts_with", "ends_with", "numeric_lt", "numeric_gt"
+    ] = "contains"
     value: str = Field(description="Value to compare against")
     then_actions: list[Action] = Field(default_factory=list)
     else_actions: list[Action] = Field(default_factory=list)
@@ -337,9 +343,9 @@ class IfPixel(ActionBase):
     else_actions: list[Action] = Field(default_factory=list)
 
 
-
 class NotifyMethod(str, Enum):
     """Notification methods."""
+
     POPUP = "popup"
     TELEGRAM = "telegram"
     DISCORD = "discord"
@@ -389,7 +395,7 @@ Action = Annotated[
 
 class GraphNode(BaseModel):
     """Node in visual graph editor."""
-    
+
     id: str = Field(description="Unique node ID (UUID)")
     action: Action = Field(description="The action this node executes")
     x: float = Field(default=0, description="X position on canvas")
@@ -398,7 +404,7 @@ class GraphNode(BaseModel):
 
 class GraphConnection(BaseModel):
     """Connection between two nodes in the graph."""
-    
+
     from_node: str = Field(description="Source node ID")
     from_socket: str = Field(description="Source socket name (e.g., 'exec_out')")
     to_node: str = Field(description="Target node ID")
@@ -407,7 +413,7 @@ class GraphConnection(BaseModel):
 
 class FlowGraph(BaseModel):
     """Visual graph representation of a flow."""
-    
+
     nodes: list[GraphNode] = Field(default_factory=list)
     connections: list[GraphConnection] = Field(default_factory=list)
 

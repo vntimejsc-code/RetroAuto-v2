@@ -92,7 +92,7 @@ class SyncManager(QObject):
     def on_code_saved(self, code: str) -> None:
         """
         Handle code save from IDE - sync immediately without debounce.
-        
+
         Use this when user explicitly saves, not on every keystroke.
         """
         if self._sync_lock:
@@ -101,17 +101,21 @@ class SyncManager(QObject):
 
         # Cancel any pending debounced sync
         self._code_debounce.stop()
-        
+
         logger.info("on_code_saved: Starting immediate sync (code length: %d)", len(code))
-        
+
         # Sync immediately
         self._sync_lock = True
         try:
             self._doc.update_from_code(code, source="editor")
-            logger.info("on_code_saved: update_from_code completed, IR valid: %s", self._doc.ir.is_valid)
+            logger.info(
+                "on_code_saved: update_from_code completed, IR valid: %s", self._doc.ir.is_valid
+            )
             logger.info("on_code_saved: IR has %d flows", len(self._doc.ir.flows))
             if self._doc.ir.flows:
-                logger.info("on_code_saved: main flow has %d actions", len(self._doc.ir.flows[0].actions))
+                logger.info(
+                    "on_code_saved: main flow has %d actions", len(self._doc.ir.flows[0].actions)
+                )
         finally:
             self._sync_lock = False
 

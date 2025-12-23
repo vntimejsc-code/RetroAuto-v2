@@ -22,11 +22,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.hybrid_panel import HybridActionsPanel
 from app.ui.assets_panel import AssetsPanel
 from app.ui.capture_tool import CaptureTool
 from app.ui.coordinates_panel import CoordinatesPanel
 from app.ui.engine_worker import EngineWorker
+from app.ui.hybrid_panel import HybridActionsPanel
 from app.ui.log_panel import LogPanel
 from app.ui.properties_panel import PropertiesPanel
 from core.dsl.document import ScriptDocument
@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         # Engine worker (QThread)
         self.engine = EngineWorker()
         self._project_path: Path | None = None
-        
+
         # Auto-detect project in CWD
         cwd = Path.cwd()
         if (cwd / "script.yaml").exists():
@@ -183,6 +183,11 @@ class MainWindow(QMainWindow):
         # IDE
         self.action_open_ide = toolbar.addAction("🖥️ Open IDE", self._on_open_ide)
 
+        # View Menu
+        menu_bar = self.menuBar()
+        view_menu = menu_bar.addMenu("View")
+        self.action_view_flow = view_menu.addAction("🎨 Visual Flow Editor", self._show_flow_editor)
+
     def _connect_panel_signals(self) -> None:
         """Connect panel signals."""
         # When action selected in actions panel, show properties
@@ -193,12 +198,15 @@ class MainWindow(QMainWindow):
 
         # When coordinate click added to script
         self.coordinates_panel.add_to_script.connect(self._on_add_click_to_script)
-        
+
         # When assets change, sync to script for persistence
         self.assets_panel.assets_changed.connect(self._on_assets_changed)
 
         # Run step from actions panel
         # self.actions_panel.run_step_requested.connect(self._on_run_step)
+
+        # Open Flow Editor
+        self.actions_panel.flow_editor_requested.connect(self._show_flow_editor)
 
     def _connect_engine_signals(self) -> None:
         """Connect engine worker signals."""
@@ -427,6 +435,41 @@ class MainWindow(QMainWindow):
         if main_flow:
             main_flow.actions = self.actions_panel.get_actions()
 
+    # ─────────────────────────────────────────────────────────────
+    # Visual Flow Editor Integration
+    # ─────────────────────────────────────────────────────────────
+
+    def _show_flow_editor(self) -> None:
+        """Show the visual flow editor in a new window."""
+        from PySide6.QtWidgets import QMainWindow
+
+        from app.ui.flow_editor import FlowEditorWidget
+
+        # Create flow editor window
+        self._flow_window = QMainWindow(self)
+        self._flow_window.setWindowTitle("🎨 Visual Flow Editor - RetroAuto")
+        self._flow_window.setMinimumSize(800, 600)
+
+        # Get current actions
+        current_actions = self.actions_panel.get_actions()
+
+        # Initialize with current actions
+        flow_widget = FlowEditorWidget(actions=current_actions)
+
+        # Connect export signal to sync back
+        flow_widget.actions_exported.connect(self._on_flow_actions_exported)
+
+        self._flow_window.setCentralWidget(flow_widget)
+        self._flow_window.show()
+
+        logger.info("Opened Visual Flow Editor window")
+
+    def _on_flow_actions_exported(self, actions: list) -> None:
+        """Handle actions exported from flow editor."""
+        self.actions_panel.load_actions(actions)
+        self.status_bar.showMessage(f"Synced {len(actions)} actions from Flow Editor")
+        logger.info(f"Updated Actions Panel with {len(actions)} actions from Flow Editor")
+
     def _on_open_ide(self) -> None:
         """Open the DSL IDE window with current script code."""
         from app.ui.ide_main_window import IDEMainWindow
@@ -449,7 +492,7 @@ class MainWindow(QMainWindow):
 
         # Create and show IDE window
         self._ide_window = IDEMainWindow()
-        
+
         # Set file path if project exists
         if self._project_path:
             self._ide_window._current_file = self._project_path / "scripts" / "main.dsl"
@@ -680,20 +723,23 @@ class MainWindow(QMainWindow):
                 self.actions_panel._actions = actions
                 self.actions_panel._refresh_list()
                 logger.info(f"Loaded draft: {len(actions)} actions")
-            
+
             # Load assets
             from core.models import AssetImage
+
             assets = []
             for asset_data in draft_data.get("assets", []):
                 with contextlib.suppress(Exception):
                     assets.append(AssetImage(**asset_data))
-            
+
             if assets:
                 self.assets_panel.load_assets(assets)
                 logger.info(f"Loaded draft: {len(assets)} assets")
-            
+
             if actions or assets:
-                self.status_bar.showMessage(f"Loaded draft: {len(actions)} actions, {len(assets)} assets")
+                self.status_bar.showMessage(
+                    f"Loaded draft: {len(actions)} actions, {len(assets)} assets"
+                )
 
         except Exception as e:
             logger.warning(f"Failed to load draft: {e}")
@@ -702,12 +748,12 @@ class MainWindow(QMainWindow):
         """Handle window close."""
         # Save draft before closing
         self._save_draft()
-        
+
         if self.engine.isRunning():
             self.engine.stop()
             self.engine.wait(2000)
         event.accept()
-        
+
     def _on_assets_changed(self) -> None:
         """Sync assets from UI to script when they change."""
         if self.engine.script:

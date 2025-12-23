@@ -188,7 +188,7 @@ class MouseController:
 
         # Steps calculation based on distance (more steps = smoother)
         steps = int(max(20, dist / 15))
-        
+
         # Duration based on Fitts' Law approximation
         base_speed = random.uniform(0.3, 0.6)  # Pixel per sec factor
         duration = max(0.2, min(1.5, dist / 1000 * base_speed + random.uniform(0.1, 0.3)))
@@ -197,28 +197,28 @@ class MouseController:
         start_time = time.time()
         for i in range(1, steps + 1):
             t = i / steps
-            
+
             # Easing function (easeOutQuad) for natural deceleration
-            # t = t * (2 - t) 
-            
+            # t = t * (2 - t)
+
             # Cubic Bezier formula
             curr_x = (
                 (1 - t) ** 3 * start_x
                 + 3 * (1 - t) ** 2 * t * c1_x
-                + 3 * (1 - t) * t ** 2 * c2_x
-                + t ** 3 * x
+                + 3 * (1 - t) * t**2 * c2_x
+                + t**3 * x
             )
             curr_y = (
                 (1 - t) ** 3 * start_y
                 + 3 * (1 - t) ** 2 * t * c1_y
-                + 3 * (1 - t) * t ** 2 * c2_y
-                + t ** 3 * y
+                + 3 * (1 - t) * t**2 * c2_y
+                + t**3 * y
             )
 
             # PyAutoGUI handles the actual move event
             # Use 0 duration for instant steps, minimal sleep manually
             pyautogui.moveTo(int(curr_x), int(curr_y), _pause=False)
-            
+
             # Variable sleep to simulate velocity changes
             elapsed = time.time() - start_time
             remaining = duration - elapsed

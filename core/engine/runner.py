@@ -8,46 +8,42 @@ import time
 from collections.abc import Callable
 
 from core.engine.context import EngineState, ExecutionContext
+from core.graph.walker import GraphWalker
 from core.models import (
+    Action,
     Click,
     ClickImage,
     ClickRandom,
     Delay,
-    DelayRandom,
     Drag,
     Flow,
     Goto,
     Hotkey,
     IfImage,
-    IfPixel,
-    Label,
-    Loop,
-    RunFlow,
-    Scroll,
-    TypeText,
-    ReadText,
-    WaitImage,
     IfText,
+    Label,
     Notify,
     NotifyMethod,
-    Action,
+    ReadText,
+    RunFlow,
+    TypeText,
+    WaitImage,
 )
-from core.graph.walker import GraphWalker
+from core.vision.hasher import calculate_phash, hamming_distance
 from infra import get_logger
 from vision import WaitResult
 from vision.ocr import TextReader
-
-from core.vision.hasher import calculate_phash, hamming_distance
 
 logger = get_logger("Runner")
 
 
 from core.watchdog import SystemWatchdog
 
+
 class Runner:
     """
     Execute automation flows.
-    
+
     Features:
     - Single-step and full-flow execution
     - Label/Goto flow control
@@ -98,7 +94,7 @@ class Runner:
 
         self._ctx.set_state(EngineState.RUNNING)
         logger.info("Starting flow: %s (from step %d)", flow_name, from_step)
-        
+
         # 🛡️ Pre-flight validation
         validation_errors = self._validate_assets_before_run(flow)
         if validation_errors:
@@ -106,47 +102,51 @@ class Runner:
                 logger.error(f"❌ Pre-flight check failed: {error}")
             # Continue anyway but warn user
             logger.warning(f"⚠️ {len(validation_errors)} validation warnings, proceeding...")
-        
+
         # Check OCR availability if needed
         if self._flow_needs_ocr(flow) and not self._ocr.is_available():
-            logger.warning("⚠️ OCR not available (Tesseract not found). ReadText/IfText actions may fail.")
+            logger.warning(
+                "⚠️ OCR not available (Tesseract not found). ReadText/IfText actions may fail."
+            )
 
         # Check if flow has a graph representation
         if flow.graph and flow.graph.nodes:
             logger.info("Executing flow using graph mode")
             return self._execute_graph(flow)
-        
+
         # Legacy mode: execute as linear list
         logger.info("Executing flow using legacy list mode")
         labels = self._build_label_index(flow)
-        return self._execute_list(flow, from_step, labels)
-    
+        return self._execute_list(flow, from_step, labels, flow_name)
+
     def _execute_graph(self, flow: Flow) -> bool:
         """Execute flow using graph walker."""
         try:
             walker = GraphWalker(flow.graph)
-            
+
             # Create action executor callback that maintains context
             def execute_action(action: Action) -> Any:
                 # Check stop/pause before each action
                 if not self._ctx.wait_if_paused():
                     raise InterruptedError("Flow stopped by user")
-                
+
                 # Execute the action and return result
                 return self._execute_action(action, flow, {})
-            
+
             # Execute graph
             walker.execute_graph(execute_action)
             return True
-            
+
         except InterruptedError:
             logger.info("Graph execution stopped by user")
             return False
         except Exception as e:
             logger.error(f"Graph execution failed: {e}")
             return False
-    
-    def _execute_list(self, flow: Flow, from_step: int, labels: dict[str, int]) -> bool:
+
+    def _execute_list(
+        self, flow: Flow, from_step: int, labels: dict[str, int], flow_name: str = "main"
+    ) -> bool:
         """Execute flow using traditional linear list walker (backward compat)."""
         # Build label index for fast Goto
         labels = self._build_label_index(flow)
@@ -156,13 +156,15 @@ class Runner:
 
         try:
             while pc < len(flow.actions):
-                # 1. System Watchdog Check
-                watchdog_cfg = self._ctx.run_options.get("watchdog", {})
-                is_healthy, msg = self._watchdog.check_health(watchdog_cfg)
-                if not is_healthy:
-                    logger.error(f"🛑 Watchdog Stop: {msg}")
-                    # Handle as error to stop script
-                    raise RuntimeError(f"System Watchdog failed: {msg}")
+                # 1. System Watchdog Check (only if run_options available)
+                run_options = getattr(self._ctx, "run_options", {})
+                if run_options:
+                    watchdog_cfg = run_options.get("watchdog", {})
+                    is_healthy, msg = self._watchdog.check_health(watchdog_cfg)
+                    if not is_healthy:
+                        logger.error(f"🛑 Watchdog Stop: {msg}")
+                        # Handle as error to stop script
+                        raise RuntimeError(f"System Watchdog failed: {msg}")
 
                 # 2. Check stop/pause
                 if not self._ctx.wait_if_paused():
@@ -228,17 +230,21 @@ class Runner:
             if isinstance(action, Label):
                 labels[action.name] = i
         return labels
-    
+
     def _validate_assets_before_run(self, flow: Flow) -> list[str]:
         """
         Validate all referenced assets exist before running.
-        
+
         Returns:
             List of error messages (empty if all valid)
         """
+        # Skip validation if context doesn't support get_asset (e.g., tests)
+        if not hasattr(self._ctx, "get_asset"):
+            return []
+
         errors = []
         checked = set()
-        
+
         for action in flow.actions:
             # Check asset_id if action has one
             if hasattr(action, "asset_id") and action.asset_id:
@@ -246,17 +252,17 @@ class Runner:
                 if asset_id in checked:
                     continue
                 checked.add(asset_id)
-                
+
                 # Try to get asset from context
                 try:
                     asset = self._ctx.get_asset(asset_id)
-                    if asset is None or asset.image is None:
+                    if asset is None or getattr(asset, "image", None) is None:
                         errors.append(f"Asset '{asset_id}' not loaded or image is None")
                 except Exception as e:
                     errors.append(f"Asset '{asset_id}' error: {e}")
-        
+
         return errors
-    
+
     def _flow_needs_ocr(self, flow: Flow) -> bool:
         """Check if flow uses any OCR actions."""
         for action in flow.actions:
@@ -280,30 +286,34 @@ class Runner:
         """
         if isinstance(action, (Click, ClickImage, ClickRandom, Drag)):
             hash_before = self._capture_hash()
-            
+
             # Execute
             result = self._dispatch_action(action, flow, labels)
-            
+
             # Flight Recorder: Check for change
             if hash_before is not None:
                 # Wait for reaction (small delay)
-                time.sleep(0.1) 
+                time.sleep(0.1)
                 hash_after = self._capture_hash()
                 if hash_after is not None:
                     dist = hamming_distance(hash_before, hash_after)
-                    if dist <= 1: # Allow exceedingly minor noise (0 or 1 bit)
-                         logger.warning(f"✈️ FlightRecorder: Action '{type(action).__name__}' resulted in NO VISUAL CHANGE (dist={dist}). Possible failure.")
+                    if dist <= 1:  # Allow exceedingly minor noise (0 or 1 bit)
+                        logger.warning(
+                            f"✈️ FlightRecorder: Action '{type(action).__name__}' resulted in NO VISUAL CHANGE (dist={dist}). Possible failure."
+                        )
                     else:
-                         logger.debug(f"FlightRecorder: Visual change confirmed (dist={dist})")
-            
+                        logger.debug(f"FlightRecorder: Visual change confirmed (dist={dist})")
+
             return result
         else:
             return self._dispatch_action(action, flow, labels)
-            
-    def _dispatch_action(self, action: Action, flow: Flow, labels: dict[str, int]) -> bool | int | None:
+
+    def _dispatch_action(
+        self, action: Action, flow: Flow, labels: dict[str, int]
+    ) -> bool | int | None:
         """
         Internal dispatch with error handling wrapper.
-        
+
         All action execution is wrapped for:
         - Execution time logging
         - Graceful error recovery
@@ -311,30 +321,32 @@ class Runner:
         """
         action_type = type(action).__name__
         start_time = time.perf_counter()
-        
+
         try:
             result = self._safe_execute(action, flow, labels)
             elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             logger.info(f"✅ {action_type} completed in {elapsed_ms}ms")
             return result
-            
+
         except TimeoutError as e:
             elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             logger.error(f"⏱️ {action_type} TIMEOUT after {elapsed_ms}ms: {e}")
             return None  # Continue to next action
-            
+
         except FileNotFoundError as e:
             logger.error(f"❌ {action_type} Asset not found: {e}")
             return None  # Continue to next action
-            
+
         except Exception as e:
             elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             logger.error(f"❌ {action_type} FAILED after {elapsed_ms}ms: {e}")
             # Log full traceback at debug level
             logger.debug(f"Traceback for {action_type}:", exc_info=True)
             return None  # Continue to next action (don't crash flow)
-    
-    def _safe_execute(self, action: Action, flow: Flow, labels: dict[str, int]) -> bool | int | None:
+
+    def _safe_execute(
+        self, action: Action, flow: Flow, labels: dict[str, int]
+    ) -> bool | int | None:
         """Execute action with specific handlers."""
         if isinstance(action, WaitImage):
             return self._exec_wait_image(action)
@@ -372,20 +384,20 @@ class Runner:
 
         elif isinstance(action, IfText):
             return self._exec_if_text(action, flow, labels)
-        
+
         elif isinstance(action, ClickImage):
-             return self._exec_click_image(action)
+            return self._exec_click_image(action)
 
         elif isinstance(action, Drag):
-             # Assuming _exec_drag exists or will receive warning for unknown
-             if hasattr(self, '_exec_drag'):
-                 return self._exec_drag(action)
-             else:
-                 logger.warning("Drag action execution not implemented")
-                 return None
+            # Assuming _exec_drag exists or will receive warning for unknown
+            if hasattr(self, "_exec_drag"):
+                return self._exec_drag(action)
+            else:
+                logger.warning("Drag action execution not implemented")
+                return None
 
         elif isinstance(action, Notify):
-             return self._exec_notify(action)
+            return self._exec_notify(action)
 
         else:
             logger.warning("Unknown action type: %s", type(action).__name__)
@@ -394,7 +406,7 @@ class Runner:
     def _capture_hash(self) -> int | None:
         """Capture screen and calculate hash for Flight Recorder."""
         try:
-            # We need to grab screen. 
+            # We need to grab screen.
             # self._ctx.capture (ScreenCapture) usually has grab() returning numpy/PIL
             img = self._ctx.capture.grab()
             return calculate_phash(img)
@@ -412,7 +424,7 @@ class Runner:
             return ""
         result = text
         for name, value in self._ctx.variables.items():
-             if name in result:
+            if name in result:
                 result = result.replace(name, str(value))
         return result
 
@@ -420,13 +432,13 @@ class Runner:
         """Execute Notify action."""
         msg = self._resolve_variables(action.message)
         title = self._resolve_variables(action.title)
-        
+
         logger.info(f"Notify [{action.method}]: {title} - {msg}")
-        
+
         if action.method == NotifyMethod.POPUP:
             if self._on_notify:
                 self._on_notify(title, msg)
-        
+
         elif action.method == NotifyMethod.TELEGRAM or action.method == NotifyMethod.DISCORD:
             target = self._resolve_variables(action.target)
             if not target:
@@ -434,47 +446,52 @@ class Runner:
                 return
 
             try:
-                import urllib.request
                 import json
-                
+                import urllib.request
+
                 if action.method == NotifyMethod.DISCORD:
-                    data = json.dumps({"content": f"**{title}**\n{msg}"}).encode('utf-8')
-                    req = urllib.request.Request(target, data=data, headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+                    data = json.dumps({"content": f"**{title}**\n{msg}"}).encode("utf-8")
+                    req = urllib.request.Request(
+                        target,
+                        data=data,
+                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+                    )
                     urllib.request.urlopen(req)
-                
+
                 elif action.method == NotifyMethod.TELEGRAM:
                     if "|" in target:
                         token, chat_id = target.split("|", 1)
                         import urllib.parse
+
                         encoded_msg = urllib.parse.quote(f"{title}\n{msg}")
                         url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={encoded_msg}"
                         urllib.request.urlopen(url)
                     else:
                         logger.warning("Telegram target format: TOKEN|CHAT_ID")
-                        
+
             except Exception as e:
                 logger.error(f"Notification failed: {e}")
 
     def _exec_read_text(self, action: ReadText) -> None:
         """Execute ReadText action."""
         try:
-             # Capture screen (returns PIL Image usually, depends on Capture impl)
-             # ctx.capture.grab() -> Image
-             screenshot = self._ctx.capture.grab()
-             
-             text = self._ocr.read_from_image(
-                 screenshot, 
-                 roi=action.roi, 
-                 allowlist=action.allowlist,
-                 scale=action.scale,
-                 invert=action.invert,
-                 binarize=action.binarize,
-             )
-             
-             # Store in variable
-             self._ctx.variables[action.variable_name] = text
-             logger.info("ReadText: %s = '%s' (ROI: %s)", action.variable_name, text, action.roi)
-             
+            # Capture screen (returns PIL Image usually, depends on Capture impl)
+            # ctx.capture.grab() -> Image
+            screenshot = self._ctx.capture.grab()
+
+            text = self._ocr.read_from_image(
+                screenshot,
+                roi=action.roi,
+                allowlist=action.allowlist,
+                scale=action.scale,
+                invert=action.invert,
+                binarize=action.binarize,
+            )
+
+            # Store in variable
+            self._ctx.variables[action.variable_name] = text
+            logger.info("ReadText: %s = '%s' (ROI: %s)", action.variable_name, text, action.roi)
+
         except Exception as e:
             logger.error("ReadText failed: %s", e)
 
@@ -485,7 +502,7 @@ class Runner:
         target = action.value
         op = action.operator
         result = False
-        
+
         try:
             if op == "contains":
                 result = target in var_val
@@ -498,7 +515,7 @@ class Runner:
             elif op == "numeric_gt" or op == "numeric_lt":
                 # Clean up string for numeric conversion (remove non-digits if needed, or just try)
                 # Simple float conversion
-                f_val = float(var_val.replace(',', '').strip())
+                f_val = float(var_val.replace(",", "").strip())
                 f_target = float(target)
                 if op == "numeric_gt":
                     result = f_val > f_target
@@ -507,28 +524,28 @@ class Runner:
         except ValueError:
             logger.warning("IfText: Numeric conversion failed for '%s'", var_val)
             result = False
-            
+
         logger.info("IfText: '%s' %s '%s' -> %s", var_val, op, target, result)
-        
+
         branch = action.then_actions if result else action.else_actions
-        
+
         # Execute branch
         for sub_action in branch:
             # Check stop/pause between sub-actions
-             if not self._ctx.wait_if_paused():
-                 return None
-                 
-             # Recursive execution? No, flat execution context needed for goto/labels usually
-             # But action models support nesting. We can execute purely.
-             # Note: Goto inside IfText won't work well unless we flatten the flow.
-             # For now, we just execute simple actions.
-             self._execute_action(sub_action, flow, labels)
+            if not self._ctx.wait_if_paused():
+                return None
+
+            # Recursive execution? No, flat execution context needed for goto/labels usually
+            # But action models support nesting. We can execute purely.
+            # Note: Goto inside IfText won't work well unless we flatten the flow.
+            # For now, we just execute simple actions.
+            self._execute_action(sub_action, flow, labels)
 
     def _exec_click_image(self, action: ClickImage) -> None:
         """Execute ClickImage with wait."""
         result = self._ctx.wait_for_image(
-            action.asset_id, 
-            timeout_ms=action.timeout_ms, 
+            action.asset_id,
+            timeout_ms=action.timeout_ms,
             appear=True,
             smart_wait=action.smart_wait,
         )
@@ -538,16 +555,19 @@ class Runner:
         # Click with offset
         x = result.location[0] + action.offset_x
         y = result.location[1] + action.offset_y
-        
-        logger.info(f"ClickImage '{action.asset_id}' at ({x},{y}) button={action.button} clicks={action.clicks}")
-        
+
+        logger.info(
+            f"ClickImage '{action.asset_id}' at ({x},{y}) button={action.button} clicks={action.clicks}"
+        )
+
         # Perform clicks
         for i in range(action.clicks):
             if i > 0:
                 # Wait interval between clicks
                 import time
+
                 time.sleep(action.interval_ms / 1000.0)
-            
+
             self._ctx.mouse.click(x, y, button=action.button)
 
     def _exec_wait_image(self, action: WaitImage) -> bool | None:
@@ -598,14 +618,15 @@ class Runner:
                 return None
 
         logger.info(f"Clicking at ({x}, {y}) button={action.button} clicks={action.clicks}")
-        
+
         # Perform clicks
         for i in range(action.clicks):
             if i > 0:
                 # Wait interval between clicks
                 import time
+
                 time.sleep(action.interval_ms / 1000.0)
-            
+
             self._ctx.mouse.click(x, y, button=action.button)
         return None
 
@@ -709,33 +730,38 @@ class Runner:
         # Calculate random point within ROI
         # Use normal distribution (gaussian) for more human-like "center-bias"
         # but clamp to ROI bounds
-        
+
         # Center of ROI
         cx = action.roi.x + action.roi.w / 2
         cy = action.roi.y + action.roi.h / 2
-        
+
         # Standard deviation = 1/6 of width/height (99% points within ROI)
         sigma_x = action.roi.w / 6
         sigma_y = action.roi.h / 6
-        
+
         # Box-Muller transform or simple gauss
         x = int(random.gauss(cx, sigma_x))
         y = int(random.gauss(cy, sigma_y))
-        
+
         # Clamp to bounds
         x = max(action.roi.x, min(action.roi.x + action.roi.w, x))
         y = max(action.roi.y, min(action.roi.y + action.roi.h, y))
 
         logger.info(
             "ClickRandom: (%d, %d) in ROI(x=%d, y=%d, w=%d, h=%d)",
-            x, y, action.roi.x, action.roi.y, action.roi.w, action.roi.h
+            x,
+            y,
+            action.roi.x,
+            action.roi.y,
+            action.roi.w,
+            action.roi.h,
         )
-        
+
         self._ctx.mouse.click(
             x=x,
             y=y,
             button=action.button,
             clicks=action.clicks,
-            interval=action.interval_ms / 1000.0
+            interval=action.interval_ms / 1000.0,
         )
         return None

@@ -23,19 +23,22 @@ def main() -> int:
     """Application entry point."""
     # Setup logging first
     logger = setup_logging()
-    
+
     # Install Global Crash Handler
     CrashHandler.install()
-    
+
     logger.info("RetroAuto v2 starting...")
 
     # Check OCR availability
     try:
         from vision.ocr import TextReader
+
         reader = TextReader()
         if not reader.available:
             logger.warning("OCR (Tesseract) not available - ReadText actions will be disabled")
-            logger.info("To enable OCR, install Tesseract: https://github.com/tesseract-ocr/tesseract")
+            logger.info(
+                "To enable OCR, install Tesseract: https://github.com/tesseract-ocr/tesseract"
+            )
         else:
             logger.info("OCR initialized successfully")
     except Exception as e:

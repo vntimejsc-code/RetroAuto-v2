@@ -37,10 +37,10 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.code_editor import DSLCodeEditor
-from app.ui.properties_panel import PropertiesPanel
 from app.ui.interrupts_panel import InterruptsPanel
 from app.ui.output_panel import OutputPanel
 from app.ui.project_explorer import ProjectExplorer
+from app.ui.properties_panel import PropertiesPanel
 from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
@@ -97,18 +97,18 @@ class IDEMainWindow(QMainWindow):
         # Left Panel (Explorer | Assets | Interrupts)
         self.left_tabs = QTabWidget()
         self.left_tabs.setTabPosition(QTabWidget.TabPosition.South)
-        
+
         # Explorer Tab
         self.explorer = ProjectExplorer()
         self.left_tabs.addTab(self.explorer, "📂 Explorer")
-        
+
         # Assets Tab (Placeholder for now, or move AssetsPanel here later if desired)
         # For now, just keep Explorer and Interrupts
-        
+
         # Interrupts Tab
         self.interrupts_panel = InterruptsPanel()
         self.left_tabs.addTab(self.interrupts_panel, "⚡ Interrupts")
-        
+
         hsplitter.addWidget(self.left_tabs)
 
         # Code Editor with header
@@ -131,6 +131,8 @@ class IDEMainWindow(QMainWindow):
         editor_layout.addWidget(editor_header)
 
         self.editor = DSLCodeEditor()
+        # Connect asset provider for Asset Peek
+        self.editor.set_asset_provider(self._get_asset_path)
         editor_layout.addWidget(self.editor)
 
         hsplitter.addWidget(editor_container)
@@ -161,7 +163,7 @@ class IDEMainWindow(QMainWindow):
     def _init_intellisense(self) -> None:
         """Initialize IntelliSense for code editor."""
         from app.ui.intellisense import IntelliSenseManager
-        
+
         self._intellisense = IntelliSenseManager(self.editor)
 
     def _init_menu(self) -> None:
@@ -264,7 +266,7 @@ class IDEMainWindow(QMainWindow):
 
         # View menu
         view_menu = menubar.addMenu("&View")
-        
+
         flow_editor_action = QAction("🎨 &Flow Editor", self)
         flow_editor_action.setShortcut(QKeySequence("Ctrl+Shift+V"))
         flow_editor_action.triggered.connect(self._show_flow_editor)
@@ -378,7 +380,7 @@ class IDEMainWindow(QMainWindow):
         last_project = settings.value("last_project")
         if last_project and Path(last_project).exists():
             self.explorer.load_project(Path(last_project))
-            
+
         # Restore interrupts if script loaded
         if self._script:
             self.interrupts_panel.set_rules(self._script.interrupts)
@@ -549,14 +551,14 @@ class IDEMainWindow(QMainWindow):
         try:
             # Ensure parent directory exists
             self._current_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             content = self.editor.get_code()
             self._current_file.write_text(content, encoding="utf-8")
             self._is_modified = False
             self._update_title()
             self.status_bar.showMessage("Saved", 3000)
             self.output.log_success(f"Saved: {self._current_file.name}")
-            
+
             # Emit signal for sync with MainWindow
             self.code_saved.emit(content)
         except Exception as e:
@@ -642,18 +644,30 @@ class IDEMainWindow(QMainWindow):
     def _show_flow_editor(self) -> None:
         """Show the visual flow editor in a new window."""
         from PySide6.QtWidgets import QMainWindow
+
         from app.ui.flow_editor import FlowEditorWidget
-        
+
         # Create flow editor window
         self._flow_window = QMainWindow(self)
         self._flow_window.setWindowTitle("🎨 Visual Flow Editor - RetroAuto")
         self._flow_window.setMinimumSize(800, 600)
-        
-        flow_widget = FlowEditorWidget()
+
+        # Get current actions
+        current_actions = self.actions_panel.get_actions()
+
+        flow_widget = FlowEditorWidget(actions=current_actions)
+        flow_widget.actions_exported.connect(self._on_flow_actions_exported)
+
         self._flow_window.setCentralWidget(flow_widget)
-        
+
         self._flow_window.show()
         self.output.log_info("Opened Visual Flow Editor")
+
+    def _on_flow_actions_exported(self, actions: list) -> None:
+        """Handle actions exported from flow editor."""
+        self.actions_panel.load_actions(actions)
+        self.output.log_info(f"Updated Actions Panel with {len(actions)} actions from Flow Editor")
+        self.status_bar.showMessage("Synced actions from Flow Editor")
 
     # ─────────────────────────────────────────────────────────────
     # UI Updates
@@ -698,3 +712,27 @@ class IDEMainWindow(QMainWindow):
         if self._script:
             self._script.interrupts = rules
             self._mark_modified()
+
+    def _get_asset_path(self, asset_id: str) -> Path | None:
+        """Get path to asset image file."""
+        if not self._current_file:
+            return None
+
+        # Assuming standard structure: project/assets/asset_id.png
+        # Assets are in "assets" sibling folder of "scripts" folder?
+        # Standard: project_root/assets/
+        # Current file: project_root/scripts/main.dsl
+
+        project_root = self._current_file.parent.parent
+        assets_dir = project_root / "assets"
+
+        if not assets_dir.exists():
+            return None
+
+        # Try common extensions
+        for ext in [".png", ".jpg", ".jpeg", ".bmp"]:
+            path = assets_dir / f"{asset_id}{ext}"
+            if path.exists():
+                return path
+
+        return None

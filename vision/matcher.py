@@ -98,11 +98,13 @@ class Matcher:
             bypass = False
             if adaptive and confidence >= 0.6:
                 logger.warning(
-                    "Adaptive Match: %s found with %.2f (threshold logic bypassed from %.2f)", 
-                    asset_id, confidence, asset.threshold
+                    "Adaptive Match: %s found with %.2f (threshold logic bypassed from %.2f)",
+                    asset_id,
+                    confidence,
+                    asset.threshold,
                 )
                 bypass = True
-            
+
             if not bypass:
                 logger.debug(
                     "Match below threshold: %s (%.2f < %.2f)", asset_id, confidence, asset.threshold

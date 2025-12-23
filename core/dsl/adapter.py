@@ -348,18 +348,19 @@ def action_to_ir(action: Action) -> ActionIR:
 
     elif isinstance(action, Notify):
         params["message"] = action.message
-        params["method"] = action.method.value if hasattr(action.method, 'value') else str(action.method)
+        params["method"] = (
+            action.method.value if hasattr(action.method, "value") else str(action.method)
+        )
         params["title"] = action.title
         params["target"] = action.target
 
     # Block markers (no params needed)
-    elif isinstance(action, Else):
-        pass  # No params
-    elif isinstance(action, EndIf):
-        pass  # No params
-    elif isinstance(action, EndLoop):
-        pass  # No params
-    elif isinstance(action, EndWhile):
+    elif (
+        isinstance(action, Else)
+        or isinstance(action, EndIf)
+        or isinstance(action, EndLoop)
+        or isinstance(action, EndWhile)
+    ):
         pass  # No params
 
     return ActionIR(

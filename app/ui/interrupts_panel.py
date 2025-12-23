@@ -6,15 +6,15 @@ Manage global interrupt rules that trigger on specific image events.
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
     QListWidget,
     QListWidgetItem,
+    QPushButton,
     QVBoxLayout,
     QWidget,
-    QLabel,
-    QPushButton,
-    QHBoxLayout,
-    QMenu,
 )
+
 from core.models import InterruptRule
 from infra import get_logger
 
@@ -27,7 +27,7 @@ class InterruptsPanel(QWidget):
     """
 
     rule_selected = Signal(dict)  # Emits {"index": int, "rule": InterruptRule}
-    rule_changed = Signal(list)   # Emits updated list of rules
+    rule_changed = Signal(list)  # Emits updated list of rules
 
     def __init__(self, rules: list[InterruptRule] = None) -> None:
         super().__init__()
@@ -37,7 +37,7 @@ class InterruptsPanel(QWidget):
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # Header
         header = QLabel("⚡ GLOBAL INTERRUPTS")
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -58,7 +58,7 @@ class InterruptsPanel(QWidget):
         self.btn_add.clicked.connect(self._add_rule)
         self.btn_remove = QPushButton("🗑️ Remove")
         self.btn_remove.clicked.connect(self._remove_rule)
-        
+
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_remove)
         layout.addLayout(btn_layout)
@@ -75,13 +75,15 @@ class InterruptsPanel(QWidget):
         self.rule_list.clear()
         for i, rule in enumerate(self._rules):
             item = QListWidgetItem(self._get_rule_label(rule))
-            # item.setData(Qt.ItemDataRole.UserRole, rule) 
+            # item.setData(Qt.ItemDataRole.UserRole, rule)
             self.rule_list.addItem(item)
 
     def _get_rule_label(self, rule: InterruptRule) -> str:
         """Format rule display."""
         trigger = rule.when_image or "?"
-        action = f"Run Flow: {rule.run_flow}" if rule.run_flow else f"{len(rule.do_actions)} Actions"
+        action = (
+            f"Run Flow: {rule.run_flow}" if rule.run_flow else f"{len(rule.do_actions)} Actions"
+        )
         return f"[P{rule.priority}] IF detected '{trigger}' THEN {action}"
 
     def _on_item_clicked(self, item: QListWidgetItem) -> None:
@@ -90,10 +92,7 @@ class InterruptsPanel(QWidget):
             self.rule_selected.emit({"index": row, "rule": self._rules[row]})
 
     def _add_rule(self) -> None:
-        new_rule = InterruptRule(
-            when_image="",
-            priority=10
-        )
+        new_rule = InterruptRule(when_image="", priority=10)
         self._rules.append(new_rule)
         self._refresh_list()
         self.rule_changed.emit(self._rules)

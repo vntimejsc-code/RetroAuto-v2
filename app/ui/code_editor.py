@@ -24,7 +24,7 @@ from PySide6.QtGui import (
     QTextCursor,
     QTextFormat,
 )
-from PySide6.QtWidgets import QPlainTextEdit, QTextEdit, QWidget
+from PySide6.QtWidgets import QPlainTextEdit, QTextEdit, QToolTip, QWidget
 
 from app.ui.syntax_highlighter import DSLHighlighter
 from app.ui.win95_style import COLORS
@@ -115,7 +115,16 @@ class DSLCodeEditor(QPlainTextEdit):
         self._init_style()
         self._init_line_numbers()
         self._init_highlighter()
+        self._init_highlighter()
         self._connect_signals()
+
+        # Asset Peek
+        self.setMouseTracking(True)
+        self._asset_provider = None  # Callable[[str], Path | None]
+
+    def set_asset_provider(self, provider) -> None:
+        """Set callback to lookup asset path from ID."""
+        self._asset_provider = provider
 
     def _init_style(self) -> None:
         """Set up editor styling."""
@@ -270,6 +279,49 @@ class DSLCodeEditor(QPlainTextEdit):
             extra_selections.append(selection)
 
         self.setExtraSelections(extra_selections)
+
+    # ─────────────────────────────────────────────────────────────
+    # Mouse Events (Asset Peek)
+    # ─────────────────────────────────────────────────────────────
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Handle mouse move for Asset Peek tooltip."""
+        super().mouseMoveEvent(event)
+
+        if not self._asset_provider:
+            return
+
+        # Get cursor under mouse
+        cursor = self.cursorForPosition(event.position().toPoint())
+
+        # Select word under cursor
+        cursor.select(QTextCursor.SelectionType.WordUnderCursor)
+        word = cursor.selectedText().strip("\"'")
+
+        if not word:
+            return
+
+        # Check if it looks like an asset ID (alphanumeric + underscore)
+        if not word.replace("_", "").isalnum():
+            return
+
+        # Try to resolve asset
+        image_path = self._asset_provider(word)
+        if image_path and image_path.exists():
+            # Show tooltip with image
+            # Convert path to string using forward slashes for HTML compatibility
+            html_path = str(image_path).replace("\\", "/")
+
+            tooltip_html = f"""
+            <div style='background-color: #2d2d2d; color: #fff; padding: 4px; border: 1px solid #0078d4;'>
+                <div style='font-weight: bold; margin-bottom: 4px;'>📷 {word}</div>
+                <img src='file:///{html_path}' width='200' />
+            </div>
+            """
+
+            QToolTip.showText(event.globalPosition().toPoint(), tooltip_html, self)
+        else:
+            QToolTip.hideText()
 
     # ─────────────────────────────────────────────────────────────
     # Key Events (Auto-indent, Tab handling)

@@ -8,22 +8,23 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QLabel,
     QLineEdit,
     QPushButton,
     QSpinBox,
-    QDoubleSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
 from core.models import (
+    ROI,
     Click,
     ClickImage,
-    ClickUntil,
     ClickRandom,  # Add import
+    ClickUntil,
     Delay,
     Goto,
     Hotkey,
@@ -31,15 +32,13 @@ from core.models import (
     IfText,
     InterruptRule,  # Add import
     Label,
-    ROI,
+    Notify,
+    NotifyMethod,
     ReadText,
     RunFlow,
     TypeText,
     WaitImage,
-    Notify,
-    NotifyMethod,
 )
-
 from infra import get_logger
 
 logger = get_logger("PropertiesPanel")
@@ -112,10 +111,13 @@ class PropertiesPanel(QWidget):
             self._add_spin_field("interval_ms", action.interval_ms, 0, 1000)
             self._add_spin_field("timeout_ms", action.timeout_ms, 0, 60000)
             # Advanced options (collapsible)
-            self._add_collapsible_section("▸ Advanced", [
-                ("offset_x", action.offset_x, -500, 500),
-                ("offset_y", action.offset_y, -500, 500),
-            ])
+            self._add_collapsible_section(
+                "▸ Advanced",
+                [
+                    ("offset_x", action.offset_x, -500, 500),
+                    ("offset_y", action.offset_y, -500, 500),
+                ],
+            )
 
         elif isinstance(action, ClickUntil):
             self._add_text_field("click_asset_id", action.click_asset_id)
@@ -146,9 +148,11 @@ class PropertiesPanel(QWidget):
 
         elif isinstance(action, IfText):
             self._add_text_field("variable_name", action.variable_name)
-            self._add_combo_field("operator", action.operator, [
-                "contains", "equals", "starts_with", "ends_with", "numeric_lt", "numeric_gt"
-            ])
+            self._add_combo_field(
+                "operator",
+                action.operator,
+                ["contains", "equals", "starts_with", "ends_with", "numeric_lt", "numeric_gt"],
+            )
             self._add_text_field("value", action.value)
             self._add_label("(then/else actions edited separately)")
 
@@ -208,7 +212,8 @@ class PropertiesPanel(QWidget):
             self._add_text_field("target", action.target)
 
         # Comment field (common to all)
-        self._add_text_field("comment", action.comment)
+        comment = getattr(action, "comment", "")
+        self._add_text_field("comment", comment)
 
         # Apply button
         btn_apply = QPushButton("Apply")
@@ -227,7 +232,9 @@ class PropertiesPanel(QWidget):
         self._fields[name] = field
         self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
 
-    def _add_double_spin_field(self, name: str, value: float, min_val: float, max_val: float) -> None:
+    def _add_double_spin_field(
+        self, name: str, value: float, min_val: float, max_val: float
+    ) -> None:
         field = QDoubleSpinBox()
         field.setRange(min_val, max_val)
         field.setValue(value)
@@ -254,9 +261,7 @@ class PropertiesPanel(QWidget):
         label.setStyleSheet("color: gray; font-style: italic;")
         self.form_layout.addRow(label)
 
-    def _add_collapsible_section(
-        self, title: str, fields: list[tuple[str, int, int, int]]
-    ) -> None:
+    def _add_collapsible_section(self, title: str, fields: list[tuple[str, int, int, int]]) -> None:
         """Add collapsible section with spin fields (hidden by default)."""
         # Toggle checkbox
         toggle = QCheckBox(title)
@@ -408,7 +413,7 @@ class PropertiesPanel(QWidget):
                     x=self._fields["roi_x"].value(),
                     y=self._fields["roi_y"].value(),
                     w=self._fields["roi_w"].value(),
-                    h=self._fields["roi_h"].value()
+                    h=self._fields["roi_h"].value(),
                 ),
                 allowlist=self._fields["allowlist"].text(),
                 scale=self._fields["scale"].value(),
@@ -422,7 +427,7 @@ class PropertiesPanel(QWidget):
                 when_image=self._fields["when_image"].text(),
                 priority=self._fields["priority"].value(),
                 run_flow=self._fields["run_flow"].text() or None,
-                do_actions=action.do_actions  # Preserve existing
+                do_actions=action.do_actions,  # Preserve existing
             )
 
         elif isinstance(action, ClickRandom):
@@ -431,7 +436,7 @@ class PropertiesPanel(QWidget):
                     x=self._fields["roi_x"].value(),
                     y=self._fields["roi_y"].value(),
                     w=self._fields["roi_w"].value(),
-                    h=self._fields["roi_h"].value()
+                    h=self._fields["roi_h"].value(),
                 ),
                 clicks=self._fields["clicks"].value(),
                 interval_ms=self._fields["interval_ms"].value(),

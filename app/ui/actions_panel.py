@@ -4,10 +4,9 @@ RetroAuto v2 - Actions Panel
 Manages the list of actions in a flow.
 """
 
-from PySide6.QtCore import QMimeData, QPoint, Qt, Signal
-from PySide6.QtGui import QColor, QDrag, QKeySequence, QPainter, QPen, QShortcut
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QKeySequence, QPainter, QPen, QShortcut
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QGroupBox,
     QHBoxLayout,
     QLineEdit,
@@ -23,12 +22,12 @@ from PySide6.QtWidgets import (
 )
 
 from core.models import (
+    ROI,
     Action,
     Click,
     ClickImage,
-    ClickUntil,
     ClickRandom,
-    ROI,
+    ClickUntil,
     Delay,
     DelayRandom,
     Drag,
@@ -43,6 +42,7 @@ from core.models import (
     IfText,
     Label,
     Loop,
+    Notify,
     PixelColor,
     ReadText,
     RunFlow,
@@ -51,7 +51,6 @@ from core.models import (
     WaitImage,
     WaitPixel,
     WhileImage,
-    Notify,
 )
 from infra import get_logger
 
@@ -194,24 +193,39 @@ ACTION_DEFAULTS = {
 
 # Color scheme by action category
 ACTION_COLORS = {
-    "click": QColor("#4CAF50"),      # Green - click actions
-    "wait": QColor("#2196F3"),       # Blue - wait/check actions
-    "control": QColor("#FF9800"),    # Orange - control flow
-    "input": QColor("#9C27B0"),      # Purple - input actions
-    "timing": QColor("#607D8B"),     # Gray-blue - timing
-    "marker": QColor("#888888"),     # Gray - block markers
+    "click": QColor("#4CAF50"),  # Green - click actions
+    "wait": QColor("#2196F3"),  # Blue - wait/check actions
+    "control": QColor("#FF9800"),  # Orange - control flow
+    "input": QColor("#9C27B0"),  # Purple - input actions
+    "timing": QColor("#607D8B"),  # Gray-blue - timing
+    "marker": QColor("#888888"),  # Gray - block markers
 }
 
 ACTION_CATEGORY = {
-    "ClickImage": "click", "Click": "click", "ClickUntil": "click",
-    "WaitImage": "wait", "WaitPixel": "wait",
-    "IfImage": "control", "Else": "control", "EndIf": "marker", "IfText": "control",
-    "Loop": "control", "EndLoop": "marker",
-    "WhileImage": "control", "EndWhile": "marker",
-    "Goto": "control", "Label": "control", "RunFlow": "control",
-    "Hotkey": "input", "TypeText": "input", "ReadText": "input",
-    "Delay": "timing", "DelayRandom": "timing",
-    "IfPixel": "control", "Drag": "click", "Scroll": "click",
+    "ClickImage": "click",
+    "Click": "click",
+    "ClickUntil": "click",
+    "WaitImage": "wait",
+    "WaitPixel": "wait",
+    "IfImage": "control",
+    "Else": "control",
+    "EndIf": "marker",
+    "IfText": "control",
+    "Loop": "control",
+    "EndLoop": "marker",
+    "WhileImage": "control",
+    "EndWhile": "marker",
+    "Goto": "control",
+    "Label": "control",
+    "RunFlow": "control",
+    "Hotkey": "input",
+    "TypeText": "input",
+    "ReadText": "input",
+    "Delay": "timing",
+    "DelayRandom": "timing",
+    "IfPixel": "control",
+    "Drag": "click",
+    "Scroll": "click",
 }
 
 
@@ -261,8 +275,14 @@ class ActionItemDelegate(QStyledItemDelegate):
         if is_block_start:
             indicator = "▾ "
             painter.setPen(QColor("#888888"))
-            painter.drawText(text_x, option.rect.y(), 20, option.rect.height(),
-                           Qt.AlignmentFlag.AlignVCenter, indicator)
+            painter.drawText(
+                text_x,
+                option.rect.y(),
+                20,
+                option.rect.height(),
+                Qt.AlignmentFlag.AlignVCenter,
+                indicator,
+            )
             text_x += 14
 
         # Draw text
@@ -275,6 +295,7 @@ class ActionItemDelegate(QStyledItemDelegate):
     def sizeHint(self, option: QStyleOptionViewItem, index) -> "QSize":  # type: ignore
         """Return size with space for tree lines."""
         from PySide6.QtCore import QSize
+
         size = super().sizeHint(option, index)
         depth = index.data(257) or 0
         return QSize(size.width() + depth * self.indent_width, max(size.height(), 22))
@@ -374,14 +395,14 @@ class ActionListWidget(QListWidget):
                 insert_index = self._drop_indicator_index
                 if insert_index < 0:
                     insert_index = self.count()
-                
+
                 # Show menu to choose action type
-                from PySide6.QtWidgets import QMenu
                 from PySide6.QtGui import QCursor
-                
+                from PySide6.QtWidgets import QMenu
+
                 menu = QMenu(self)
                 menu.setStyleSheet("QMenu { font-size: 12px; }")
-                
+
                 # Image-related actions
                 actions_list = [
                     ("👁️ Wait Image", "WaitImage"),
@@ -389,14 +410,15 @@ class ActionListWidget(QListWidget):
                     ("❓ If Image", "IfImage"),
                     ("🔄 While Image", "WhileImage"),
                 ]
-                
+
                 for label, action_type in actions_list:
                     action = menu.addAction(label)
                     action.triggered.connect(
-                        lambda checked=False, aid=asset_id, idx=insert_index, at=action_type:
-                            self.asset_dropped_insert.emit(aid, idx, at)
+                        lambda checked=False, aid=asset_id, idx=insert_index, at=action_type: self.asset_dropped_insert.emit(
+                            aid, idx, at
+                        )
                     )
-                
+
                 # Show menu at cursor
                 menu.exec(QCursor.pos())
 
@@ -485,14 +507,15 @@ class ActionsPanel(QWidget):
         self._undo_stack: list[list[Action]] = []  # Undo history
         self._redo_stack: list[list[Action]] = []  # Redo history
         self._max_undo = 50  # Max undo steps
-        
+
         # Performance: debounced refresh
         from PySide6.QtCore import QTimer
+
         self._refresh_timer = QTimer()
         self._refresh_timer.setSingleShot(True)
         self._refresh_timer.timeout.connect(self._do_refresh)
         self._refresh_pending = False
-        
+
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -656,7 +679,7 @@ class ActionsPanel(QWidget):
     def _refresh_list(self, immediate: bool = False) -> None:
         """
         Schedule a list refresh. Uses debouncing to batch rapid changes.
-        
+
         Args:
             immediate: If True, refresh now without debouncing.
         """
@@ -667,15 +690,15 @@ class ActionsPanel(QWidget):
             # Debounce: wait 16ms (1 frame at 60fps) before refreshing
             self._refresh_pending = True
             self._refresh_timer.start(16)
-    
+
     def _do_refresh(self) -> None:
         """Actually perform the list refresh (called by timer or immediate)."""
         self._refresh_pending = False
-        
+
         # SAVE current state to restore after refresh
         current_row = self.action_list.currentRow()
         scroll_value = self.action_list.verticalScrollBar().value()
-        
+
         # Optimization: only clear if count differs significantly
         if abs(self.action_list.count() - len(self._actions)) > 10:
             self.action_list.clear()
@@ -683,12 +706,12 @@ class ActionsPanel(QWidget):
         else:
             # Incremental update - faster for small changes
             self._incremental_update()
-        
+
         # RESTORE scroll position and selection
         self.action_list.verticalScrollBar().setValue(scroll_value)
         if current_row >= 0 and current_row < self.action_list.count():
             self.action_list.setCurrentRow(current_row)
-    
+
     def _rebuild_all_items(self) -> None:
         """Rebuild all items from scratch (used after clear)."""
         block_depth = 0
@@ -722,51 +745,51 @@ class ActionsPanel(QWidget):
 
             # Create item with data roles for delegate
             item = QListWidgetItem(label)
-            item.setData(256, i)         # Qt.UserRole - index
+            item.setData(256, i)  # Qt.UserRole - index
             item.setData(257, item_depth)  # Qt.UserRole + 1 - depth
             item.setData(258, is_block_start)  # Qt.UserRole + 2 - is_block_start
-            item.setData(259, category)   # Qt.UserRole + 3 - category
+            item.setData(259, category)  # Qt.UserRole + 3 - category
 
             self.action_list.addItem(item)
-    
+
     def _incremental_update(self) -> None:
         """Update items incrementally - much faster for small changes."""
         current_count = self.action_list.count()
         target_count = len(self._actions)
-        
+
         # Add or remove items to match count
         while self.action_list.count() < target_count:
             self.action_list.addItem(QListWidgetItem(""))
         while self.action_list.count() > target_count:
             self.action_list.takeItem(self.action_list.count() - 1)
-        
+
         # Update each item
         block_depth = 0
         for i, action in enumerate(self._actions):
             item = self.action_list.item(i)
             if not item:
                 continue
-                
+
             action_type = type(action).__name__
             label = next(
                 (label_text for t, label_text in ACTION_TYPES if t == action_type), action_type
             )
-            
+
             detail = self._get_action_detail(action)
             if detail:
                 label = f"{label}: {detail}"
-            
+
             is_block_start = action_type in ("IfImage", "Loop", "WhileImage")
             item_depth = block_depth
-            
+
             if is_block_start:
                 block_depth += 1
             elif action_type in ("EndIf", "EndLoop", "EndWhile"):
                 block_depth = max(0, block_depth - 1)
                 item_depth = block_depth
-            
+
             category = ACTION_CATEGORY.get(action_type, "timing")
-            
+
             # Only update if changed
             if item.text() != label:
                 item.setText(label)
@@ -774,7 +797,6 @@ class ActionsPanel(QWidget):
             item.setData(257, item_depth)
             item.setData(258, is_block_start)
             item.setData(259, category)
-
 
     def _get_action_detail(self, action: Action) -> str:
         """Get short detail string for action."""
@@ -887,15 +909,15 @@ class ActionsPanel(QWidget):
     def _show_add_menu(self) -> None:
         """Show categorized add action menu with templates."""
         menu = QMenu(self)
-        
+
         # Add Templates submenu first (most common use case)
         templates_menu = menu.addMenu("✨ Templates")
-        for template_name in ACTION_TEMPLATES.keys():
+        for template_name in ACTION_TEMPLATES:
             action = templates_menu.addAction(template_name)
             action.triggered.connect(lambda checked=False, t=template_name: self._add_template(t))
-        
+
         menu.addSeparator()
-        
+
         # Add categorized actions
         for category_name, actions in ACTION_CATEGORIES.items():
             category_menu = menu.addMenu(category_name)
@@ -904,7 +926,7 @@ class ActionsPanel(QWidget):
                 action.triggered.connect(
                     lambda checked=False, t=action_type: self._add_action_type(t)
                 )
-        
+
         menu.exec(self.btn_more.mapToGlobal(self.btn_more.rect().bottomLeft()))
 
     def _add_action(self, action_type: str) -> None:
@@ -920,22 +942,22 @@ class ActionsPanel(QWidget):
             self.action_list.setCurrentRow(len(self._actions) - 1)
             self.action_changed.emit()
             logger.info("Added action: %s", action_type)
-    
+
     def _add_template(self, template_name: str) -> None:
         """Add a template (multiple actions at once) with smart insertion."""
         template = ACTION_TEMPLATES.get(template_name)
         if not template:
             return
-        
+
         self._save_state()
-        
+
         # Smart insertion: insert at current position
         current_row = self.action_list.currentRow()
         if current_row < 0:
             insert_pos = len(self._actions)
         else:
             insert_pos = current_row + 1
-        
+
         # Add all actions from template
         for i, (action_type, params) in enumerate(template):
             action = ACTION_DEFAULTS[action_type]()
@@ -943,53 +965,55 @@ class ActionsPanel(QWidget):
                 if hasattr(action, key):
                     setattr(action, key, value)
             self._actions.insert(insert_pos + i, action)
-        
+
         self._refresh_list()
-        
+
         # Auto-select all inserted actions
         self.action_list.clearSelection()
         for i in range(len(template)):
             item = self.action_list.item(insert_pos + i)
             if item:
                 item.setSelected(True)
-        
+
         # Scroll to show first inserted action
         self.action_list.setCurrentRow(insert_pos)
         self.action_list.scrollToItem(self.action_list.item(insert_pos))
-        
+
         self.action_changed.emit()
-        logger.info(f"Added template: {template_name} ({len(template)} actions) at position {insert_pos}")
-    
+        logger.info(
+            f"Added template: {template_name} ({len(template)} actions) at position {insert_pos}"
+        )
+
     def _add_template(self, template_name: str) -> None:
         """Add a template (multiple actions at once)."""
         template = ACTION_TEMPLATES.get(template_name)
         if not template:
             return
-        
+
         self._save_state()  # Save for undo
-        
+
         # Get insertion index (append at end)
         insert_pos = len(self._actions)
-        
+
         # Add all actions from template
         for action_type, params in template:
             # Create action with default
             action = ACTION_DEFAULTS[action_type]()
-            
+
             # Apply template parameters
             for key, value in params.items():
                 if hasattr(action, key):
                     setattr(action, key, value)
-            
+
             self._actions.append(action)
-        
+
         self._refresh_list()
         # Select first action of template
         self.action_list.setCurrentRow(insert_pos)
         self.action_changed.emit()
-        
+
         logger.info(f"Added template: {template_name} ({len(template)} actions)")
-    
+
     def _add_action_type(self, action_type: str) -> None:
         """Add action from categorized menu (alias for _add_action)."""
         self._add_action(action_type)
@@ -997,8 +1021,8 @@ class ActionsPanel(QWidget):
     def _quick_add(self, action_type: str) -> None:
         """Quick add action after current selection (1-click workflow)."""
         if action_type == "WaitGone":
-             self._save_state()
-             action = WaitImage(asset_id="", appear=False)
+            self._save_state()
+            action = WaitImage(asset_id="", appear=False)
         else:
             factory = ACTION_DEFAULTS.get(action_type)
             if not factory:
@@ -1034,19 +1058,19 @@ class ActionsPanel(QWidget):
         # Get indices in reverse order to delete from end
         rows = sorted([self.action_list.row(item) for item in selected], reverse=True)
         first_deleted_row = min(rows)  # Remember position for reselection
-        
+
         for row in rows:
             if 0 <= row < len(self._actions):
                 del self._actions[row]
 
         self._refresh_list()
-        
+
         # Smart selection: select item at deleted position (or last if beyond end)
         if self.action_list.count() > 0:
             new_row = min(first_deleted_row, self.action_list.count() - 1)
             self.action_list.setCurrentRow(new_row)
             self.action_list.scrollToItem(self.action_list.item(new_row))
-        
+
         self.action_changed.emit()
         logger.info("Deleted %d actions", len(rows))
 
@@ -1224,7 +1248,7 @@ class ActionsPanel(QWidget):
             action = IfImage(asset_id=asset_id)
         else:
             return
-        
+
         self._actions.append(action)
         self._refresh_list()
         self.action_list.setCurrentRow(len(self._actions) - 1)
@@ -1291,7 +1315,7 @@ class ActionsPanel(QWidget):
 
         # Add Templates submenu first
         templates_menu = menu.addMenu("✨ Templates")
-        for template_name in ACTION_TEMPLATES.keys():
+        for template_name in ACTION_TEMPLATES:
             action = templates_menu.addAction(template_name)
             action.triggered.connect(lambda checked=False, t=template_name: self._add_template(t))
 
@@ -1316,7 +1340,9 @@ class ActionsPanel(QWidget):
                 lambda checked, t=action_type, p=position: self._add_action_at(t, p)
             )
         # Show menu at current item position
-        item = self.action_list.item(position if position < self.action_list.count() else position - 1)
+        item = self.action_list.item(
+            position if position < self.action_list.count() else position - 1
+        )
         if item:
             rect = self.action_list.visualItemRect(item)
             global_pos = self.action_list.mapToGlobal(rect.bottomLeft())
@@ -1403,38 +1429,41 @@ class ActionsPanel(QWidget):
         This fixes the bug where drag-drop changed visuals but not the underlying data.
         """
         if self.action_list.count() != len(self._actions):
-            logger.error("Sync error: Visua list count %d != Data list count %d", 
-                         self.action_list.count(), len(self._actions))
-            return # Should not happen unless state is corrupted
+            logger.error(
+                "Sync error: Visua list count %d != Data list count %d",
+                self.action_list.count(),
+                len(self._actions),
+            )
+            return  # Should not happen unless state is corrupted
 
         # Create a mapping of original_index -> action
         # We need a copy because we'll be rebuilding self._actions
         # Note: We rely on the UserRole (256) which stores the index AT THE TIME OF LAST REFRESH
-        
-        # Snapshot of actions before reorder (we already saved state in about_to_reorder, 
+
+        # Snapshot of actions before reorder (we already saved state in about_to_reorder,
         # but we need this reference for reconstruction)
         # However, self._actions HAS NOT CHANGED YET. The visual list HAS changed order.
         # But the UserRole data on items STILL points to the index in the CURRENT self._actions.
-        
+
         new_actions_list = []
-        
+
         for i in range(self.action_list.count()):
             item = self.action_list.item(i)
             original_idx = item.data(256)  # Qt.UserRole
-            
+
             if original_idx is None or original_idx >= len(self._actions):
                 logger.error("Sync error: Invalid original index %s", original_idx)
-                # Fallback: Just keep original order to prevent data loss? 
+                # Fallback: Just keep original order to prevent data loss?
                 # Or try to continue? Better to abort sync if critical error.
                 # But partial sync is bad.
                 # For safety, we should probably stick to original list if mapping fails.
-                return 
+                return
 
             new_actions_list.append(self._actions[original_idx])
-            
+
         # Update the data model
         self._actions = new_actions_list
-        
+
         # Refresh list to update indices for next time
         self._refresh_list()
         self.action_changed.emit()
