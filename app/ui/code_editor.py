@@ -328,13 +328,6 @@ class DSLCodeEditor(QPlainTextEdit):
         else:
             QToolTip.hideText()
 
-    # ─────────────────────────────────────────────────────────────
-    # Key Events (Auto-indent, Tab handling)
-    # ─────────────────────────────────────────────────────────────
-
-        # Minimap (Overlay)
-        self.minimap = Minimap(self)
-        self.minimap.show()
 
     def resizeEvent(self, event) -> None:
         """Handle resize to update minimap position."""
