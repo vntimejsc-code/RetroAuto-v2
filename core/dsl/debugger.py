@@ -337,12 +337,11 @@ class Debugger:
 
     def get_variables(self, frame_id: int | None = None) -> list[Variable]:
         """Get variables for a stack frame."""
+        frame: StackFrame | None = None
         if frame_id is None and self._call_stack:
             frame = self._call_stack[-1]
         elif frame_id:
             frame = next((f for f in self._call_stack if f.id == frame_id), None)
-        else:
-            frame = None
 
         if not frame:
             return []

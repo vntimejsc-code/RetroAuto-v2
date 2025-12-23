@@ -219,6 +219,7 @@ class ImageMatcher:
         roi: ROI | tuple[int, int, int, int] | None = None,
         confidence: float | None = None,
         grayscale: bool = True,
+        adaptive: bool = True,
     ) -> MatchResult:
         """Find template on screen.
 

@@ -131,7 +131,7 @@ class TextReader:
                 logger.warning(f"Failed to convert to grayscale: {e}, using original")
 
             # Build config
-            config = "--psm 6"  # Assume uniform block of text
+            config_opts = ["--psm 6"]  # Assume uniform block of text
             if allowlist:
                 # Tesseract 4/5 uses multiple engines, some allowlist features behave differently
                 # But generally -c tessedit_char_whitelist=... works
@@ -139,7 +139,7 @@ class TextReader:
 
             config_str = " ".join(config_opts)
 
-            text = pytesseract.image_to_string(img, config=config_str)
+            text = pytesseract.image_to_string(image, config=config_str)
             return text.strip()
 
         except Exception as e:

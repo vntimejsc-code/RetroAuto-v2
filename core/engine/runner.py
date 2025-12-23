@@ -6,6 +6,7 @@ Execute flows with Label/Goto support and action dispatch.
 
 import time
 from collections.abc import Callable
+from typing import Any
 
 from core.engine.context import EngineState, ExecutionContext
 from core.graph.walker import GraphWalker

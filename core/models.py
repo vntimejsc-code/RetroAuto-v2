@@ -156,7 +156,7 @@ class ReadText(ActionBase):
     """Read text from screen region using OCR."""
 
     action: Literal["ReadText"] = "ReadText"
-    variable_name: str = Field(description="Variable to store the result", example="hp_value")
+    variable_name: str = Field(description="Variable to store the result")
     roi: ROI = Field(description="Region to read")
     allowlist: str = Field(default="", description="Whitelist of characters (e.g. '0123456789')")
     scale: float = Field(default=1.0, description="Image scale factor", ge=0.1, le=10.0)
