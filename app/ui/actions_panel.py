@@ -485,6 +485,14 @@ class ActionsPanel(QWidget):
         self._undo_stack: list[list[Action]] = []  # Undo history
         self._redo_stack: list[list[Action]] = []  # Redo history
         self._max_undo = 50  # Max undo steps
+        
+        # Performance: debounced refresh
+        from PySide6.QtCore import QTimer
+        self._refresh_timer = QTimer()
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.timeout.connect(self._do_refresh)
+        self._refresh_pending = False
+        
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -645,15 +653,44 @@ class ActionsPanel(QWidget):
         """Get current actions list."""
         return list(self._actions)
 
-    def _refresh_list(self) -> None:
-        """Refresh list widget from internal actions with visual indentation and colors."""
+    def _refresh_list(self, immediate: bool = False) -> None:
+        """
+        Schedule a list refresh. Uses debouncing to batch rapid changes.
+        
+        Args:
+            immediate: If True, refresh now without debouncing.
+        """
+        if immediate:
+            self._refresh_timer.stop()
+            self._do_refresh()
+        else:
+            # Debounce: wait 16ms (1 frame at 60fps) before refreshing
+            self._refresh_pending = True
+            self._refresh_timer.start(16)
+    
+    def _do_refresh(self) -> None:
+        """Actually perform the list refresh (called by timer or immediate)."""
+        self._refresh_pending = False
+        
         # SAVE current state to restore after refresh
         current_row = self.action_list.currentRow()
         scroll_value = self.action_list.verticalScrollBar().value()
         
-        self.action_list.clear()
-
-        # Track block depth for indentation (supports nested blocks)
+        # Optimization: only clear if count differs significantly
+        if abs(self.action_list.count() - len(self._actions)) > 10:
+            self.action_list.clear()
+            self._rebuild_all_items()
+        else:
+            # Incremental update - faster for small changes
+            self._incremental_update()
+        
+        # RESTORE scroll position and selection
+        self.action_list.verticalScrollBar().setValue(scroll_value)
+        if current_row >= 0 and current_row < self.action_list.count():
+            self.action_list.setCurrentRow(current_row)
+    
+    def _rebuild_all_items(self) -> None:
+        """Rebuild all items from scratch (used after clear)."""
         block_depth = 0
 
         for i, action in enumerate(self._actions):
@@ -691,11 +728,53 @@ class ActionsPanel(QWidget):
             item.setData(259, category)   # Qt.UserRole + 3 - category
 
             self.action_list.addItem(item)
+    
+    def _incremental_update(self) -> None:
+        """Update items incrementally - much faster for small changes."""
+        current_count = self.action_list.count()
+        target_count = len(self._actions)
         
-        # RESTORE scroll position and selection
-        self.action_list.verticalScrollBar().setValue(scroll_value)
-        if current_row >= 0 and current_row < self.action_list.count():
-            self.action_list.setCurrentRow(current_row)
+        # Add or remove items to match count
+        while self.action_list.count() < target_count:
+            self.action_list.addItem(QListWidgetItem(""))
+        while self.action_list.count() > target_count:
+            self.action_list.takeItem(self.action_list.count() - 1)
+        
+        # Update each item
+        block_depth = 0
+        for i, action in enumerate(self._actions):
+            item = self.action_list.item(i)
+            if not item:
+                continue
+                
+            action_type = type(action).__name__
+            label = next(
+                (label_text for t, label_text in ACTION_TYPES if t == action_type), action_type
+            )
+            
+            detail = self._get_action_detail(action)
+            if detail:
+                label = f"{label}: {detail}"
+            
+            is_block_start = action_type in ("IfImage", "Loop", "WhileImage")
+            item_depth = block_depth
+            
+            if is_block_start:
+                block_depth += 1
+            elif action_type in ("EndIf", "EndLoop", "EndWhile"):
+                block_depth = max(0, block_depth - 1)
+                item_depth = block_depth
+            
+            category = ACTION_CATEGORY.get(action_type, "timing")
+            
+            # Only update if changed
+            if item.text() != label:
+                item.setText(label)
+            item.setData(256, i)
+            item.setData(257, item_depth)
+            item.setData(258, is_block_start)
+            item.setData(259, category)
+
 
     def _get_action_detail(self, action: Action) -> str:
         """Get short detail string for action."""
