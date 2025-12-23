@@ -1,0 +1,25 @@
+# RetroAuto v2 Documentation for LLMs
+
+> **Project:** RetroAuto v2 (Windows Automation IDE)
+> **Description:** A Python-based automation tool featuring a visual IDE, custom DSL (RetroScript), and 'Human Mouse' anti-ban technology.
+
+## 📚 Core Documentation (Reading Order)
+
+1. **[The Launchpad](user_guide/launchpad.md)** - Getting Started, Installation, UI Tour.
+2. **[The Cookbook](user_guide/cookbook.md)** - Practical Recipes (Auto-Login, Farming).
+3. **[Core Concepts](user_guide/core_concepts.md)** - Execution Model (Sync/Async), Coordinates, Matching.
+4. **[Tools Mastery](user_guide/tools_mastery.md)** - Detailed GUI & IDE Manual.
+5. **[Deep Dive](user_guide/deep_dive.md)** - Advanced Tech (OCR, Anti-Ban, Interrupts).
+6. **[Reference Manual](user_guide/reference_manual.md)** - Full API Dictionary (100% Commands).
+7. **[Troubleshooting](user_guide/troubleshooting.md)** - Error Diagnosis.
+
+## 🧠 Key Context for Code Generation
+
+- **Language:** Python 3.11+ (Backend), PySide6 (UI).
+- **DSL:** RetroScript (Python-like indentation).
+- **Anti-Ban:** Use `click_random` and `delay_random` instead of fixed values.
+- **Vision:** OpenCV Template Matching (Grayscale default).
+- **OCR:** Tesseract Integration.
+
+## 🔗 Full Context File
+For a single-file context dump, see: **[Full User Guide](full_user_guide.md)**
