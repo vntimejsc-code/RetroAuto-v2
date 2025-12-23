@@ -27,6 +27,24 @@ class TextReader:
         self.available = HAS_TESSERACT
         if not self.available:
             logger.warning("pytesseract not installed. OCR features will be disabled.")
+    
+    def is_available(self) -> bool:
+        """
+        Check if OCR is available and working.
+        
+        Returns:
+            True if Tesseract is installed and accessible
+        """
+        if not self.available:
+            return False
+        
+        try:
+            # Try to get Tesseract version as a quick check
+            import pytesseract
+            version = pytesseract.get_tesseract_version()
+            return version is not None
+        except Exception:
+            return False
         
         # Check for Tesseract binary in common Windows paths if not in PATH
         if HAS_TESSERACT:

@@ -98,6 +98,18 @@ class Runner:
 
         self._ctx.set_state(EngineState.RUNNING)
         logger.info("Starting flow: %s (from step %d)", flow_name, from_step)
+        
+        # 🛡️ Pre-flight validation
+        validation_errors = self._validate_assets_before_run(flow)
+        if validation_errors:
+            for error in validation_errors:
+                logger.error(f"❌ Pre-flight check failed: {error}")
+            # Continue anyway but warn user
+            logger.warning(f"⚠️ {len(validation_errors)} validation warnings, proceeding...")
+        
+        # Check OCR availability if needed
+        if self._flow_needs_ocr(flow) and not self._ocr.is_available():
+            logger.warning("⚠️ OCR not available (Tesseract not found). ReadText/IfText actions may fail.")
 
         # Check if flow has a graph representation
         if flow.graph and flow.graph.nodes:
@@ -216,6 +228,41 @@ class Runner:
             if isinstance(action, Label):
                 labels[action.name] = i
         return labels
+    
+    def _validate_assets_before_run(self, flow: Flow) -> list[str]:
+        """
+        Validate all referenced assets exist before running.
+        
+        Returns:
+            List of error messages (empty if all valid)
+        """
+        errors = []
+        checked = set()
+        
+        for action in flow.actions:
+            # Check asset_id if action has one
+            if hasattr(action, "asset_id") and action.asset_id:
+                asset_id = action.asset_id
+                if asset_id in checked:
+                    continue
+                checked.add(asset_id)
+                
+                # Try to get asset from context
+                try:
+                    asset = self._ctx.get_asset(asset_id)
+                    if asset is None or asset.image is None:
+                        errors.append(f"Asset '{asset_id}' not loaded or image is None")
+                except Exception as e:
+                    errors.append(f"Asset '{asset_id}' error: {e}")
+        
+        return errors
+    
+    def _flow_needs_ocr(self, flow: Flow) -> bool:
+        """Check if flow uses any OCR actions."""
+        for action in flow.actions:
+            if isinstance(action, (ReadText, IfText)):
+                return True
+        return False
 
     def _execute_action(
         self,
@@ -254,7 +301,41 @@ class Runner:
             return self._dispatch_action(action, flow, labels)
             
     def _dispatch_action(self, action: Action, flow: Flow, labels: dict[str, int]) -> bool | int | None:
-        """Internal dispatch."""
+        """
+        Internal dispatch with error handling wrapper.
+        
+        All action execution is wrapped for:
+        - Execution time logging
+        - Graceful error recovery
+        - Detailed error context
+        """
+        action_type = type(action).__name__
+        start_time = time.perf_counter()
+        
+        try:
+            result = self._safe_execute(action, flow, labels)
+            elapsed_ms = int((time.perf_counter() - start_time) * 1000)
+            logger.info(f"✅ {action_type} completed in {elapsed_ms}ms")
+            return result
+            
+        except TimeoutError as e:
+            elapsed_ms = int((time.perf_counter() - start_time) * 1000)
+            logger.error(f"⏱️ {action_type} TIMEOUT after {elapsed_ms}ms: {e}")
+            return None  # Continue to next action
+            
+        except FileNotFoundError as e:
+            logger.error(f"❌ {action_type} Asset not found: {e}")
+            return None  # Continue to next action
+            
+        except Exception as e:
+            elapsed_ms = int((time.perf_counter() - start_time) * 1000)
+            logger.error(f"❌ {action_type} FAILED after {elapsed_ms}ms: {e}")
+            # Log full traceback at debug level
+            logger.debug(f"Traceback for {action_type}:", exc_info=True)
+            return None  # Continue to next action (don't crash flow)
+    
+    def _safe_execute(self, action: Action, flow: Flow, labels: dict[str, int]) -> bool | int | None:
+        """Execute action with specific handlers."""
         if isinstance(action, WaitImage):
             return self._exec_wait_image(action)
 
