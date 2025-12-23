@@ -14,7 +14,7 @@ from core.security.policy import SecurityPolicy
 from core.templates import TemplateStore
 from infra import get_logger
 from input import KeyboardController, MouseController
-from vision import ImageWaiter, Matcher, ScreenCapture
+from vision import ImageWaiter, Matcher, ScreenCapture, WaitOutcome
 
 logger = get_logger("Context")
 
@@ -136,3 +136,23 @@ class ExecutionContext:
         with self._lock:
             self.current_flow = flow
             self.current_step = step
+
+    def wait_for_image(
+        self,
+        asset_id: str,
+        timeout_ms: int = 10000,
+        appear: bool = True,
+        smart_wait: bool = True,
+    ) -> WaitOutcome | None:
+        """Wait for image using configured waiter."""
+        if not self.waiter:
+            return None
+        
+        if appear:
+            return self.waiter.wait_appear(
+                asset_id, timeout_ms=timeout_ms, smart_wait=smart_wait
+            )
+        else:
+            return self.waiter.wait_vanish(
+                asset_id, timeout_ms=timeout_ms, smart_wait=smart_wait
+            )

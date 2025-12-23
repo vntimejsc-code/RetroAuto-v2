@@ -246,7 +246,6 @@ class ImageMatcher:
         if screen is None:
             return MatchResult.error("Failed to capture screen")
 
-        # Convert to grayscale if needed
         if grayscale and len(template_img.shape) == 3:
             template_img = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
         if grayscale and len(screen.shape) == 3:
@@ -254,6 +253,16 @@ class ImageMatcher:
 
         # Perform template matching
         result = self._match(screen, template_img, confidence)
+
+        # Adaptive Fallback
+        if not result.found and adaptive and confidence > 0.6:
+            # Try reducing confidence in steps
+            for fallback_conf in [c * 0.05 for c in range(int(confidence*20)-1, 11, -1)]: # e.g., 0.75, 0.70... 0.60
+                fallback_result = self._match(screen, template_img, fallback_conf)
+                if fallback_result.found:
+                    result = fallback_result
+                    result.error_message = f"Matched with degraded confidence: {fallback_conf:.2f}"
+                    break
 
         # Adjust coordinates for ROI
         if result.found and roi:

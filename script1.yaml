@@ -1,0 +1,516 @@
+name: Untitled
+version: '1.0'
+author: ''
+description: ''
+hotkeys:
+  start: F5
+  stop: F6
+  pause: F7
+assets:
+- id: capture_1
+  path: capture_1.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+- id: capture_2
+  path: capture_2.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+flows:
+- name: main
+  actions:
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: IfImage
+    asset_id: capture_2
+    then_actions: []
+    else_actions: []
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_2
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_1
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1270
+    y: 356
+    button: left
+    clicks: 2
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1234
+    y: 406
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: IfImage
+    asset_id: capture_1
+    then_actions: []
+    else_actions: []
+    roi_override:
+  - comment: ''
+    action: Delay
+    ms: 1000
+  - comment: ''
+    action: IfImage
+    asset_id: capture_2
+    then_actions: []
+    else_actions: []
+    roi_override:
+  - comment: ''
+    action: WaitImage
+    asset_id: '[target]'
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x:
+    y:
+    button: left
+    clicks: 1
+    interval_ms: 80
+    use_match: false
+  - comment: ''
+    action: Delay
+    ms: 1000
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_2
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: IfImage
+    asset_id: capture_1
+    then_actions: []
+    else_actions: []
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1291
+    y: 483
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1269
+    y: 553
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1298
+    y: 634
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1306
+    y: 625
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1277
+    y: 512
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1307
+    y: 415
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1306
+    y: 625
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1277
+    y: 512
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1298
+    y: 634
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Goto
+    label: ''
+  - comment: ''
+    action: Click
+    x: 1307
+    y: 415
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_2
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_2
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
+  - comment: ''
+    action: Click
+    x: 1467
+    y: 389
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1048
+    y: 467
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 613
+    y: 486
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 544
+    y: 290
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  - comment: ''
+    action: Click
+    x: 1480
+    y: 514
+    button: left
+    clicks: 2
+    interval_ms: 100
+    use_match: false
+  graph:
+interrupts: []
+main_flow: main

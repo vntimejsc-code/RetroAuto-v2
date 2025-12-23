@@ -32,6 +32,11 @@ class WaitOutcome:
     match: Match | None = None
     elapsed_ms: int = 0
 
+    @property
+    def found(self) -> bool:
+        """Check if wait was successful."""
+        return self.result == WaitResult.SUCCESS
+
 
 class ImageWaiter:
     """
@@ -73,6 +78,7 @@ class ImageWaiter:
         poll_ms: int | None = None,
         roi_override: ROI | None = None,
         on_poll: Callable[[int], None] | None = None,
+        smart_wait: bool = True,
     ) -> WaitOutcome:
         """
         Wait for image to appear on screen.
@@ -94,6 +100,7 @@ class ImageWaiter:
             poll_ms=poll_ms or self._default_poll_ms,
             roi_override=roi_override,
             on_poll=on_poll,
+            smart_wait=smart_wait,
         )
 
     def wait_vanish(
@@ -103,6 +110,7 @@ class ImageWaiter:
         poll_ms: int | None = None,
         roi_override: ROI | None = None,
         on_poll: Callable[[int], None] | None = None,
+        smart_wait: bool = True,
     ) -> WaitOutcome:
         """
         Wait for image to disappear from screen.
@@ -124,6 +132,7 @@ class ImageWaiter:
             poll_ms=poll_ms or self._default_poll_ms,
             roi_override=roi_override,
             on_poll=on_poll,
+            smart_wait=smart_wait,
         )
 
     def _wait(
@@ -134,6 +143,7 @@ class ImageWaiter:
         poll_ms: int,
         roi_override: ROI | None,
         on_poll: Callable[[int], None] | None,
+        smart_wait: bool,
     ) -> WaitOutcome:
         """Internal wait implementation with exponential backoff."""
         self._cancelled = False
@@ -162,7 +172,7 @@ class ImageWaiter:
                 on_poll(elapsed)
 
             # Check image
-            match = self._matcher.find(asset_id, roi_override)
+            match = self._matcher.find(asset_id, roi_override, adaptive=smart_wait)
 
             if appear:
                 # Waiting for image to appear

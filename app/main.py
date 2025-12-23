@@ -16,12 +16,17 @@ from PySide6.QtWidgets import QApplication, QStyleFactory  # noqa: E402
 
 from app.ui.main_window import MainWindow  # noqa: E402
 from infra import setup_logging  # noqa: E402
+from infra.crash_handler import CrashHandler  # noqa: E402
 
 
 def main() -> int:
     """Application entry point."""
     # Setup logging first
     logger = setup_logging()
+    
+    # Install Global Crash Handler
+    CrashHandler.install()
+    
     logger.info("RetroAuto v2 starting...")
 
     # Check OCR availability

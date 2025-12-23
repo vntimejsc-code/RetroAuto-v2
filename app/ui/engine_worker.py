@@ -30,6 +30,7 @@ class EngineWorker(QThread):
     flow_completed = Signal(str, bool)  # flow, success
     state_changed = Signal(str)  # state name
     error_occurred = Signal(str)  # error message
+    notification_received = Signal(str, str)  # title, message
 
     def __init__(self) -> None:
         super().__init__()
@@ -127,6 +128,7 @@ class EngineWorker(QThread):
             self._ctx,
             on_step=self._on_step,
             on_complete=self._on_flow_complete,
+            on_notify=self._on_notify_callback,
         )
 
         self._interrupt_mgr = InterruptManager(self._ctx)
@@ -140,6 +142,10 @@ class EngineWorker(QThread):
     def _on_flow_complete(self, flow: str, success: bool) -> None:
         """Callback when flow completes."""
         self.flow_completed.emit(flow, success)
+
+    def _on_notify_callback(self, title: str, message: str) -> None:
+        """Callback for notifications."""
+        self.notification_received.emit(title, message)
 
     def run(self) -> None:
         """Execute the main flow (called by QThread.start)."""

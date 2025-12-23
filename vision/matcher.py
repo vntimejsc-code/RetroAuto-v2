@@ -45,6 +45,7 @@ class Matcher:
         self,
         asset_id: str,
         roi_override: ROI | None = None,
+        adaptive: bool = False,
     ) -> Match | None:
         """
         Find asset on screen.
@@ -52,9 +53,10 @@ class Matcher:
         Args:
             asset_id: Asset ID from template store
             roi_override: Override asset's default ROI
+            adaptive: Allow adaptive thresholding (lower confidence)
 
         Returns:
-            Match if found with confidence >= threshold, else None
+            Match if found with confidence >= threshold (or adaptive floor), else None
         """
         # Get template
         tmpl_data = self._templates.get(asset_id)
@@ -93,10 +95,19 @@ class Matcher:
 
         # Check threshold
         if confidence < asset.threshold:
-            logger.debug(
-                "Match below threshold: %s (%.2f < %.2f)", asset_id, confidence, asset.threshold
-            )
-            return None
+            bypass = False
+            if adaptive and confidence >= 0.6:
+                logger.warning(
+                    "Adaptive Match: %s found with %.2f (threshold logic bypassed from %.2f)", 
+                    asset_id, confidence, asset.threshold
+                )
+                bypass = True
+            
+            if not bypass:
+                logger.debug(
+                    "Match below threshold: %s (%.2f < %.2f)", asset_id, confidence, asset.threshold
+                )
+                return None
 
         # Create match with absolute coordinates
         match = Match(

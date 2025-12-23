@@ -51,6 +51,7 @@ from core.models import (
     WaitImage,
     WaitPixel,
     WhileImage,
+    Notify,
 )
 from infra import get_logger
 
@@ -88,6 +89,9 @@ ACTION_CATEGORIES = {
         ("Label", "🏷️ Label"),
         ("Goto", "↩️ Goto"),
         ("RunFlow", "▶️ Run Flow"),
+    ],
+    "📡 Remote & Notify": [
+        ("Notify", "📢 Notify"),
     ],
     "📐 Structure Markers": [
         ("Else", "↩️ Else"),
@@ -185,6 +189,7 @@ ACTION_DEFAULTS = {
     "Drag": lambda: Drag(from_x=0, from_y=0, to_x=100, to_y=100),
     "Scroll": lambda: Scroll(),
     "ClickRandom": lambda: ClickRandom(roi=ROI(x=0, y=0, w=100, h=100)),
+    "Notify": lambda: Notify(message="Notification"),
 }
 
 # Color scheme by action category
@@ -288,6 +293,8 @@ class ActionListWidget(QListWidget):
 
     asset_dropped_on_item = Signal(str, int)  # asset_id, item_index (update existing)
     asset_dropped_insert = Signal(str, int, str)  # asset_id, insert_index, action_type (create new)
+    about_to_reorder = Signal()  # Before internal move
+    reordered = Signal()  # After internal move
 
     def __init__(self, parent=None) -> None:  # type: ignore
         super().__init__(parent)
@@ -398,9 +405,12 @@ class ActionListWidget(QListWidget):
             self.viewport().update()
             event.acceptProposedAction()
         else:
+            # Internal move
+            self.about_to_reorder.emit()
             self._drop_indicator_index = -1
             self._drop_on_item_index = -1
             super().dropEvent(event)
+            self.reordered.emit()
 
     def paintEvent(self, event) -> None:  # type: ignore
         """Paint drop indicator line or item highlight."""
@@ -534,6 +544,8 @@ class ActionsPanel(QWidget):
         self.action_list.customContextMenuRequested.connect(self._show_context_menu)
         self.action_list.asset_dropped_on_item.connect(self._on_asset_dropped_on_item)
         self.action_list.asset_dropped_insert.connect(self._on_asset_drop_insert)
+        self.action_list.about_to_reorder.connect(self._save_state)
+        self.action_list.reordered.connect(self._sync_actions_order)
         group_layout.addWidget(self.action_list)
 
         # Bottom buttons (Add, Delete, Clear, Move)
@@ -971,6 +983,7 @@ class ActionsPanel(QWidget):
         """Move selected action up."""
         row = self.action_list.currentRow()
         if row > 0:
+            self._save_state()
             self._actions[row], self._actions[row - 1] = self._actions[row - 1], self._actions[row]
             self._refresh_list()
             self.action_list.setCurrentRow(row - 1)
@@ -980,6 +993,7 @@ class ActionsPanel(QWidget):
         """Move selected action down."""
         row = self.action_list.currentRow()
         if row < len(self._actions) - 1:
+            self._save_state()
             self._actions[row], self._actions[row + 1] = self._actions[row + 1], self._actions[row]
             self._refresh_list()
             self.action_list.setCurrentRow(row + 1)
@@ -1029,6 +1043,7 @@ class ActionsPanel(QWidget):
         action = data.get("action")
 
         if 0 <= idx < len(self._actions) and action:
+            self._save_state()
             self._actions[idx] = action
             self._refresh_list()
             self.action_list.setCurrentRow(idx)
@@ -1039,6 +1054,7 @@ class ActionsPanel(QWidget):
         if item_index < 0 or item_index >= len(self._actions):
             return
 
+        self._save_state()
         action = self._actions[item_index]
         action_type = type(action).__name__
 
@@ -1097,6 +1113,7 @@ class ActionsPanel(QWidget):
 
     def _on_asset_drop_insert(self, asset_id: str, insert_index: int, action_type: str) -> None:
         """Handle asset dropped BETWEEN actions - create chosen action type."""
+        self._save_state()
         # Create appropriate action based on type
         if action_type == "WaitImage":
             action = WaitImage(asset_id=asset_id)
@@ -1300,6 +1317,49 @@ class ActionsPanel(QWidget):
                 # Hide items that don't match search
                 visible = not search or search in item.text().lower()
                 item.setHidden(not visible)
+
+    def _sync_actions_order(self) -> None:
+        """
+        Synchronize self._actions list with the visual order in QListWidget after a drag-drop reorder.
+        This fixes the bug where drag-drop changed visuals but not the underlying data.
+        """
+        if self.action_list.count() != len(self._actions):
+            logger.error("Sync error: Visua list count %d != Data list count %d", 
+                         self.action_list.count(), len(self._actions))
+            return # Should not happen unless state is corrupted
+
+        # Create a mapping of original_index -> action
+        # We need a copy because we'll be rebuilding self._actions
+        # Note: We rely on the UserRole (256) which stores the index AT THE TIME OF LAST REFRESH
+        
+        # Snapshot of actions before reorder (we already saved state in about_to_reorder, 
+        # but we need this reference for reconstruction)
+        # However, self._actions HAS NOT CHANGED YET. The visual list HAS changed order.
+        # But the UserRole data on items STILL points to the index in the CURRENT self._actions.
+        
+        new_actions_list = []
+        
+        for i in range(self.action_list.count()):
+            item = self.action_list.item(i)
+            original_idx = item.data(256)  # Qt.UserRole
+            
+            if original_idx is None or original_idx >= len(self._actions):
+                logger.error("Sync error: Invalid original index %s", original_idx)
+                # Fallback: Just keep original order to prevent data loss? 
+                # Or try to continue? Better to abort sync if critical error.
+                # But partial sync is bad.
+                # For safety, we should probably stick to original list if mapping fails.
+                return 
+
+            new_actions_list.append(self._actions[original_idx])
+            
+        # Update the data model
+        self._actions = new_actions_list
+        
+        # Refresh list to update indices for next time
+        self._refresh_list()
+        self.action_changed.emit()
+        logger.info("Synced action order after drag-drop")
 
     def _on_double_click(self, item: QListWidgetItem) -> None:
         """Handle double-click for quick inline edit (opens properties panel)."""

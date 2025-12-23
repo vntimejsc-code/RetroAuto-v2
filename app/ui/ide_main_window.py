@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, Signal
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -57,6 +57,9 @@ class IDEMainWindow(QMainWindow):
     - Output/Problems panels
     - Win95/98 classic styling
     """
+
+    # Signals
+    code_saved = Signal(str)  # Emits the saved code content
 
     def __init__(self) -> None:
         super().__init__()
@@ -528,12 +531,18 @@ class IDEMainWindow(QMainWindow):
             return
 
         try:
+            # Ensure parent directory exists
+            self._current_file.parent.mkdir(parents=True, exist_ok=True)
+            
             content = self.editor.get_code()
             self._current_file.write_text(content, encoding="utf-8")
             self._is_modified = False
             self._update_title()
             self.status_bar.showMessage("Saved", 3000)
             self.output.log_success(f"Saved: {self._current_file.name}")
+            
+            # Emit signal for sync with MainWindow
+            self.code_saved.emit(content)
         except Exception as e:
             self.output.log_error(f"Error saving: {e}")
 
@@ -630,7 +639,7 @@ class IDEMainWindow(QMainWindow):
 
     def _update_title(self) -> None:
         """Update window title."""
-        name = self._current_file.name if self._current_file else "Untitled"
+        name = str(self._current_file) if self._current_file else "Untitled"
         modified = " *" if self._is_modified else ""
         self.setWindowTitle(f"MacroIDE 95 - {name}{modified}")
 

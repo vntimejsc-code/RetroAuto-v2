@@ -95,6 +95,7 @@ class WaitImage(ActionBase):
     appear: bool = Field(default=True, description="True=appear, False=vanish")
     timeout_ms: int = Field(default=10000, ge=0, le=300000, description="Timeout in ms (max 5 min)")
     poll_ms: int = Field(default=100, ge=10)
+    smart_wait: bool = Field(default=True, description="Enable adaptive thresholding")
     roi_override: ROI | None = Field(default=None)
 
 
@@ -120,6 +121,7 @@ class ClickImage(ActionBase):
     timeout_ms: int = Field(default=10000, ge=0, le=300000)
     offset_x: int = Field(default=0)
     offset_y: int = Field(default=0)
+    smart_wait: bool = Field(default=True, description="Enable adaptive thresholding")
     interval_ms: int = Field(default=100, ge=0, description="Interval between clicks in ms")
 
 
@@ -153,6 +155,9 @@ class ReadText(ActionBase):
     variable_name: str = Field(description="Variable to store the result", example="hp_value")
     roi: ROI = Field(description="Region to read")
     allowlist: str = Field(default="", description="Whitelist of characters (e.g. '0123456789')")
+    scale: float = Field(default=1.0, description="Image scale factor", ge=0.1, le=10.0)
+    invert: bool = Field(default=False, description="Invert colors")
+    binarize: bool = Field(default=False, description="Apply thresholding")
 
 
 class IfText(ActionBase):
@@ -332,11 +337,29 @@ class IfPixel(ActionBase):
     else_actions: list[Action] = Field(default_factory=list)
 
 
+
+class NotifyMethod(str, Enum):
+    """Notification methods."""
+    POPUP = "popup"
+    TELEGRAM = "telegram"
+    DISCORD = "discord"
+
+
+class Notify(ActionBase):
+    """Send a notification."""
+
+    action: Literal["Notify"] = "Notify"
+    message: str = Field(description="Message to send")
+    method: NotifyMethod = Field(default=NotifyMethod.POPUP)
+    title: str = Field(default="Notification", description="Title (for popup/email)")
+    target: str = Field(default="", description="Webhook URL or User ID")
+
+
 # Discriminated union type
 Action = Annotated[
     WaitImage
     | Click
-    | ClickImage  # Added missing ClickImage
+    | ClickImage
     | IfImage
     | Hotkey
     | TypeText
@@ -353,7 +376,8 @@ Action = Annotated[
     | IfPixel
     | ClickRandom
     | ReadText
-    | IfText,
+    | IfText
+    | Notify,
     Field(discriminator="action"),
 ]
 

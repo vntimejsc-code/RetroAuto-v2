@@ -13,18 +13,28 @@ from core.models import (
     Action,
     AssetImage,
     Click,
+    ClickImage,
+    ClickRandom,
     Delay,
     DelayRandom,
     Drag,
+    Else,
+    EndIf,
+    EndLoop,
+    EndWhile,
     Flow,
     Goto,
     Hotkey,
     IfImage,
     IfPixel,
+    IfText,
     InterruptRule,
     Label,
     Loop,
+    Notify,
+    NotifyMethod,
     PixelColor,
+    ReadText,
     RunFlow,
     Script,
     ScriptHotkeys,
@@ -208,8 +218,11 @@ def action_to_ir(action: Action) -> ActionIR:
         "WaitImage": "wait_image",
         "WaitPixel": "wait_pixel",
         "Click": "click",
+        "ClickImage": "click_image",
+        "ClickRandom": "click_random",
         "IfImage": "if_image",
         "IfPixel": "if_pixel",
+        "IfText": "if_text",
         "Hotkey": "hotkey",
         "TypeText": "type_text",
         "Label": "label",
@@ -221,6 +234,10 @@ def action_to_ir(action: Action) -> ActionIR:
         "Scroll": "scroll",
         "Loop": "loop",
         "WhileImage": "while_image",
+        "ReadText": "read_text",
+        "Notify": "notify",
+        "EndIf": "end_if",
+        "Else": "else",
     }
 
     action_type = type_mapping.get(action.action, action.action.lower())
@@ -303,6 +320,47 @@ def action_to_ir(action: Action) -> ActionIR:
     elif isinstance(action, WhileImage):
         params["arg0"] = action.asset_id
         params["while_present"] = action.while_present
+
+    elif isinstance(action, ClickImage):
+        params["asset_id"] = action.asset_id
+        params["button"] = action.button
+        params["clicks"] = action.clicks
+        params["timeout_ms"] = action.timeout_ms
+
+    elif isinstance(action, ClickRandom):
+        params["x1"] = action.x1
+        params["y1"] = action.y1
+        params["x2"] = action.x2
+        params["y2"] = action.y2
+
+    elif isinstance(action, ReadText):
+        params["variable_name"] = action.variable_name
+        params["roi"] = action.roi
+        params["allowlist"] = action.allowlist
+        params["scale"] = action.scale
+        params["invert"] = action.invert
+        params["binarize"] = action.binarize
+
+    elif isinstance(action, IfText):
+        params["variable_name"] = action.variable_name
+        params["operator"] = action.operator
+        params["value"] = action.value
+
+    elif isinstance(action, Notify):
+        params["message"] = action.message
+        params["method"] = action.method.value if hasattr(action.method, 'value') else str(action.method)
+        params["title"] = action.title
+        params["target"] = action.target
+
+    # Block markers (no params needed)
+    elif isinstance(action, Else):
+        pass  # No params
+    elif isinstance(action, EndIf):
+        pass  # No params
+    elif isinstance(action, EndLoop):
+        pass  # No params
+    elif isinstance(action, EndWhile):
+        pass  # No params
 
     return ActionIR(
         action_type=action_type,
@@ -426,6 +484,63 @@ def ir_to_action(ir: ActionIR) -> Action | None:
                 asset_id=params.get("arg0", ""),
                 while_present=params.get("while_present", True),
             )
+
+        if action_type == "click_image":
+            return ClickImage(
+                asset_id=params.get("asset_id", params.get("arg0", "")),
+                button=params.get("button", "left"),
+                clicks=params.get("clicks", 1),
+                timeout_ms=params.get("timeout_ms", 10000),
+            )
+
+        if action_type == "click_random":
+            return ClickRandom(
+                x1=params.get("x1", 0),
+                y1=params.get("y1", 0),
+                x2=params.get("x2", 100),
+                y2=params.get("y2", 100),
+            )
+
+        if action_type == "read_text":
+            return ReadText(
+                variable_name=params.get("variable_name", "text"),
+                roi=params.get("roi"),
+                allowlist=params.get("allowlist", ""),
+                scale=params.get("scale", 1.0),
+                invert=params.get("invert", False),
+                binarize=params.get("binarize", False),
+            )
+
+        if action_type == "if_text":
+            return IfText(
+                variable_name=params.get("variable_name", ""),
+                operator=params.get("operator", "contains"),
+                value=params.get("value", ""),
+            )
+
+        if action_type == "notify":
+            method_str = params.get("method", "popup")
+            method = NotifyMethod.POPUP
+            if method_str == "telegram":
+                method = NotifyMethod.TELEGRAM
+            elif method_str == "discord":
+                method = NotifyMethod.DISCORD
+            return Notify(
+                message=params.get("message", params.get("arg0", "")),
+                method=method,
+                title=params.get("title", "Notification"),
+                target=params.get("target", ""),
+            )
+
+        # Block markers
+        if action_type == "else":
+            return Else()
+        if action_type in ("end_if", "endif"):
+            return EndIf()
+        if action_type in ("end_loop", "endloop"):
+            return EndLoop()
+        if action_type in ("end_while", "endwhile"):
+            return EndWhile()
 
     except Exception:
         pass

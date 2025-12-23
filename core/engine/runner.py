@@ -28,26 +28,33 @@ from core.models import (
     ReadText,
     WaitImage,
     IfText,
-    Action,  # Add Action type
+    Notify,
+    NotifyMethod,
+    Action,
 )
 from core.graph.walker import GraphWalker
 from infra import get_logger
 from vision import WaitResult
 from vision.ocr import TextReader
 
+from core.vision.hasher import calculate_phash, hamming_distance
+
 logger = get_logger("Runner")
 
+
+from core.watchdog import SystemWatchdog
 
 class Runner:
     """
     Execute automation flows.
-
+    
     Features:
     - Single-step and full-flow execution
     - Label/Goto flow control
     - IfImage conditional branching
     - Nested flow calls (RunFlow)
     - Stop/Pause support
+    - System Watchdog monitoring
     """
 
     def __init__(
@@ -55,6 +62,7 @@ class Runner:
         ctx: ExecutionContext,
         on_step: Callable[[str, int, Action], None] | None = None,
         on_complete: Callable[[str, bool], None] | None = None,
+        on_notify: Callable[[str, str], None] | None = None,
     ) -> None:
         """
         Initialize runner.
@@ -67,8 +75,10 @@ class Runner:
         self._ctx = ctx
         self._on_step = on_step
         self._on_complete = on_complete
+        self._on_notify = on_notify
         self._call_stack: list[tuple[str, int]] = []  # For nested RunFlow
         self._ocr = TextReader()
+        self._watchdog = SystemWatchdog()
 
     def run_flow(self, flow_name: str, from_step: int = 0) -> bool:
         """
@@ -96,6 +106,7 @@ class Runner:
         
         # Legacy mode: execute as linear list
         logger.info("Executing flow using legacy list mode")
+        labels = self._build_label_index(flow)
         return self._execute_list(flow, from_step, labels)
     
     def _execute_graph(self, flow: Flow) -> bool:
@@ -133,7 +144,15 @@ class Runner:
 
         try:
             while pc < len(flow.actions):
-                # Check stop/pause
+                # 1. System Watchdog Check
+                watchdog_cfg = self._ctx.run_options.get("watchdog", {})
+                is_healthy, msg = self._watchdog.check_health(watchdog_cfg)
+                if not is_healthy:
+                    logger.error(f"🛑 Watchdog Stop: {msg}")
+                    # Handle as error to stop script
+                    raise RuntimeError(f"System Watchdog failed: {msg}")
+
+                # 2. Check stop/pause
                 if not self._ctx.wait_if_paused():
                     logger.info("Flow stopped by user")
                     success = False
@@ -212,6 +231,30 @@ class Runner:
             - int: Jump to this step index (Goto)
             - False: Stop execution
         """
+        if isinstance(action, (Click, ClickImage, ClickRandom, Drag)):
+            hash_before = self._capture_hash()
+            
+            # Execute
+            result = self._dispatch_action(action, flow, labels)
+            
+            # Flight Recorder: Check for change
+            if hash_before is not None:
+                # Wait for reaction (small delay)
+                time.sleep(0.1) 
+                hash_after = self._capture_hash()
+                if hash_after is not None:
+                    dist = hamming_distance(hash_before, hash_after)
+                    if dist <= 1: # Allow exceedingly minor noise (0 or 1 bit)
+                         logger.warning(f"✈️ FlightRecorder: Action '{type(action).__name__}' resulted in NO VISUAL CHANGE (dist={dist}). Possible failure.")
+                    else:
+                         logger.debug(f"FlightRecorder: Visual change confirmed (dist={dist})")
+            
+            return result
+        else:
+            return self._dispatch_action(action, flow, labels)
+            
+    def _dispatch_action(self, action: Action, flow: Flow, labels: dict[str, int]) -> bool | int | None:
+        """Internal dispatch."""
         if isinstance(action, WaitImage):
             return self._exec_wait_image(action)
 
@@ -248,14 +291,88 @@ class Runner:
 
         elif isinstance(action, IfText):
             return self._exec_if_text(action, flow, labels)
+        
+        elif isinstance(action, ClickImage):
+             return self._exec_click_image(action)
+
+        elif isinstance(action, Drag):
+             # Assuming _exec_drag exists or will receive warning for unknown
+             if hasattr(self, '_exec_drag'):
+                 return self._exec_drag(action)
+             else:
+                 logger.warning("Drag action execution not implemented")
+                 return None
+
+        elif isinstance(action, Notify):
+             return self._exec_notify(action)
 
         else:
             logger.warning("Unknown action type: %s", type(action).__name__)
             return None
 
+    def _capture_hash(self) -> int | None:
+        """Capture screen and calculate hash for Flight Recorder."""
+        try:
+            # We need to grab screen. 
+            # self._ctx.capture (ScreenCapture) usually has grab() returning numpy/PIL
+            img = self._ctx.capture.grab()
+            return calculate_phash(img)
+        except Exception as e:
+            logger.warning(f"FlightRecorder capture failed: {e}")
+            return None
+
     # ─────────────────────────────────────────────────────────────
     # Action Executors
     # ─────────────────────────────────────────────────────────────
+
+    def _resolve_variables(self, text: str) -> str:
+        """Replace $var with values from context."""
+        if not text:
+            return ""
+        result = text
+        for name, value in self._ctx.variables.items():
+             if name in result:
+                result = result.replace(name, str(value))
+        return result
+
+    def _exec_notify(self, action: Notify) -> None:
+        """Execute Notify action."""
+        msg = self._resolve_variables(action.message)
+        title = self._resolve_variables(action.title)
+        
+        logger.info(f"Notify [{action.method}]: {title} - {msg}")
+        
+        if action.method == NotifyMethod.POPUP:
+            if self._on_notify:
+                self._on_notify(title, msg)
+        
+        elif action.method == NotifyMethod.TELEGRAM or action.method == NotifyMethod.DISCORD:
+            target = self._resolve_variables(action.target)
+            if not target:
+                logger.warning("Notification target not specified")
+                return
+
+            try:
+                import urllib.request
+                import json
+                
+                if action.method == NotifyMethod.DISCORD:
+                    data = json.dumps({"content": f"**{title}**\n{msg}"}).encode('utf-8')
+                    req = urllib.request.Request(target, data=data, headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'})
+                    urllib.request.urlopen(req)
+                
+                elif action.method == NotifyMethod.TELEGRAM:
+                    if "|" in target:
+                        token, chat_id = target.split("|", 1)
+                        import urllib.parse
+                        encoded_msg = urllib.parse.quote(f"{title}\n{msg}")
+                        url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={encoded_msg}"
+                        urllib.request.urlopen(url)
+                    else:
+                        logger.warning("Telegram target format: TOKEN|CHAT_ID")
+                        
+            except Exception as e:
+                logger.error(f"Notification failed: {e}")
 
     def _exec_read_text(self, action: ReadText) -> None:
         """Execute ReadText action."""
@@ -267,7 +384,10 @@ class Runner:
              text = self._ocr.read_from_image(
                  screenshot, 
                  roi=action.roi, 
-                 allowlist=action.allowlist
+                 allowlist=action.allowlist,
+                 scale=action.scale,
+                 invert=action.invert,
+                 binarize=action.binarize,
              )
              
              # Store in variable
@@ -326,7 +446,10 @@ class Runner:
     def _exec_click_image(self, action: ClickImage) -> None:
         """Execute ClickImage with wait."""
         result = self._ctx.wait_for_image(
-            action.asset_id, timeout_ms=action.timeout_ms, appear=True
+            action.asset_id, 
+            timeout_ms=action.timeout_ms, 
+            appear=True,
+            smart_wait=action.smart_wait,
         )
         if not result or not result.found:
             raise RuntimeError(f"Image not found: {action.asset_id}")
@@ -361,6 +484,7 @@ class Runner:
                 timeout_ms=action.timeout_ms,
                 poll_ms=action.poll_ms,
                 roi_override=action.roi_override,
+                smart_wait=action.smart_wait,
             )
         else:
             outcome = self._ctx.waiter.wait_vanish(
@@ -368,6 +492,7 @@ class Runner:
                 timeout_ms=action.timeout_ms,
                 poll_ms=action.poll_ms,
                 roi_override=action.roi_override,
+                smart_wait=action.smart_wait,
             )
 
         if outcome.result == WaitResult.SUCCESS:

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QSpinBox,
+    QDoubleSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -35,6 +36,8 @@ from core.models import (
     RunFlow,
     TypeText,
     WaitImage,
+    Notify,
+    NotifyMethod,
 )
 
 from infra import get_logger
@@ -176,6 +179,9 @@ class PropertiesPanel(QWidget):
             self._add_spin_field("roi_w", r.w, 1, 9999)
             self._add_spin_field("roi_h", r.h, 1, 9999)
             self._add_text_field("allowlist", action.allowlist)
+            self._add_double_spin_field("scale", action.scale, 0.1, 10.0)
+            self._add_bool_field("invert", action.invert)
+            self._add_bool_field("binarize", action.binarize)
 
         elif isinstance(action, InterruptRule):
             self._add_text_field("when_image", action.when_image)
@@ -195,6 +201,12 @@ class PropertiesPanel(QWidget):
         elif isinstance(action, Delay):
             self._add_spin_field("ms", action.ms, 0, 300000)
 
+        elif isinstance(action, Notify):
+            self._add_text_field("message", action.message)
+            self._add_combo_field("method", action.method.value, [m.value for m in NotifyMethod])
+            self._add_text_field("title", action.title)
+            self._add_text_field("target", action.target)
+
         # Comment field (common to all)
         self._add_text_field("comment", action.comment)
 
@@ -212,6 +224,14 @@ class PropertiesPanel(QWidget):
         field = QSpinBox()
         field.setRange(min_val, max_val)
         field.setValue(value)
+        self._fields[name] = field
+        self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
+
+    def _add_double_spin_field(self, name: str, value: float, min_val: float, max_val: float) -> None:
+        field = QDoubleSpinBox()
+        field.setRange(min_val, max_val)
+        field.setValue(value)
+        field.setSingleStep(0.1)
         self._fields[name] = field
         self.form_layout.addRow(name.replace("_", " ").title() + ":", field)
 
@@ -391,6 +411,9 @@ class PropertiesPanel(QWidget):
                     h=self._fields["roi_h"].value()
                 ),
                 allowlist=self._fields["allowlist"].text(),
+                scale=self._fields["scale"].value(),
+                invert=self._fields["invert"].isChecked(),
+                binarize=self._fields["binarize"].isChecked(),
                 comment=self._fields["comment"].text(),
             )
 
@@ -416,9 +439,17 @@ class PropertiesPanel(QWidget):
                 comment=self._fields["comment"].text(),
             )
 
-        elif isinstance(action, Delay):
             return Delay(
                 ms=self._fields["ms"].value(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Notify):
+            return Notify(
+                message=self._fields["message"].text(),
+                method=NotifyMethod(self._fields["method"].currentText()),
+                title=self._fields["title"].text(),
+                target=self._fields["target"].text(),
                 comment=self._fields["comment"].text(),
             )
 

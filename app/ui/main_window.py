@@ -60,8 +60,16 @@ class MainWindow(QMainWindow):
         self.resize(1200, 800)
 
         # Engine worker (QThread)
+        # Engine worker (QThread)
         self.engine = EngineWorker()
         self._project_path: Path | None = None
+        
+        # Auto-detect project in CWD
+        cwd = Path.cwd()
+        if (cwd / "script.yaml").exists():
+            self._project_path = cwd
+            logger.info(f"Auto-detected project at {cwd}")
+
         self._draft_path = Path.home() / ".retroauto" / "draft.json"
 
         # ScriptDocument and SyncManager for GUI-IDE sync
@@ -198,6 +206,11 @@ class MainWindow(QMainWindow):
         self.engine.step_started.connect(self._on_step_started)
         self.engine.flow_completed.connect(self._on_flow_completed)
         self.engine.error_occurred.connect(self._on_error)
+        self.engine.notification_received.connect(self._on_notification)
+
+    def _on_notification(self, title: str, message: str) -> None:
+        """Handle notification from engine."""
+        QMessageBox.information(self, title, message)
 
     def _connect_sync_signals(self) -> None:
         """Connect SyncManager signals for GUI-IDE synchronization."""
@@ -215,12 +228,16 @@ class MainWindow(QMainWindow):
 
     def _on_ir_changed_from_code(self, change_type: str) -> None:
         """Handle IR changes from code editor."""
+        logger.info("IR changed signal received: %s", change_type)
         if change_type.startswith("code_"):
             # Refresh actions panel from IR
             actions = self._sync_manager.get_flow_actions("main")
+            logger.info("Got %d actions from IR for panel refresh", len(actions) if actions else 0)
             if actions:
-                self.actions_panel.set_actions(actions)
-            logger.debug("Actions panel refreshed from IR (%s)", change_type)
+                self.actions_panel.load_actions(actions)
+                logger.info("Actions panel updated with %d actions", len(actions))
+            else:
+                logger.warning("No actions returned from IR - panel not updated")
 
     def _on_code_regenerated(self, new_code: str) -> None:
         """Handle code regenerated from GUI changes."""
@@ -432,6 +449,10 @@ class MainWindow(QMainWindow):
 
         # Create and show IDE window
         self._ide_window = IDEMainWindow()
+        
+        # Set file path if project exists
+        if self._project_path:
+            self._ide_window._current_file = self._project_path / "scripts" / "main.dsl"
 
         # Apply dark theme matching Main Window
         dark_stylesheet = self._get_ide_dark_stylesheet()
@@ -444,8 +465,16 @@ class MainWindow(QMainWindow):
             self._ide_window._is_modified = False
             self._ide_window._update_title()
 
+        # Connect IDE save signal to sync back to actions panel
+        self._ide_window.code_saved.connect(self._on_ide_code_saved)
+
         self._ide_window.show()
         logger.info("Opened IDE window with %d actions", len(actions))
+
+    def _on_ide_code_saved(self, code: str) -> None:
+        """Handle code saved from IDE - sync back to actions panel immediately."""
+        self._sync_manager.on_code_saved(code)
+        logger.info("IDE code synced to actions panel")
 
     def _get_ide_dark_stylesheet(self) -> str:
         """Get dark theme stylesheet for IDE Editor matching Main Window."""
