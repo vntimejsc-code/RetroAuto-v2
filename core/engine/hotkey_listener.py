@@ -9,14 +9,15 @@ from __future__ import annotations
 
 import logging
 import threading
-from dataclasses import dataclass, field
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
 # Try to import pynput
 try:
     from pynput import keyboard
+
     HAS_PYNPUT = True
 except ImportError:
     HAS_PYNPUT = False
@@ -26,6 +27,7 @@ except ImportError:
 @dataclass
 class HotkeyBinding:
     """A hotkey-to-action binding."""
+
     hotkey: str  # e.g., "f4", "ctrl+f4", "ctrl+shift+a"
     callback: Callable[[], None]
     enabled: bool = True
@@ -49,10 +51,11 @@ class HotkeyListener:
         - Special keys: f1-f12, space, enter, tab, etc.
     """
 
-    _instance: "HotkeyListener | None" = None
+    _instance: HotkeyListener | None = None
     _lock = threading.Lock()
+    _initialized: bool = False  # Type annotation for mypy
 
-    def __new__(cls) -> "HotkeyListener":
+    def __new__(cls) -> HotkeyListener:
         """Singleton pattern."""
         with cls._lock:
             if cls._instance is None:
@@ -184,6 +187,7 @@ class HotkeyListener:
                             b.callback()
                         except Exception as e:
                             logger.error(f"Hotkey callback error: {e}")
+
                     return cb
 
                 hotkey_map[normalized] = make_callback(binding)
@@ -200,6 +204,7 @@ class HotkeyListener:
 # ─────────────────────────────────────────────────────────────
 # Convenience Functions
 # ─────────────────────────────────────────────────────────────
+
 
 def get_hotkey_listener() -> HotkeyListener:
     """Get the global HotkeyListener instance."""
@@ -218,6 +223,7 @@ if __name__ == "__main__":
     print("Listening for F4 and Ctrl+F4... Press Ctrl+C to exit.")
     try:
         import time
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
