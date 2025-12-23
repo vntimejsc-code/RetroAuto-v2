@@ -134,6 +134,7 @@ class CrashHandler:
     """
 
     _installed = False
+    _is_handling = False
 
     @classmethod
     def install(cls):
@@ -150,26 +151,38 @@ class CrashHandler:
     @classmethod
     def _handle_exception(cls, exctype, value, tb):
         """Handle execution exception."""
-        # Log it first
-        logger.critical("Uncaught exception!", exc_info=(exctype, value, tb))
-
-        # Don't handle KeyboardInterrupt (Ctrl+C)
-        if issubclass(exctype, KeyboardInterrupt):
+        # Prevent recursion
+        if cls._is_handling:
             sys.__excepthook__(exctype, value, tb)
             return
 
-        # Show dialog if QApplication exists
-        app = QApplication.instance()
-        if app:
+        cls._is_handling = True
+        try:
+            # Log it first (safely)
             try:
-                dialog = CrashDialog(exctype, value, tb)
-                dialog.exec()
-            except Exception as e:
-                # If dialog fails, fallback to stderr
-                print("Error showing CrashDialog:", e, file=sys.stderr)
+                logger.critical("Uncaught exception!", exc_info=(exctype, value, tb))
+            except Exception:
+                print("Failed to log crash (likely stack overflow)", file=sys.stderr)
+
+            # Don't handle KeyboardInterrupt (Ctrl+C)
+            if issubclass(exctype, KeyboardInterrupt):
                 sys.__excepthook__(exctype, value, tb)
-        else:
-            sys.__excepthook__(exctype, value, tb)
+                return
+
+            # Show dialog if QApplication exists
+            app = QApplication.instance()
+            if app:
+                try:
+                    dialog = CrashDialog(exctype, value, tb)
+                    dialog.exec()
+                except Exception as e:
+                    # If dialog fails, fallback to stderr
+                    print("Error showing CrashDialog:", e, file=sys.stderr)
+                    sys.__excepthook__(exctype, value, tb)
+            else:
+                sys.__excepthook__(exctype, value, tb)
+        finally:
+            cls._is_handling = False
 
     # @classmethod
     # def _handle_unraisable(cls, args):

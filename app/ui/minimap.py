@@ -46,12 +46,12 @@ class Minimap(QWidget):
 
         # Update when editor changes
         self.editor.blockCountChanged.connect(self.update)
-        self.editor.updateRequest.connect(self._on_update_request)
+        # Use lambda to ignore arguments and trigger update
+        self.editor.updateRequest.connect(lambda rect, dy: self.update())
         self.editor.verticalScrollBar().valueChanged.connect(self.update)
 
-    def _on_update_request(self, rect: QRect, dy: int):
-        """Handle editor update requests."""
-        self.update()
+    # _on_update_request removed in favor of lambda
+
 
     def paintEvent(self, event: QPaintEvent):
         """Paint the minimap."""

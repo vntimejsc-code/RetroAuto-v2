@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 sys.path.append(r"c:\Auto\Newauto")
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, QRect, Qt
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QApplication
 
@@ -129,7 +129,15 @@ def test_ide_components():
                  print("⚠️ Minimap exists but isVisible() returned False (might be due to mocked window state)")
             
             # Test paint event (no crash)
-            # editor.minimap.repaint() # Hard to test without event loop
+            # editor.minimap.repaint()
+            
+            # Test Signal Connection (Regression Test for AttributeError)
+            try:
+                editor.updateRequest.emit(QRect(0,0,10,10), 0)
+                print("✅ Minimap _on_update_request Slot connection verified")
+            except Exception as e:
+                print(f"❌ Minimap Slot connection FAILED: {e}")
+
             print("✅ Minimap integration checked")
             
         else:

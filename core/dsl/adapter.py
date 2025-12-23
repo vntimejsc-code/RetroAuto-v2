@@ -547,3 +547,15 @@ def ir_to_action(ir: ActionIR) -> Action | None:
         pass
 
     return None
+
+
+def ir_to_actions(actions_ir: list[ActionIR]) -> list[Action]:
+    """
+    Convert a list of ActionIR to Action models.
+    """
+    actions = []
+    for ir in actions_ir:
+        action = ir_to_action(ir)
+        if action:
+            actions.append(action)
+    return actions

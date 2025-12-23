@@ -751,7 +751,10 @@ class MainWindow(QMainWindow):
 
         if self.engine.isRunning():
             self.engine.stop()
-            self.engine.wait(2000)
+            if not self.engine.wait(2000):
+                logger.warning("Engine did not stop gracefully, forcing termination")
+                self.engine.terminate()
+                self.engine.wait()
         event.accept()
 
     def _on_assets_changed(self) -> None:
