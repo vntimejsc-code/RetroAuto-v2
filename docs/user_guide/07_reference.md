@@ -195,3 +195,100 @@ Stack: [Main] -> [A] -> [B] -> [C] ...
 | OCR `read_text` | 100-500 ms | Nặng, dùng tiết kiệm. |
 
 **Best Practice:** Luôn dùng `region=[x, y, w, h]` để giới hạn vùng tìm kiếm.
+
+
+---
+
+<!-- AUTO-GENERATED: START -->
+## Auto-Generated Action Reference
+
+> *Tự động tạo từ `core/models.py`. Cập nhật lần cuối: 2025-12-23 20:06*
+
+### ⌨️ Keyboard
+
+**`Hotkey(keys)`**
+  - Press hotkey combination.
+
+**`TypeText(text, paste_mode, enter)`**
+  - Type text using keyboard.
+
+### ⏱️ Timing
+
+**`Delay(ms)`**
+  - Wait for specified duration.
+
+**`DelayRandom(min_ms, max_ms)`**
+  - Wait for random duration between min and max.
+
+### 🎯 Mouse Actions
+
+**`Click(x, y, button, clicks, interval_ms, use_match)`**
+  - Click at coordinates or last found image.
+
+**`ClickImage(asset_id, button, clicks, timeout_ms, offset_x, offset_y, smart_wait, interval_ms)`**
+  - Wait for image then click.
+
+**`ClickRandom(roi, clicks, interval_ms, button)`**
+  - Click randomly within a region (Anti-ban).
+
+**`ClickUntil(click_asset_id, until_asset_id, until_appear, button, click_interval_ms, timeout_ms, max_clicks)`**
+  - Click repeatedly until target image appears/vanishes (farming loop).
+
+**`Drag(from_x, from_y, to_x, to_y, duration_ms, button)`**
+  - Drag from one position to another.
+
+**`Scroll(x, y, amount)`**
+  - Scroll mouse wheel.
+
+### 👁️ Vision & Wait
+
+**`WaitImage(asset_id, appear, timeout_ms, poll_ms, smart_wait, roi_override)`**
+  - Wait for image to appear or vanish.
+
+**`WaitPixel(x, y, color, appear, timeout_ms, poll_ms)`**
+  - Wait for pixel color at position.
+
+### 📖 OCR
+
+**`ReadText(variable_name, roi, allowlist, scale, invert, binarize)`**
+  - Read text from screen region using OCR.
+
+### 📢 Notifications
+
+**`Notify(message, method, title, target)`**
+  - Send a notification.
+
+**`NotifyMethod`**
+  - Notification methods.
+
+### 🔀 Conditionals
+
+**`IfImage(asset_id, then_actions, else_actions, roi_override)`**
+  - Conditional branch based on image presence.
+
+**`IfPixel(x, y, color, then_actions, else_actions)`**
+  - Conditional branch based on pixel color.
+
+**`IfText(variable_name, operator, value, then_actions, else_actions)`**
+  - Conditional branch based on text variable value.
+
+### 🔁 Loops
+
+**`Loop(count, actions)`**
+  - Repeat actions N times or infinitely.
+
+**`WhileImage(asset_id, while_present, actions, max_iterations, roi_override)`**
+  - Repeat actions while image is present/absent.
+
+### 🔧 Flow Control
+
+**`Goto(label)`**
+  - Jump to a label.
+
+**`Label(name)`**
+  - Mark a position for Goto.
+
+**`RunFlow(flow_name)`**
+  - Execute another flow.
+
+<!-- AUTO-GENERATED: END -->
