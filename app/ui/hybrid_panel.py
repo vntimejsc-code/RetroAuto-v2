@@ -206,3 +206,23 @@ class HybridActionsPanel(QWidget):
         """Insert action for asset."""
         self.actions_panel.insert_action_for_asset(asset_id, action_type)
         self._update_code_preview()
+    
+    @property
+    def _actions(self) -> list[Action]:
+        """Proxy to internal ActionsPanel._actions for compatibility."""
+        return self.actions_panel._actions
+    
+    @_actions.setter
+    def _actions(self, value: list[Action]) -> None:
+        """Set actions and update code preview."""
+        self.actions_panel._actions = value
+        
+    def _refresh_list(self) -> None:
+        """Proxy to internal ActionsPanel._refresh_list."""
+        self.actions_panel._refresh_list()
+        self._update_code_preview()
+    
+    @property
+    def action_list(self):
+        """Proxy to action_list widget for compatibility."""
+        return self.actions_panel.action_list
