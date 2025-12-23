@@ -51,6 +51,16 @@ def test_ide_components():
     except Exception as e:
         print(f"❌ Asset Peek failed: {e}")
 
+    # 2.2 Test Line Highlighting (Recent Bug Verification)
+    try:
+        # Trigger highlight manually
+        editor._highlight_current_line()
+        print("✅ Line Highlighting (QTextEdit.ExtraSelection) works")
+    except NameError as e:
+        print(f"❌ Line Highlighting failed (NameError): {e}")
+    except Exception as e:
+         print(f"❌ Line Highlighting failed: {e}")
+
     # 2.2 Signature Help Logic checks
     # Verify signatures exist
     if "click" in DSL_SIGNATURES:

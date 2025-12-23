@@ -24,7 +24,7 @@ from PySide6.QtGui import (
     QTextCursor,
     QTextFormat,
 )
-from PySide6.QtWidgets import QCompleter, QPlainTextEdit, QToolTip, QWidget
+from PySide6.QtWidgets import QCompleter, QPlainTextEdit, QTextEdit, QToolTip, QWidget
 
 from app.ui.minimap import Minimap
 
