@@ -1,13 +1,15 @@
 """
 RetroAuto v2 - Interrupts Panel
 
-Manage global interrupt rules that trigger on specific image events.
+Manage global interrupt rules that trigger on specific image events OR hotkeys.
 """
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
@@ -24,6 +26,7 @@ logger = get_logger("InterruptsPanel")
 class InterruptsPanel(QWidget):
     """
     Panel for managing global interrupt rules.
+    Supports both Image triggers and Hotkey triggers.
     """
 
     rule_selected = Signal(dict)  # Emits {"index": int, "rule": InterruptRule}
@@ -75,16 +78,21 @@ class InterruptsPanel(QWidget):
         self.rule_list.clear()
         for i, rule in enumerate(self._rules):
             item = QListWidgetItem(self._get_rule_label(rule))
-            # item.setData(Qt.ItemDataRole.UserRole, rule)
             self.rule_list.addItem(item)
 
     def _get_rule_label(self, rule: InterruptRule) -> str:
-        """Format rule display."""
-        trigger = rule.when_image or "?"
+        """Format rule display for both Image and Hotkey triggers."""
+        # Determine trigger display
+        if rule.trigger_type == "hotkey" and rule.when_hotkey:
+            trigger = f"⌨️ {rule.when_hotkey.upper()}"
+        else:
+            trigger = f"🖼️ '{rule.when_image or '?'}'"
+
+        # Determine action display
         action = (
             f"Run Flow: {rule.run_flow}" if rule.run_flow else f"{len(rule.do_actions)} Actions"
         )
-        return f"[P{rule.priority}] IF detected '{trigger}' THEN {action}"
+        return f"[P{rule.priority}] WHEN {trigger} → {action}"
 
     def _on_item_clicked(self, item: QListWidgetItem) -> None:
         row = self.rule_list.row(item)

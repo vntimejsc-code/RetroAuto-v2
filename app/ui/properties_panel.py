@@ -188,9 +188,23 @@ class PropertiesPanel(QWidget):
             self._add_bool_field("binarize", action.binarize)
 
         elif isinstance(action, InterruptRule):
-            self._add_text_field("when_image", action.when_image)
+            # Trigger Type dropdown
+            self._add_combo_field("trigger_type", action.trigger_type, ["image", "hotkey"])
+
+            # Conditional fields based on trigger type
+            if action.trigger_type == "hotkey":
+                self._add_text_field("when_hotkey", action.when_hotkey or "")
+                self._add_label("(e.g., f4, ctrl+f4, alt+a)")
+            else:
+                self._add_text_field("when_image", action.when_image or "")
+
             self._add_spin_field("priority", action.priority, 0, 100)
             self._add_text_field("run_flow", action.run_flow or "")
+
+            # Add callback to rebuild on trigger type change
+            trigger_combo = self._fields.get("trigger_type")
+            if trigger_combo:
+                trigger_combo.currentTextChanged.connect(self._on_trigger_type_changed)
 
         elif isinstance(action, ClickRandom):
             r = action.roi
@@ -290,6 +304,27 @@ class PropertiesPanel(QWidget):
                 field.setVisible(checked)
 
         toggle.toggled.connect(on_toggle)
+
+    def _on_trigger_type_changed(self, new_type: str) -> None:
+        """Handle trigger type change - rebuild form with new field."""
+        if not self._current_data:
+            return
+
+        action = self._current_data.get("action")
+        if not isinstance(action, InterruptRule):
+            return
+
+        # Update action with new trigger type and rebuild form
+        updated = InterruptRule(
+            trigger_type=new_type,
+            when_image=action.when_image if new_type == "image" else None,
+            when_hotkey=action.when_hotkey if new_type == "hotkey" else None,
+            priority=action.priority,
+            run_flow=action.run_flow,
+            do_actions=action.do_actions,
+        )
+        self._current_data["action"] = updated
+        self._rebuild_form()
 
     def _on_apply(self) -> None:
         """Apply changes to action."""
@@ -423,8 +458,11 @@ class PropertiesPanel(QWidget):
             )
 
         elif isinstance(action, InterruptRule):
+            trigger_type = self._fields["trigger_type"].currentText()
             return InterruptRule(
-                when_image=self._fields["when_image"].text(),
+                trigger_type=trigger_type,
+                when_image=self._fields.get("when_image", lambda: type("", (), {"text": lambda self: None})()).text() if "when_image" in self._fields else None,
+                when_hotkey=self._fields.get("when_hotkey", lambda: type("", (), {"text": lambda self: None})()).text() if "when_hotkey" in self._fields else None,
                 priority=self._fields["priority"].value(),
                 run_flow=self._fields["run_flow"].text() or None,
                 do_actions=action.do_actions,  # Preserve existing

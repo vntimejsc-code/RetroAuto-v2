@@ -427,11 +427,21 @@ class Flow(BaseModel):
 
 
 class InterruptRule(BaseModel):
-    """Global interrupt that triggers on image detection."""
+    """Global interrupt that triggers on image detection OR hotkey press."""
 
     priority: int = Field(default=0, description="Higher = checked first")
-    when_image: str = Field(description="Asset ID to watch for")
+
+    # Trigger type: 'image' (default) or 'hotkey'
+    trigger_type: Literal["image", "hotkey"] = Field(default="image")
+
+    # Image trigger (used when trigger_type == 'image')
+    when_image: str | None = Field(default=None, description="Asset ID to watch for")
     roi_override: ROI | None = Field(default=None)
+
+    # Hotkey trigger (used when trigger_type == 'hotkey')
+    when_hotkey: str | None = Field(default=None, description="Hotkey combo, e.g. 'f4', 'ctrl+f4'")
+
+    # Actions to perform
     do_actions: list[Action] = Field(default_factory=list)
     run_flow: str | None = Field(default=None, description="Or run this flow")
 

@@ -15,6 +15,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 from core.models import Action, InterruptRule
+from core.engine.hotkey_listener import get_hotkey_listener
 from infra import get_logger
 
 if TYPE_CHECKING:
@@ -98,6 +99,9 @@ class InterruptScanner:
 
         # Cooldown to avoid re-triggering same interrupt
         self._cooldown: dict[str, float] = {}
+
+        # Hotkey listener for hotkey-type interrupts
+        self._hotkey_listener = get_hotkey_listener()
         self._cooldown_duration = 2.0  # seconds
 
     @property
@@ -128,6 +132,9 @@ class InterruptScanner:
         self._pause_event.set()
         self._state = InterruptState.SCANNING
 
+        # Register hotkey-type interrupts
+        self._register_hotkey_interrupts()
+
         self._thread = threading.Thread(target=self._scan_loop, daemon=True)
         self._thread.start()
         logger.info("Interrupt scanner started (interval: %.0fms)", self._scan_interval * 1000)
@@ -136,6 +143,9 @@ class InterruptScanner:
         """Stop the interrupt scanner thread."""
         self._stop_event.set()
         self._state = InterruptState.STOPPED
+
+        # Stop hotkey listener
+        self._hotkey_listener.stop()
 
         if self._thread is not None:
             self._thread.join(timeout=2.0)
@@ -152,6 +162,33 @@ class InterruptScanner:
         """Resume scanning after pause."""
         self._pause_event.set()
         logger.debug("Scanner resumed")
+
+    def _register_hotkey_interrupts(self) -> None:
+        """Register hotkey-type interrupts with the HotkeyListener."""
+        for rule in self._ctx.script.interrupts:
+            if rule.trigger_type == "hotkey" and rule.when_hotkey:
+                # Create a callback that triggers this rule
+                def make_callback(r: InterruptRule):
+                    def cb():
+                        logger.info(f"Hotkey triggered: {r.when_hotkey}")
+                        # Create a dummy InterruptMatch for hotkey triggers
+                        match = InterruptMatch(
+                            rule=r,
+                            match_x=0,
+                            match_y=0,
+                            match_w=0,
+                            match_h=0,
+                            confidence=1.0,
+                        )
+                        self._handle_interrupt(match)
+                    return cb
+
+                self._hotkey_listener.register(rule.when_hotkey, make_callback(rule))
+                logger.info(f"Registered hotkey interrupt: {rule.when_hotkey}")
+
+        # Start the hotkey listener if we have any bindings
+        if self._hotkey_listener.get_bindings():
+            self._hotkey_listener.start()
 
     def _scan_loop(self) -> None:
         """Main scanning loop - runs in background thread."""
@@ -188,6 +225,14 @@ class InterruptScanner:
         current_time = time.time()
 
         for rule in interrupts:
+            # Skip hotkey-type rules (handled by HotkeyListener)
+            if rule.trigger_type == "hotkey":
+                continue
+
+            # Skip if no when_image for image-type
+            if not rule.when_image:
+                continue
+
             # Skip if in cooldown
             cooldown_key = rule.when_image
             if (
