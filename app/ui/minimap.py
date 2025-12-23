@@ -7,9 +7,7 @@ Renders a scaled-down version of the code with syntax coloring.
 
 from __future__ import annotations
 
-import re
-
-from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import QPlainTextEdit, QWidget
 
@@ -29,7 +27,7 @@ COLORS = {
 class Minimap(QWidget):
     """
     Code Minimap widget.
-    
+
     Displays a high-level view of the code structure.
     Handles scrolling interactions.
     """
@@ -52,7 +50,6 @@ class Minimap(QWidget):
 
     # _on_update_request removed in favor of lambda
 
-
     def paintEvent(self, event: QPaintEvent):
         """Paint the minimap."""
         painter = QPainter(self)
@@ -71,11 +68,7 @@ class Minimap(QWidget):
             if text:
                 color = self._get_line_color(text)
                 painter.fillRect(
-                    2, 
-                    pixel_y, 
-                    min(len(text) * 2, self.WIDTH - 4), 
-                    self.LINE_HEIGHT, 
-                    QColor(color)
+                    2, pixel_y, min(len(text) * 2, self.WIDTH - 4), self.LINE_HEIGHT, QColor(color)
                 )
 
             block = block.next()
@@ -98,28 +91,28 @@ class Minimap(QWidget):
 
     def _paint_viewport(self, painter: QPainter):
         """Paint the rectangle representing visible area."""
-        
+
         # Calculate viewport position
         # Ratio of visible lines to total lines
-        
-        total_lines = max(1, self.editor.blockCount())
+
+        max(1, self.editor.blockCount())
         lines_visible = self.editor.viewport().height() / self.editor.fontMetrics().height()
-        
+
         # Scaling factor: map editor scroll range to minimap height?
         # Typically minimap shows the WHOLE file scaled down, or a window of it?
         # Let's map 1 code line = LINE_HEIGHT pixels on minimap.
-        
+
         # If file is too long for minimap, we might need a scrollable minimap or scaling.
         # For simple implementation: Fixed scale.
-        
+
         first_visible = self.editor.firstVisibleBlock().blockNumber()
-        
+
         y = first_visible * (self.LINE_HEIGHT + 1)
         h = lines_visible * (self.LINE_HEIGHT + 1)
-        
+
         # Draw viewport rect
         painter.fillRect(0, int(y), self.WIDTH, int(h), QColor(COLORS["viewport"]))
-        
+
         # Draw border
         painter.setPen(QColor(COLORS["viewport_border"]))
         painter.drawRect(0, int(y), self.WIDTH - 1, int(h))
@@ -136,34 +129,34 @@ class Minimap(QWidget):
     def _handle_mouse(self, event: QMouseEvent):
         """Map mouse Y to scroll position."""
         y = event.position().y()
-        
+
         # Reverse map: y pixels -> line number
         line = int(y / (self.LINE_HEIGHT + 1))
-        
+
         # Center viewport on click?
         # Or simpler: Jump to that line
-        
+
         viewport_lines = self.editor.viewport().height() / self.editor.fontMetrics().height()
         target_line = int(line - (viewport_lines / 2))
-        
+
         scrollbar = self.editor.verticalScrollBar()
         # Map line to scroll value?
         # QPlainTextEdit scroll is by lines usually, or pixels?
         # Default is usually lines if not smooth scroll?
         # Let's try cursor movement or scrollbar
-        
-        cursor = self.editor.textCursor()
-        block = self.editor.document().findBlockByNumber(max(0, min(line, self.editor.blockCount() - 1)))
-        
+
+        self.editor.textCursor()
+        self.editor.document().findBlockByNumber(max(0, min(line, self.editor.blockCount() - 1)))
+
         # We want to scroll so this block is visible, preferably centered
         # Using scrollbar setValue directly is cleaner if we know the ratio
-        
+
         # But setting cursor is safer for valid range
         # self.editor.setTextCursor(...) scrolls to cursor.
-        
+
         # Let's try direct scrollbar calculation
         # total_pixels in minimap vs scrollbar range
-        
+
         # If using 1-to-1 mapping logic:
         # scroll_val = line_idx
         scrollbar.setValue(target_line)

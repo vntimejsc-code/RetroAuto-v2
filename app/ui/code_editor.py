@@ -24,10 +24,9 @@ from PySide6.QtGui import (
     QTextCursor,
     QTextFormat,
 )
-from PySide6.QtWidgets import QCompleter, QPlainTextEdit, QTextEdit, QToolTip, QWidget
+from PySide6.QtWidgets import QPlainTextEdit, QTextEdit, QToolTip, QWidget
 
 from app.ui.minimap import Minimap
-
 from app.ui.syntax_highlighter import DSLHighlighter
 from app.ui.win95_style import COLORS
 
@@ -206,18 +205,16 @@ class DSLCodeEditor(QPlainTextEdit):
         """Handle resize to adjust line number area AND minimap."""
         super().resizeEvent(event)
         cr = self.contentsRect()
-        
+
         # Line number area (left)
         self.line_number_area.setGeometry(
             QRect(cr.left(), cr.top(), self.line_number_area_width(), cr.height())
         )
-        
+
         # Minimap (right overlay)
         if hasattr(self, "minimap"):
             w = self.minimap.WIDTH
-            self.minimap.setGeometry(
-                QRect(cr.right() - w, cr.top(), w, cr.height())
-            )
+            self.minimap.setGeometry(QRect(cr.right() - w, cr.top(), w, cr.height()))
 
     def line_number_area_paint_event(self, event) -> None:  # type: ignore
         """Paint the line number gutter with breakpoint markers."""
@@ -339,9 +336,8 @@ class DSLCodeEditor(QPlainTextEdit):
         else:
             QToolTip.hideText()
 
-
     # resizeEvent unified above (handles both line numbers and minimap)
-    
+
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle key events for editor behavior."""
         # Tab -> spaces

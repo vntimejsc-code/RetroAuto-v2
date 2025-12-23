@@ -6,10 +6,8 @@ Manage global interrupt rules that trigger on specific image events OR hotkeys.
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QComboBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
@@ -76,7 +74,7 @@ class InterruptsPanel(QWidget):
     def _refresh_list(self) -> None:
         """Refresh logic."""
         self.rule_list.clear()
-        for i, rule in enumerate(self._rules):
+        for _i, rule in enumerate(self._rules):
             item = QListWidgetItem(self._get_rule_label(rule))
             self.rule_list.addItem(item)
 

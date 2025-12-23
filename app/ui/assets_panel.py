@@ -236,10 +236,6 @@ class AssetsPanel(QWidget):
         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
         self.asset_list.addItem(item)
 
-    def get_assets(self) -> list[AssetImage]:
-        """Get current assets list."""
-        return list(self._assets)
-
     def add_asset(self, asset: AssetImage) -> None:
         """Add a new asset."""
         self._assets.append(asset)

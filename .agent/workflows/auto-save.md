@@ -2,41 +2,83 @@
 description: Auto-save code changes with version bump and git commit
 ---
 
-# Auto-Save Workflow (Dành cho AI Agent)
+# Auto-Save Workflow
 
-**QUAN TRỌNG:** Sau mỗi khi hoàn thành thay đổi code, AI Agent PHẢI thực hiện các bước sau:
+This workflow automatically:
+1. Runs deep code checks
+2. Bumps the version number
+3. Commits and pushes to git
 
-## Bước 1: Check Code
-```powershell
+## Steps
+
+### 1. Run Deep Code Check
 // turbo
-python check_code.py
+```powershell
+python scripts/deep_check.py --fix
 ```
 
-## Bước 2: Bump Build Version  
-```powershell
+If the check fails, the workflow stops here. Fix the issues first.
+
+---
+
+### 2. Bump Version (Patch)
 // turbo
-python -c "from infra.version import bump_build; bump_build()"
+```powershell
+python scripts/version_bump.py --patch
 ```
 
-## Bước 3: Commit với Mô tả
-```powershell
+This increments the patch version: `2.0.5` → `2.0.6`
+
+For feature additions, use `--minor`. For breaking changes, use `--major`.
+
+---
+
+### 3. Get Current Version
 // turbo
-git add -A; git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Mô tả thay đổi" --no-verify
-```
-
-## Quick Save (One-liner cho PowerShell)
 ```powershell
-// turbo-all
-python -c "from infra.version import bump_build; bump_build()"; git add -A; git commit -m "[$(Get-Date -Format 'yyyyMMdd_HHmmss')] Mô tả thay đổi" --no-verify
+python scripts/version_bump.py --show
 ```
 
-## Rollback
+Save this version for the commit message.
+
+---
+
+### 4. Stage All Changes
+// turbo
 ```powershell
-git log --oneline -10    # Xem lịch sử
-git reset --hard <hash>  # Rollback về commit cũ
+git add -A
 ```
 
-## Lưu ý cho AI Agent
-- **SAU MỖI LẦN EDIT CODE**: Chạy workflow này trước khi kết thúc task
-- **COMMIT MESSAGE**: Phải mô tả rõ ràng thay đổi (tiếng Việt hoặc tiếng Anh)
-- **BUILD VERSION**: Tự động tăng theo format: YYYYMMDD.NNN
+---
+
+### 5. Commit with Version
+```powershell
+git commit -m "Release: v$(python scripts/version_bump.py --show) - [describe changes]"
+```
+
+Replace `[describe changes]` with a brief description of what changed.
+
+---
+
+### 6. Push to Remote
+```powershell
+git push origin master
+```
+
+---
+
+## Quick Command (All-in-One)
+
+For experienced users, run all steps in one command:
+
+```powershell
+python scripts/deep_check.py --fix && python scripts/version_bump.py --patch && git add -A && git commit -m "Release: v$(python scripts/version_bump.py --show)" && git push origin master
+```
+
+---
+
+## Notes
+
+- Always run `deep_check.py` before committing
+- The pre-commit hooks will also run automatically on `git commit`
+- If pre-commit fails, the commit is blocked

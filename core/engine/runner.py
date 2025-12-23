@@ -266,10 +266,7 @@ class Runner:
 
     def _flow_needs_ocr(self, flow: Flow) -> bool:
         """Check if flow uses any OCR actions."""
-        for action in flow.actions:
-            if isinstance(action, (ReadText, IfText)):
-                return True
-        return False
+        return any(isinstance(action, (ReadText, IfText)) for action in flow.actions)
 
     def _execute_action(
         self,
@@ -518,10 +515,7 @@ class Runner:
                 # Simple float conversion
                 f_val = float(var_val.replace(",", "").strip())
                 f_target = float(target)
-                if op == "numeric_gt":
-                    result = f_val > f_target
-                else:
-                    result = f_val < f_target
+                result = f_val > f_target if op == "numeric_gt" else f_val < f_target
         except ValueError:
             logger.warning("IfText: Numeric conversion failed for '%s'", var_val)
             result = False

@@ -41,15 +41,13 @@ class SystemWatchdog:
         self.last_check = current_time
 
         # 1. Check Internet
-        if config.get("check_internet", False):
-            if not self._check_internet():
-                return False, "⚠️ No Internet Connection"
+        if config.get("check_internet", False) and not self._check_internet():
+            return False, "⚠️ No Internet Connection"
 
         # 2. Check Process
         process_name = config.get("process_name")
-        if process_name:
-            if not self._check_process(process_name):
-                return False, f"⚠️ Process '{process_name}' not found"
+        if process_name and not self._check_process(process_name):
+            return False, f"⚠️ Process '{process_name}' not found"
 
         # 3. Check Window
         window_title = config.get("window_title")

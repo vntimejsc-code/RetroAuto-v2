@@ -4,7 +4,7 @@ RetroAuto v2 - Actions Panel
 Manages the list of actions in a flow.
 """
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QColor, QKeySequence, QPainter, QPen, QShortcut
 from PySide6.QtWidgets import (
     QGroupBox,
@@ -158,7 +158,7 @@ ACTION_TEMPLATES = {
 
 # Build flattened lookup for backward compatibility
 ACTION_TYPES = []
-for category_name, actions in ACTION_CATEGORIES.items():
+for _category_name, actions in ACTION_CATEGORIES.items():
     ACTION_TYPES.extend(actions)
 
 # Action factory functions
@@ -292,10 +292,8 @@ class ActionItemDelegate(QStyledItemDelegate):
 
         painter.restore()
 
-    def sizeHint(self, option: QStyleOptionViewItem, index) -> "QSize":  # type: ignore
+    def sizeHint(self, option: QStyleOptionViewItem, index) -> QSize:  # type: ignore
         """Return size with space for tree lines."""
-        from PySide6.QtCore import QSize
-
         size = super().sizeHint(option, index)
         depth = index.data(257) or 0
         return QSize(size.width() + depth * self.indent_width, max(size.height(), 22))
@@ -754,7 +752,7 @@ class ActionsPanel(QWidget):
 
     def _incremental_update(self) -> None:
         """Update items incrementally - much faster for small changes."""
-        current_count = self.action_list.count()
+        self.action_list.count()
         target_count = len(self._actions)
 
         # Add or remove items to match count
@@ -953,10 +951,7 @@ class ActionsPanel(QWidget):
 
         # Smart insertion: insert at current position
         current_row = self.action_list.currentRow()
-        if current_row < 0:
-            insert_pos = len(self._actions)
-        else:
-            insert_pos = current_row + 1
+        insert_pos = len(self._actions) if current_row < 0 else current_row + 1
 
         # Add all actions from template
         for i, (action_type, params) in enumerate(template):
@@ -1033,10 +1028,7 @@ class ActionsPanel(QWidget):
 
         # Insert after current selection, or at end
         current_row = self.action_list.currentRow()
-        if current_row >= 0:
-            insert_pos = current_row + 1
-        else:
-            insert_pos = len(self._actions)
+        insert_pos = current_row + 1 if current_row >= 0 else len(self._actions)
 
         if insert_pos >= len(self._actions):
             self._actions.append(action)

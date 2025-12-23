@@ -6,6 +6,7 @@ Output: dist/RetroAuto/
 
 Note: SPECPATH, Analysis, PYZ, EXE, COLLECT are provided by PyInstaller runtime.
 """
+
 # ruff: noqa: F821
 # type: ignore
 

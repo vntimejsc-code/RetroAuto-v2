@@ -2,6 +2,7 @@
 OCR Module for Text Recognition.
 Wraps pytesseract/Tesseract-OCR.
 """
+
 import logging
 import os
 

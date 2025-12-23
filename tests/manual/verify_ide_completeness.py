@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
-from unittest.mock import MagicMock, patch
 sys.path.append(r"c:\Auto\Newauto")
 
 from PySide6.QtCore import QPointF, QRect, Qt
@@ -17,7 +17,7 @@ def test_ide_components():
     print("🚀 Starting IDE Comprehensive Audit...")
 
     # Init App
-    app = QApplication.instance() or QApplication(sys.argv)
+    QApplication.instance() or QApplication(sys.argv)
 
     # 1. Test IDEMainWindow Initialization
     try:
@@ -59,7 +59,7 @@ def test_ide_components():
     except NameError as e:
         print(f"❌ Line Highlighting failed (NameError): {e}")
     except Exception as e:
-         print(f"❌ Line Highlighting failed: {e}")
+        print(f"❌ Line Highlighting failed: {e}")
 
     # 2.2 Signature Help Logic checks
     # Verify signatures exist
@@ -102,19 +102,23 @@ def test_ide_components():
     print("\n🧪 Testing Flow Editor Integration...")
     try:
         # Mock window.show to avoid opening real window during test
-        with patch.object(window, '_flow_window', create=True):
-             # Also need to mock QMessageBox to avoid popping up on success/fail
-            with patch('PySide6.QtWidgets.QMessageBox.warning') as mock_warn, \
-                 patch('PySide6.QtWidgets.QMessageBox.critical') as mock_crit:
+        with patch.object(window, "_flow_window", create=True):
+            # Also need to mock QMessageBox to avoid popping up on success/fail
+            with (
+                patch("PySide6.QtWidgets.QMessageBox.warning") as mock_warn,
+                patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit,
+            ):
                 window._show_flow_editor()
                 if mock_warn.called or mock_crit.called:
-                    print(f"⚠️ Flow Editor opened with warnings: {mock_warn.call_args or mock_crit.call_args}")
+                    print(
+                        f"⚠️ Flow Editor opened with warnings: {mock_warn.call_args or mock_crit.call_args}"
+                    )
                 else:
                     print("✅ Flow Editor logic executed successfully (Conversion OK)")
     except AttributeError as e:
-         print(f"❌ IDEMainWindow crashed on Flow Editor (Regression): {e}")
+        print(f"❌ IDEMainWindow crashed on Flow Editor (Regression): {e}")
     except Exception as e:
-         print(f"❌ Flow Editor test failed: {e}")
+        print(f"❌ Flow Editor test failed: {e}")
 
     # 6. Test Minimap (The Navigator)
     print("\n🧪 Testing Minimap (The Navigator)...")
@@ -124,22 +128,24 @@ def test_ide_components():
             if editor.minimap.isVisible():
                 print("✅ Minimap is visible")
             else:
-                 # Minimap might be hidden if window not shown properly or logic differs
-                 # logic says self.minimap.show() in init.
-                 print("⚠️ Minimap exists but isVisible() returned False (might be due to mocked window state)")
-            
+                # Minimap might be hidden if window not shown properly or logic differs
+                # logic says self.minimap.show() in init.
+                print(
+                    "⚠️ Minimap exists but isVisible() returned False (might be due to mocked window state)"
+                )
+
             # Test paint event (no crash)
             # editor.minimap.repaint()
-            
+
             # Test Signal Connection (Regression Test for AttributeError)
             try:
-                editor.updateRequest.emit(QRect(0,0,10,10), 0)
+                editor.updateRequest.emit(QRect(0, 0, 10, 10), 0)
                 print("✅ Minimap _on_update_request Slot connection verified")
             except Exception as e:
                 print(f"❌ Minimap Slot connection FAILED: {e}")
 
             print("✅ Minimap integration checked")
-            
+
         else:
             print("❌ Minimap widget NOT found in editor")
     except Exception as e:
@@ -150,23 +156,23 @@ def test_ide_components():
     try:
         if hasattr(window, "structure_panel"):
             print("✅ StructurePanel widget found in window")
-            
+
             # Test refresh
             test_code = "@flow test:\n  #start"
             window.structure_panel.refresh(test_code)
-            
+
             # Check items
             item_count = window.structure_panel.tree.topLevelItemCount()
             if item_count > 0:
-                 print(f"✅ Structure parsed successfully (found {item_count} items)")
-                 # Verify navigation signal works (mock emit)
-                 # window.structure_panel.navigate_requested.emit(1)
+                print(f"✅ Structure parsed successfully (found {item_count} items)")
+                # Verify navigation signal works (mock emit)
+                # window.structure_panel.navigate_requested.emit(1)
             else:
-                 print("⚠️ Structure parsing produced 0 items (check regex?)")
+                print("⚠️ Structure parsing produced 0 items (check regex?)")
         else:
-             print("❌ StructurePanel widget NOT found in IDEMainWindow")
+            print("❌ StructurePanel widget NOT found in IDEMainWindow")
     except Exception as e:
-         print(f"❌ Structure Panel test failed: {e}")
+        print(f"❌ Structure Panel test failed: {e}")
 
     # 8. Clean up
     window.close()

@@ -7,7 +7,7 @@ OUTPUT_FILE = "docs/RetroAuto_UserGuide_v5.html"
 CSS = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap');
-    
+
     body {
         font-family: 'Merriweather', serif;
         line-height: 1.6;
@@ -27,7 +27,7 @@ CSS = """
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     th { background-color: #f2f2f2; }
     img { max-width: 100%; height: auto; display: block; margin: 20px auto; }
-    
+
     @media print {
         body { max-width: 100%; padding: 0; }
         a { text-decoration: none; color: #333; }
@@ -46,7 +46,7 @@ FILES = [
     "04_concepts.md",
     "05_cookbook.md",
     "06_troubleshooting.md",
-    "07_reference.md"
+    "07_reference.md",
 ]
 
 # 3. Processing
@@ -54,21 +54,21 @@ content_html = ""
 for fname in FILES:
     path = os.path.join(SOURCE_DIR, fname)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             md = f.read()
             # Simple Markdown to HTML fallback (since we might not have 'markdown' lib)
             # 1. Headers
-            md = re.sub(r'^# (.*)', r'<h1>\1</h1>', md, flags=re.MULTILINE)
-            md = re.sub(r'^## (.*)', r'<h2>\1</h2>', md, flags=re.MULTILINE)
-            md = re.sub(r'^### (.*)', r'<h3>\1</h3>', md, flags=re.MULTILINE)
+            md = re.sub(r"^# (.*)", r"<h1>\1</h1>", md, flags=re.MULTILINE)
+            md = re.sub(r"^## (.*)", r"<h2>\1</h2>", md, flags=re.MULTILINE)
+            md = re.sub(r"^### (.*)", r"<h3>\1</h3>", md, flags=re.MULTILINE)
             # 2. Bold/Italic
-            md = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', md)
-            md = re.sub(r'`(.*?)`', r'<code>\1</code>', md)
+            md = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", md)
+            md = re.sub(r"`(.*?)`", r"<code>\1</code>", md)
             # 3. Code Blocks
-            md = re.sub(r'```(.*?)```', r'<pre><code>\1</code></pre>', md, flags=re.DOTALL)
+            md = re.sub(r"```(.*?)```", r"<pre><code>\1</code></pre>", md, flags=re.DOTALL)
             # 4. Images
-            md = re.sub(r'!\[(.*?)\]\((.*?)\)', r'<img src="\2" alt="\1">', md)
-            
+            md = re.sub(r"!\[(.*?)\]\((.*?)\)", r'<img src="\2" alt="\1">', md)
+
             content_html += f"<section class='chapter'>{md}</section>\n"
 
 # 4. Wrap

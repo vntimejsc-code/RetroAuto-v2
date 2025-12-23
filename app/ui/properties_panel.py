@@ -461,8 +461,20 @@ class PropertiesPanel(QWidget):
             trigger_type = self._fields["trigger_type"].currentText()
             return InterruptRule(
                 trigger_type=trigger_type,
-                when_image=self._fields.get("when_image", lambda: type("", (), {"text": lambda self: None})()).text() if "when_image" in self._fields else None,
-                when_hotkey=self._fields.get("when_hotkey", lambda: type("", (), {"text": lambda self: None})()).text() if "when_hotkey" in self._fields else None,
+                when_image=(
+                    self._fields.get(
+                        "when_image", lambda: type("", (), {"text": lambda self: None})()
+                    ).text()
+                    if "when_image" in self._fields
+                    else None
+                ),
+                when_hotkey=(
+                    self._fields.get(
+                        "when_hotkey", lambda: type("", (), {"text": lambda self: None})()
+                    ).text()
+                    if "when_hotkey" in self._fields
+                    else None
+                ),
                 priority=self._fields["priority"].value(),
                 run_flow=self._fields["run_flow"].text() or None,
                 do_actions=action.do_actions,  # Preserve existing

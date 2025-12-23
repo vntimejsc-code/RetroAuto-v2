@@ -360,6 +360,7 @@ class IDEMainWindow(QMainWindow):
         # Structure Panel
         # Structure Panel
         from app.ui.structure_panel import StructurePanel
+
         self.structure_panel = StructurePanel()
         self.structure_panel.navigate_requested.connect(self._navigate_to_line)
 
@@ -372,8 +373,7 @@ class IDEMainWindow(QMainWindow):
         # Try to tabify with Explorer if exists
         explorer_dock = self.findChild(QDockWidget, "ExplorerDock")
         if explorer_dock:
-             self.tabifyDockWidget(explorer_dock, structure_dock)
-
+            self.tabifyDockWidget(explorer_dock, structure_dock)
 
         # Editor
         self.editor.content_changed.connect(self._on_code_changed)
@@ -663,9 +663,9 @@ class IDEMainWindow(QMainWindow):
     def _show_flow_editor(self) -> None:
         """Show the visual flow editor in a new window."""
         from PySide6.QtWidgets import QMainWindow
+
         from app.ui.flow_editor import FlowEditorWidget
         from core.dsl.document import ScriptDocument
-        from core.dsl.ir import ir_to_actions
 
         # Parse current code to IR
         code = self.editor.get_code()
@@ -686,7 +686,7 @@ class IDEMainWindow(QMainWindow):
             # FlowEditor usually expects a list of actions for a single flow.
             # Let's use the 'main' flow or the first flow.
             target_flow = doc.ir.get_flow("main") or (doc.ir.flows[0] if doc.ir.flows else None)
-            
+
             if not target_flow:
                 current_actions = []
             else:
@@ -694,10 +694,13 @@ class IDEMainWindow(QMainWindow):
                 # core.dsl.adapter.ir_to_action ? No, adapter is for single action
                 # Let's grab the adapter
                 from core.dsl.adapter import ir_to_action
+
                 current_actions = [ir_to_action(a) for a in target_flow.actions]
-                
+
         except Exception as e:
-            QMessageBox.critical(self, "Conversion Error", f"Failed to convert code to actions: {e}")
+            QMessageBox.critical(
+                self, "Conversion Error", f"Failed to convert code to actions: {e}"
+            )
             return
 
         # Create flow editor window
@@ -717,7 +720,7 @@ class IDEMainWindow(QMainWindow):
         """Handle actions exported from flow editor."""
         from core.dsl.adapter import action_to_ir
         from core.dsl.document import ScriptDocument
-        from core.dsl.ir import FlowIR, ScriptIR, ir_to_code
+        from core.dsl.ir import FlowIR, ir_to_code
 
         try:
             # Convert UI Actions back to IR
@@ -726,38 +729,38 @@ class IDEMainWindow(QMainWindow):
                 ir = action_to_ir(action)
                 if ir:
                     action_irs.append(ir)
-            
+
             # Reconstruct Code
             # We preserve existing IR structure (assets, config)
             # regenerate with new main flow
-            
+
             current_code = self.editor.get_code()
             doc = ScriptDocument()
             doc.update_from_code(current_code)
-            
+
             # Find main flow to replace
             # If doc was invalid, maybe we overwrite? But safer to rely on valid doc.
             if not doc.ir.is_valid:
-                # If code was invalid, we might lose data. 
+                # If code was invalid, we might lose data.
                 # But we checked validity on open.
                 pass
-                
+
             main_flow = doc.ir.get_flow("main")
             if not main_flow:
                 main_flow = FlowIR(name="main")
                 doc.ir.flows.append(main_flow)
-                
+
             main_flow.actions = action_irs
-            
+
             # Generate new code
             new_code = ir_to_code(doc.ir)
-            
+
             # Update Editor
             self.editor.set_code(new_code)
-            
+
             self.output.log_success(f"Synced {len(actions)} actions from Flow Editor")
             self.status_bar.showMessage("Synced actions from Flow Editor")
-            
+
         except Exception as e:
             self.output.log_error(f"Failed to sync actions: {e}")
             QMessageBox.critical(self, "Sync Error", f"Failed to sync actions: {e}")
@@ -773,7 +776,7 @@ class IDEMainWindow(QMainWindow):
             self._update_title()
         # Update structure panel
         self.structure_panel.refresh(self.editor.get_code())
-        
+
     def _navigate_to_line(self, line: int) -> None:
         """Scroll editor to specific line."""
         self.editor.goto_line(line)
@@ -786,7 +789,7 @@ class IDEMainWindow(QMainWindow):
         # The instruction implies _on_content_changed is renamed/replaced by _on_code_changed
         # and the logic for _is_modified and _update_title is moved into _on_code_changed.
         # The original _on_content_changed signal connection is updated in _connect_signals.
-        pass # The logic is now in _on_code_changed
+        pass  # The logic is now in _on_code_changed
 
     def _on_cursor_moved(self, line: int, col: int) -> None:
         """Handle cursor movement."""

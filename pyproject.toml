@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "retroauto"
-version = "2.0.0"
+version = "2.0.1"
 description = "Windows automation tool with image recognition - Win95 style"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -43,6 +43,8 @@ dev = [
     "black>=23.12.0",
     "mypy>=1.7.0",
     "pre-commit>=3.6.0",
+    "bandit>=1.7.0",
+    "watchdog>=4.0.0",
 ]
 
 [project.scripts]
@@ -69,7 +71,13 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by black)
+    "E402",  # module level import not at top (acceptable in tests/scripts)
+    "E741",  # ambiguous variable name (l, O, I) - context-dependent
     "B008",  # function call in default argument
+    "B007",  # unused loop variable (often intentional)
+    "SIM102", # Use single if statement (reduces readability sometimes)
+    "SIM108", # Use ternary operator (reduces readability sometimes)
+    "SIM117", # combine with statements (readability)
 ]
 
 [tool.ruff.isort]

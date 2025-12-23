@@ -9,16 +9,15 @@ from __future__ import annotations
 import re
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QLineEdit,
-    QVBoxLayout,
-    QWidget,
     QTreeWidget,
     QTreeWidgetItem,
-    QHeaderView
+    QVBoxLayout,
+    QWidget,
 )
+
 
 class StructurePanel(QWidget):
     """
@@ -50,9 +49,10 @@ class StructurePanel(QWidget):
         self.tree.setIndentation(16)
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.tree.itemDoubleClicked.connect(self._on_item_double_clicked)
-        
+
         # Style
-        self.tree.setStyleSheet("""
+        self.tree.setStyleSheet(
+            """
             QTreeWidget {
                 background-color: #1e1e1e;
                 color: #d4d4d4;
@@ -64,31 +64,32 @@ class StructurePanel(QWidget):
             QTreeWidget::item:selected {
                 background-color: #094771;
             }
-        """)
+        """
+        )
 
         layout.addWidget(self.tree)
 
     def refresh(self, code: str) -> None:
         """Parse code and update tree."""
         self.tree.clear()
-        
+
         # Regex for structure items
         # @flow name:
         # #label
-        
+
         lines = code.splitlines()
-        
+
         root_flow = QTreeWidgetItem(self.tree)
         root_flow.setText(0, "Flows")
         root_flow.setExpanded(True)
-        # Icon? 
-        
+        # Icon?
+
         current_flow_item = None
-        
+
         for i, line in enumerate(lines):
             line = line.strip()
             line_num = i + 1
-            
+
             if line.startswith("@"):
                 # Flow definition: @flow_name:
                 match = re.match(r"@(\w+):?", line)
@@ -100,13 +101,13 @@ class StructurePanel(QWidget):
                     # item.setIcon(0, QIcon("...")) # TODO: Add icons
                     current_flow_item = item
                     root_flow.addChild(item)
-                    
+
             elif line.startswith("#"):
                 # Label: #label_name
                 # Attach to current flow or root if no flow
                 parent = current_flow_item or root_flow
                 item = QTreeWidgetItem(parent)
-                item.setText(0, line) # Keep the #
+                item.setText(0, line)  # Keep the #
                 item.setData(0, Qt.ItemDataRole.UserRole, line_num)
                 # Indent labels visually strictly or just tree hierarchy?
                 # Tree hierarchy is good.

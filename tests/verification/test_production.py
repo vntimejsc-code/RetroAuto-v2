@@ -56,7 +56,7 @@ def test_scenario_2_timeout_protection():
 
     # Try to create wait with 10-minute timeout (should fail)
     try:
-        action = WaitImage(asset_id="test", timeout_ms=600000)
+        WaitImage(asset_id="test", timeout_ms=600000)
         print("✗ Should have rejected 10-minute timeout")
         return False
     except ValidationError as e:

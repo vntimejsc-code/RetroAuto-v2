@@ -181,10 +181,7 @@ class SocketItem(QGraphicsEllipseItem):
             return False
 
         # Can't connect to same node
-        if target.parentItem() == self.parentItem():
-            return False
-
-        return True
+        return target.parentItem() != self.parentItem()
 
     def update_connections(self):
         """Update all connection paths (called when node moves)."""

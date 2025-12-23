@@ -355,12 +355,7 @@ def action_to_ir(action: Action) -> ActionIR:
         params["target"] = action.target
 
     # Block markers (no params needed)
-    elif (
-        isinstance(action, Else)
-        or isinstance(action, EndIf)
-        or isinstance(action, EndLoop)
-        or isinstance(action, EndWhile)
-    ):
+    elif isinstance(action, (Else, EndIf, EndLoop, EndWhile)):
         pass  # No params
 
     return ActionIR(

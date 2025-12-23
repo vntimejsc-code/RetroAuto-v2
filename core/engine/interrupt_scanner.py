@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
-from core.models import Action, InterruptRule
 from core.engine.hotkey_listener import get_hotkey_listener
+from core.models import Action, InterruptRule
 from infra import get_logger
 
 if TYPE_CHECKING:
@@ -181,6 +181,7 @@ class InterruptScanner:
                             confidence=1.0,
                         )
                         self._handle_interrupt(match)
+
                     return cb
 
                 self._hotkey_listener.register(rule.when_hotkey, make_callback(rule))

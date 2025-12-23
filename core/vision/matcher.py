@@ -258,7 +258,9 @@ class ImageMatcher:
         # Adaptive Fallback
         if not result.found and adaptive and confidence > 0.6:
             # Try reducing confidence in steps
-            for fallback_conf in [c * 0.05 for c in range(int(confidence*20)-1, 11, -1)]: # e.g., 0.75, 0.70... 0.60
+            for fallback_conf in [
+                c * 0.05 for c in range(int(confidence * 20) - 1, 11, -1)
+            ]:  # e.g., 0.75, 0.70... 0.60
                 fallback_result = self._match(screen, template_img, fallback_conf)
                 if fallback_result.found:
                     result = fallback_result

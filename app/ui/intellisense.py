@@ -232,7 +232,7 @@ class IntelliSenseManager:
             self.completer.setCompletionPrefix(prefix)
 
             if self.completer.completionCount() > 0:
-                popup = self.completer.popup()
+                self.completer.popup()
 
                 # Position popup below cursor
                 rect = self.editor.cursorRect()

@@ -66,7 +66,7 @@ def test_timeout_limits():
 
     # Test exceeding max (should fail)
     try:
-        action3 = WaitImage(asset_id="test", timeout_ms=600000)  # 10 minutes
+        WaitImage(asset_id="test", timeout_ms=600000)  # 10 minutes
         print("✗ Should have rejected timeout > 5 min")
         return False
     except ValidationError:
