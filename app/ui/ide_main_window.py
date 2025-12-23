@@ -66,7 +66,9 @@ class IDEMainWindow(QMainWindow):
         self._current_file: Path | None = None
         self._is_modified = False
         self._script = None  # Current loaded script
+        self._intellisense = None  # Will be initialized after editor
         self._init_ui()
+        self._init_intellisense()
         self._init_menu()
         self._init_toolbar()
         self._init_status_bar()
@@ -155,6 +157,12 @@ class IDEMainWindow(QMainWindow):
         vsplitter.setSizes([500, 200])
 
         main_layout.addWidget(vsplitter)
+
+    def _init_intellisense(self) -> None:
+        """Initialize IntelliSense for code editor."""
+        from app.ui.intellisense import IntelliSenseManager
+        
+        self._intellisense = IntelliSenseManager(self.editor)
 
     def _init_menu(self) -> None:
         """Initialize menu bar."""
