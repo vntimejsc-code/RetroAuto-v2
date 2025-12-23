@@ -24,6 +24,7 @@ from pathlib import Path
 from PySide6.QtCore import QSettings, Qt, Signal
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
 from PySide6.QtWidgets import (
+    QDockWidget,
     QFileDialog,
     QLabel,
     QMainWindow,
@@ -356,8 +357,26 @@ class IDEMainWindow(QMainWindow):
         # Explorer
         self.explorer.file_opened.connect(self._open_file)
 
+        # Structure Panel
+        # Structure Panel
+        from app.ui.structure_panel import StructurePanel
+        self.structure_panel = StructurePanel()
+        self.structure_panel.navigate_requested.connect(self._navigate_to_line)
+
+        # Structure Dock
+        structure_dock = QDockWidget("Structure", self)
+        structure_dock.setObjectName("StructureDock")
+        structure_dock.setWidget(self.structure_panel)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, structure_dock)
+
+        # Try to tabify with Explorer if exists
+        explorer_dock = self.findChild(QDockWidget, "ExplorerDock")
+        if explorer_dock:
+             self.tabifyDockWidget(explorer_dock, structure_dock)
+
+
         # Editor
-        self.editor.content_changed.connect(self._on_content_changed)
+        self.editor.content_changed.connect(self._on_code_changed)
         self.editor.cursor_position_changed.connect(self._on_cursor_moved)
 
         # Output
@@ -747,11 +766,27 @@ class IDEMainWindow(QMainWindow):
     # UI Updates
     # ─────────────────────────────────────────────────────────────
 
-    def _on_content_changed(self) -> None:
-        """Handle content change in editor."""
+    def _on_code_changed(self) -> None:
+        """Handle code changes."""
         if not self._is_modified:
             self._is_modified = True
             self._update_title()
+        # Update structure panel
+        self.structure_panel.refresh(self.editor.get_code())
+        
+    def _navigate_to_line(self, line: int) -> None:
+        """Scroll editor to specific line."""
+        self.editor.goto_line(line)
+        self.editor.setFocus()
+
+    def _on_content_changed(self) -> None:
+        """Handle content change in editor."""
+        # This method is now effectively replaced by _on_code_changed
+        # Keeping it for now, but its signal connection should be updated.
+        # The instruction implies _on_content_changed is renamed/replaced by _on_code_changed
+        # and the logic for _is_modified and _update_title is moved into _on_code_changed.
+        # The original _on_content_changed signal connection is updated in _connect_signals.
+        pass # The logic is now in _on_code_changed
 
     def _on_cursor_moved(self, line: int, col: int) -> None:
         """Handle cursor movement."""

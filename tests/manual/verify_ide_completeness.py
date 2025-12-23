@@ -127,7 +127,30 @@ def test_ide_components():
     except Exception as e:
         print(f"❌ Minimap test failed: {e}")
 
-    # 7. Clean up
+    # 7. Test Structure Panel Integration
+    print("\n🧪 Testing Structure Overlay...")
+    try:
+        if hasattr(window, "structure_panel"):
+            print("✅ StructurePanel widget found in window")
+            
+            # Test refresh
+            test_code = "@flow test:\n  #start"
+            window.structure_panel.refresh(test_code)
+            
+            # Check items
+            item_count = window.structure_panel.tree.topLevelItemCount()
+            if item_count > 0:
+                 print(f"✅ Structure parsed successfully (found {item_count} items)")
+                 # Verify navigation signal works (mock emit)
+                 # window.structure_panel.navigate_requested.emit(1)
+            else:
+                 print("⚠️ Structure parsing produced 0 items (check regex?)")
+        else:
+             print("❌ StructurePanel widget NOT found in IDEMainWindow")
+    except Exception as e:
+         print(f"❌ Structure Panel test failed: {e}")
+
+    # 8. Clean up
     window.close()
     print("\n✨ Audit Complete. If all ticks are green, the System is stable.")
 
