@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.actions_panel import ActionsPanel
+from app.ui.hybrid_panel import HybridActionsPanel
 from app.ui.assets_panel import AssetsPanel
 from app.ui.capture_tool import CaptureTool
 from app.ui.coordinates_panel import CoordinatesPanel
@@ -113,7 +113,7 @@ class MainWindow(QMainWindow):
         hsplitter = QSplitter(Qt.Orientation.Horizontal)
 
         self.assets_panel = AssetsPanel()
-        self.actions_panel = ActionsPanel()
+        self.actions_panel = HybridActionsPanel()
         self.properties_panel = PropertiesPanel()
         self.coordinates_panel = CoordinatesPanel()
 
