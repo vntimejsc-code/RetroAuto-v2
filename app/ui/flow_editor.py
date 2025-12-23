@@ -184,6 +184,26 @@ class SocketItem(QGraphicsItem):
     def get_center_scene_pos(self) -> QPointF:
         """Get socket center in scene coordinates."""
         return self.scenePos()
+    
+    def mousePressEvent(self, event) -> None:
+        """Start dragging a connection from this socket."""
+        if event.button() == Qt.MouseButton.LeftButton and self.is_output:
+            scene = self.scene()
+            if scene and hasattr(scene, "start_connection"):
+                scene.start_connection(self)
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+    
+    def mouseReleaseEvent(self, event) -> None:
+        """End dragging a connection."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            scene = self.scene()
+            if scene and hasattr(scene, "end_connection"):
+                scene.end_connection(self)
+            event.accept()
+        else:
+            super().mouseReleaseEvent(event)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -439,6 +459,79 @@ class FlowScene(QGraphicsScene):
                 conn.update_path()
             if conn.end_socket and conn.end_socket.parentItem() == node:
                 conn.update_path()
+    
+    def start_connection(self, socket: SocketItem) -> None:
+        """Start dragging a new connection from a socket."""
+        self._dragging_connection = True
+        self._drag_start_socket = socket
+        
+        # Create temporary connection for preview
+        self._temp_connection = ConnectionItem(
+            ConnectionData(),
+            start_socket=socket,
+            end_socket=None
+        )
+        self.addItem(self._temp_connection)
+        logger.info(f"Started connection from {socket.pin.name}")
+    
+    def end_connection(self, socket: SocketItem) -> None:
+        """Complete connection to a socket."""
+        if not hasattr(self, "_dragging_connection") or not self._dragging_connection:
+            return
+        
+        self._dragging_connection = False
+        
+        # Remove temp connection
+        if hasattr(self, "_temp_connection") and self._temp_connection:
+            self.removeItem(self._temp_connection)
+            self._temp_connection = None
+        
+        # Validate connection
+        start_socket = self._drag_start_socket
+        if not start_socket or socket == start_socket:
+            return
+        
+        # Check compatible: output -> input
+        if start_socket.is_output and not socket.is_output:
+            self.add_connection(start_socket, socket)
+        elif not start_socket.is_output and socket.is_output:
+            self.add_connection(socket, start_socket)
+    
+    def add_connection(
+        self, 
+        from_socket: SocketItem, 
+        to_socket: SocketItem
+    ) -> ConnectionItem | None:
+        """Create a connection between two sockets."""
+        # Get parent nodes
+        from_node = from_socket.parentItem()
+        to_node = to_socket.parentItem()
+        
+        if not isinstance(from_node, NodeItem) or not isinstance(to_node, NodeItem):
+            return None
+        
+        # Create connection data
+        data = ConnectionData(
+            from_node=from_node.data.id,
+            from_pin=from_socket.pin.name,
+            to_node=to_node.data.id,
+            to_pin=to_socket.pin.name
+        )
+        
+        # Create connection item
+        conn = ConnectionItem(data, from_socket, to_socket)
+        self.addItem(conn)
+        self.connections.append(conn)
+        
+        logger.info(f"Connected {from_node.data.title}.{from_socket.pin.name} -> {to_node.data.title}.{to_socket.pin.name}")
+        return conn
+    
+    def cancel_connection(self) -> None:
+        """Cancel the in-progress connection drag."""
+        if hasattr(self, "_temp_connection") and self._temp_connection:
+            self.removeItem(self._temp_connection)
+            self._temp_connection = None
+        self._dragging_connection = False
 
 
 # ─────────────────────────────────────────────────────────────
