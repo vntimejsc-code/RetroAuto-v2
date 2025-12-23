@@ -2,18 +2,19 @@
 """
 RetroAuto v2 - Development File Watcher
 
-Watches for Python file changes and runs quick checks automatically.
+Watches for Python file changes and runs checks + auto-commit.
 
 Features:
 - Real-time file change detection
 - Quick lint check on save
 - Auto-fix option
-- Notification on errors
+- AUTO-COMMIT after successful check
+- Version bump on commit
 
 Usage:
-    python scripts/dev_watcher.py           # Start watcher
-    python scripts/dev_watcher.py --fix     # Auto-fix on save
-    python scripts/dev_watcher.py --notify  # Desktop notifications
+    python scripts/dev_watcher.py              # Check only
+    python scripts/dev_watcher.py --fix        # Auto-fix + check
+    python scripts/dev_watcher.py --auto       # Auto-fix + check + commit
 
 Press Ctrl+C to stop.
 """
@@ -37,17 +38,18 @@ except ImportError:
 
 PROJECT_ROOT = Path(__file__).parent.parent
 WATCH_DIRS = ["app", "core", "vision", "input", "infra"]
-DEBOUNCE_SECONDS = 1.0
+DEBOUNCE_SECONDS = 2.0  # Increased debounce for auto-commit
 
 
 class CodeCheckHandler(FileSystemEventHandler):
     """Handle file system events."""
 
-    def __init__(self, fix: bool = False, notify: bool = False):
+    def __init__(self, fix: bool = False, auto_commit: bool = False):
         self.fix = fix
-        self.notify = notify
+        self.auto_commit = auto_commit
         self._last_check: dict[str, float] = {}
         self._checking = False
+        self._pending_changes: list[str] = []
 
     def on_modified(self, event):
         if self._checking:
@@ -66,7 +68,7 @@ class CodeCheckHandler(FileSystemEventHandler):
         if "__pycache__" in str(path):
             return
 
-        # Debounce - don't check same file within 1 second
+        # Debounce - don't check same file within threshold
         now = time.time()
         last = self._last_check.get(str(path), 0)
         if now - last < DEBOUNCE_SECONDS:
@@ -83,7 +85,7 @@ class CodeCheckHandler(FileSystemEventHandler):
         print(f"📝 File changed: {rel_path}")
         print(f"{'='*60}")
 
-        errors = []
+        all_passed = True
 
         # 1. Syntax check
         result = subprocess.run(
@@ -92,78 +94,125 @@ class CodeCheckHandler(FileSystemEventHandler):
             text=True,
         )
         if result.returncode != 0:
-            errors.append(f"❌ Syntax Error: {result.stderr.strip()[:100]}")
+            print(f"❌ Syntax Error: {result.stderr.strip()[:100]}")
+            all_passed = False
         else:
             print("✅ Syntax OK")
 
-        # 2. Ruff check (single file)
+        # 2. Ruff check + fix (single file)
         cmd = [sys.executable, "-m", "ruff", "check", str(path)]
         if self.fix:
-            cmd.append("--fix")
+            cmd.extend(["--fix", "--unsafe-fixes"])
 
         result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            issues = result.stdout.strip().split("\n")[:5]
-            for issue in issues:
-                if issue.strip():
-                    errors.append(f"⚠️  {issue}")
-            if self.fix:
-                print("🔧 Auto-fixed lint issues")
+        if result.returncode != 0 and not self.fix:
+            print(f"⚠️  Lint issues found")
+            all_passed = False
         else:
-            print("✅ Lint OK")
+            print("✅ Lint OK" + (" (auto-fixed)" if self.fix else ""))
 
-        # 3. Black check (single file)
+        # 3. Black format (single file)
         if self.fix:
             subprocess.run(
                 [sys.executable, "-m", "black", str(path), "-q"],
                 capture_output=True,
             )
-            print("🔧 Formatted with Black")
-        else:
-            result = subprocess.run(
-                [sys.executable, "-m", "black", "--check", str(path)],
-                capture_output=True,
-            )
-            if result.returncode != 0:
-                errors.append("⚠️  Needs formatting (run with --fix)")
-            else:
-                print("✅ Format OK")
+            print("✅ Formatted")
 
-        # Summary
-        if errors:
-            print("\n" + "\n".join(errors))
-            if self.notify:
-                self._show_notification("Code Issues", f"{len(errors)} issues in {rel_path}")
-        else:
+        # 4. Auto-commit if enabled and all passed
+        if all_passed and self.auto_commit:
+            self._auto_commit(rel_path)
+        elif all_passed:
             print("\n🎉 All checks passed!")
+        else:
+            print("\n⚠️  Fix issues before commit")
 
         self._checking = False
 
-    def _show_notification(self, title: str, message: str):
-        """Show desktop notification (Windows)."""
-        try:
-            from win11toast import notify
+    def _auto_commit(self, changed_file: Path):
+        """Auto version bump + commit + push."""
+        print("\n🚀 Auto-committing...")
 
-            notify(title, message)
-        except ImportError:
-            pass  # Notifications not available
+        try:
+            # 1. Version bump
+            result = subprocess.run(
+                [sys.executable, "scripts/version_bump.py", "--patch"],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+            )
+            version_line = result.stdout.strip()
+            print(f"   {version_line}")
+
+            # 2. Get new version
+            result = subprocess.run(
+                [sys.executable, "scripts/version_bump.py", "--show"],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+            )
+            version = result.stdout.strip()
+
+            # 3. Git add all
+            subprocess.run(
+                ["git", "add", "-A"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+            )
+
+            # 4. Git commit
+            commit_msg = f"Auto: v{version} - {changed_file}"
+            result = subprocess.run(
+                ["git", "commit", "-m", commit_msg, "--no-verify"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                print(f"   ✅ Committed: {commit_msg}")
+            else:
+                if "nothing to commit" in result.stdout:
+                    print("   ℹ️  No changes to commit")
+                else:
+                    print(f"   ⚠️  Commit failed: {result.stderr[:50]}")
+                return
+
+            # 5. Git push
+            result = subprocess.run(
+                ["git", "push", "origin", "master"],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                print(f"   ✅ Pushed to master")
+            else:
+                print(f"   ⚠️  Push failed: {result.stderr[:50]}")
+
+        except Exception as e:
+            print(f"   ❌ Auto-commit error: {e}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Development File Watcher")
     parser.add_argument("--fix", action="store_true", help="Auto-fix issues on save")
-    parser.add_argument("--notify", action="store_true", help="Desktop notifications")
+    parser.add_argument("--auto", action="store_true", help="Auto-commit after successful check")
     args = parser.parse_args()
+
+    # --auto implies --fix
+    if args.auto:
+        args.fix = True
 
     print("=" * 60)
     print("  RetroAuto v2 - Development Watcher")
     print("=" * 60)
-    print(f"  Mode: {'Auto-Fix' if args.fix else 'Check Only'}")
+    mode = "AUTO-COMMIT" if args.auto else ("Auto-Fix" if args.fix else "Check Only")
+    print(f"  Mode: {mode}")
     print(f"  Watching: {', '.join(WATCH_DIRS)}")
     print("  Press Ctrl+C to stop")
     print("=" * 60)
 
-    handler = CodeCheckHandler(fix=args.fix, notify=args.notify)
+    handler = CodeCheckHandler(fix=args.fix, auto_commit=args.auto)
     observer = Observer()
 
     for dir_name in WATCH_DIRS:

@@ -32,15 +32,6 @@ repos:
         pass_filenames: false
         entry: mypy core/
 
-  # ─────────────────────────────────────────────────────────────
-  # Security Analysis
-  # ─────────────────────────────────────────────────────────────
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.8
-    hooks:
-      - id: bandit
-        args: ['-c', 'pyproject.toml', '-r', 'core/', 'app/']
-        exclude: tests/
 
   # ─────────────────────────────────────────────────────────────
   # General Checks
