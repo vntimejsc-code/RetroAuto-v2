@@ -16,6 +16,15 @@ from app.ui.win95_style import apply_win95_style
 
 def main() -> int:
     """Main entry point."""
+    # Initialize stability features first
+    from infra.crash_handler import CrashHandler
+    CrashHandler.install()
+
+    # Start memory manager for 24/7 operation
+    from core.engine.memory_manager import get_memory_manager
+    memory_mgr = get_memory_manager()
+    memory_mgr.start()
+
     app = QApplication(sys.argv)
 
     # Apply Win95/98 styling
@@ -25,8 +34,14 @@ def main() -> int:
     window = IDEMainWindow()
     window.show()
 
-    return app.exec()
+    result = app.exec()
+
+    # Cleanup
+    memory_mgr.stop()
+
+    return result
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
