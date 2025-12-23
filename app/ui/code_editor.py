@@ -187,8 +187,10 @@ class DSLCodeEditor(QPlainTextEdit):
         return space
 
     def _update_line_number_area_width(self) -> None:
-        """Update viewport margins for line numbers."""
-        self.setViewportMargins(self.line_number_area_width(), 0, 0, 0)
+        """Update viewport margins for line numbers AND minimap."""
+        left_margin = self.line_number_area_width()
+        right_margin = self.minimap.WIDTH if hasattr(self, "minimap") else 0
+        self.setViewportMargins(left_margin, 0, right_margin, 0)
 
     def _update_line_number_area(self, rect: QRect, dy: int) -> None:
         """Update line number area on scroll."""
@@ -201,12 +203,21 @@ class DSLCodeEditor(QPlainTextEdit):
             self._update_line_number_area_width()
 
     def resizeEvent(self, event) -> None:  # type: ignore
-        """Handle resize to adjust line number area."""
+        """Handle resize to adjust line number area AND minimap."""
         super().resizeEvent(event)
         cr = self.contentsRect()
+        
+        # Line number area (left)
         self.line_number_area.setGeometry(
             QRect(cr.left(), cr.top(), self.line_number_area_width(), cr.height())
         )
+        
+        # Minimap (right overlay)
+        if hasattr(self, "minimap"):
+            w = self.minimap.WIDTH
+            self.minimap.setGeometry(
+                QRect(cr.right() - w, cr.top(), w, cr.height())
+            )
 
     def line_number_area_paint_event(self, event) -> None:  # type: ignore
         """Paint the line number gutter with breakpoint markers."""
@@ -329,17 +340,7 @@ class DSLCodeEditor(QPlainTextEdit):
             QToolTip.hideText()
 
 
-    def resizeEvent(self, event) -> None:
-        """Handle resize to update minimap position."""
-        super().resizeEvent(event)
-        if hasattr(self, "minimap"):
-            cr = self.contentsRect()
-            w = self.minimap.WIDTH
-            self.minimap.setGeometry(
-                QRect(cr.right() - w, cr.top(), w, cr.height())
-            )
-            # Adjust viewport margins so text doesn't go under minimap
-            self.setViewportMargins(0, 0, w, 0)
+    # resizeEvent unified above (handles both line numbers and minimap)
     
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle key events for editor behavior."""
