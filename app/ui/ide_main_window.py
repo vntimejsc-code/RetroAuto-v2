@@ -262,6 +262,14 @@ class IDEMainWindow(QMainWindow):
         check_action.triggered.connect(self._check_syntax)
         run_menu.addAction(check_action)
 
+        # View menu
+        view_menu = menubar.addMenu("&View")
+        
+        flow_editor_action = QAction("🎨 &Flow Editor", self)
+        flow_editor_action.setShortcut(QKeySequence("Ctrl+Shift+V"))
+        flow_editor_action.triggered.connect(self._show_flow_editor)
+        view_menu.addAction(flow_editor_action)
+
         # Help menu
         help_menu = menubar.addMenu("&Help")
 
@@ -630,6 +638,22 @@ class IDEMainWindow(QMainWindow):
         self.run_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.status_bar.showMessage("Stopped")
+
+    def _show_flow_editor(self) -> None:
+        """Show the visual flow editor in a new window."""
+        from PySide6.QtWidgets import QMainWindow
+        from app.ui.flow_editor import FlowEditorWidget
+        
+        # Create flow editor window
+        self._flow_window = QMainWindow(self)
+        self._flow_window.setWindowTitle("🎨 Visual Flow Editor - RetroAuto")
+        self._flow_window.setMinimumSize(800, 600)
+        
+        flow_widget = FlowEditorWidget()
+        self._flow_window.setCentralWidget(flow_widget)
+        
+        self._flow_window.show()
+        self.output.log_info("Opened Visual Flow Editor")
 
     # ─────────────────────────────────────────────────────────────
     # UI Updates
