@@ -14,36 +14,35 @@ from core.graph import graph_to_list, list_to_graph
 from core.models import ClickImage, Delay, Flow, WaitImage
 
 
-def test_model_creation():
-    """Test creating graph models."""
-    print("Test 1: Creating graph models...")
-
-    # Create a simple flow with graph
+def _create_test_flow() -> Flow:
+    """Helper to create a test flow with graph."""
     flow = Flow(name="test_flow")
-    flow.actions = [Delay(ms=1000), ClickImage(asset_id="button"), WaitImage(asset_id="loading")]
-
-    # Convert to graph
+    flow.actions = [
+        Delay(ms=1000),
+        ClickImage(asset_id="button"),
+        WaitImage(asset_id="loading"),
+    ]
     flow.graph = list_to_graph(flow.actions)
-
-    print(f"  Created flow with {len(flow.graph.nodes)} nodes")
-    print(f"  Created {len(flow.graph.connections)} connections")
-    assert len(flow.graph.nodes) == 3
-    assert len(flow.graph.connections) == 2
-    print("  ✓ Model creation passed")
-
     return flow
 
 
-def test_serialization(flow: Flow):
+def test_model_creation():
+    """Test creating graph models."""
+    flow = _create_test_flow()
+
+    assert len(flow.graph.nodes) == 3
+    assert len(flow.graph.connections) == 2
+
+
+def test_serialization():
     """Test YAML serialization."""
-    print("\nTest 2: YAML serialization...")
+    flow = _create_test_flow()
 
     # Serialize to dict
     data = flow.model_dump()
 
     # Convert to YAML
     yaml_str = yaml.dump(data, sort_keys=False, allow_unicode=True)
-    print(f"  YAML length: {len(yaml_str)} bytes")
 
     # Deserialize back
     loaded_data = yaml.safe_load(yaml_str)
@@ -51,28 +50,23 @@ def test_serialization(flow: Flow):
 
     assert loaded_flow.name == flow.name
     assert len(loaded_flow.graph.nodes) == len(flow.graph.nodes)
-    print("  ✓ Serialization passed")
 
 
-def test_graph_to_list(flow: Flow):
+def test_graph_to_list():
     """Test graph -> list conversion."""
-    print("\nTest 3: Graph to list conversion...")
+    flow = _create_test_flow()
 
     # Convert graph back to list
     actions = graph_to_list(flow.graph)
 
-    print(f"  Converted graph to {len(actions)} actions")
     assert len(actions) == 3
     assert actions[0].action == "Delay"
     assert actions[1].action == "ClickImage"
     assert actions[2].action == "WaitImage"
-    print("  ✓ Graph-to-list conversion passed")
 
 
 def test_backward_compat():
     """Test backward compatibility (flow without graph)."""
-    print("\nTest 4: Backward compatibility...")
-
     # Legacy format (no graph)
     legacy_flow = Flow(name="legacy")
     legacy_flow.actions = [Delay(ms=500), ClickImage(asset_id="ok")]
@@ -83,7 +77,6 @@ def test_backward_compat():
 
     assert loaded.graph is None
     assert len(loaded.actions) == 2
-    print("  ✓ Backward compatibility passed")
 
 
 if __name__ == "__main__":
@@ -91,10 +84,17 @@ if __name__ == "__main__":
     print("Graph Data Model Tests")
     print("=" * 60)
 
-    flow = test_model_creation()
-    test_serialization(flow)
-    test_graph_to_list(flow)
+    test_model_creation()
+    print("  ✓ Model creation passed")
+
+    test_serialization()
+    print("  ✓ Serialization passed")
+
+    test_graph_to_list()
+    print("  ✓ Graph-to-list conversion passed")
+
     test_backward_compat()
+    print("  ✓ Backward compatibility passed")
 
     print("\n" + "=" * 60)
     print("All tests passed! ✓")

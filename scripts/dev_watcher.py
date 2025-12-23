@@ -106,7 +106,7 @@ class CodeCheckHandler(FileSystemEventHandler):
 
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0 and not self.fix:
-            print(f"⚠️  Lint issues found")
+            print("⚠️  Lint issues found")
             all_passed = False
         else:
             print("✅ Lint OK" + (" (auto-fixed)" if self.fix else ""))
@@ -185,7 +185,7 @@ class CodeCheckHandler(FileSystemEventHandler):
                 text=True,
             )
             if result.returncode == 0:
-                print(f"   ✅ Pushed to master")
+                print("   ✅ Pushed to master")
             else:
                 print(f"   ⚠️  Push failed: {result.stderr[:50]}")
 

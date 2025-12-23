@@ -38,53 +38,55 @@ def get_git_commits(since_tag: str | None = None, limit: int = 50) -> list[dict]
     cmd = ["git", "log", f"-{limit}", "--pretty=format:%H|%s|%ai"]
     if since_tag:
         cmd.insert(2, f"{since_tag}..HEAD")
-    
+
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
     if result.returncode != 0:
         return []
-    
+
     commits = []
     for line in result.stdout.strip().split("\n"):
         if not line:
             continue
         parts = line.split("|")
         if len(parts) >= 3:
-            commits.append({
-                "hash": parts[0][:7],
-                "message": parts[1],
-                "date": parts[2][:10],
-            })
+            commits.append(
+                {
+                    "hash": parts[0][:7],
+                    "message": parts[1],
+                    "date": parts[2][:10],
+                }
+            )
     return commits
 
 
 def categorize_commit(message: str) -> str | None:
     """Categorize commit message into changelog sections."""
     msg_lower = message.lower()
-    
+
     # Feature patterns
     if any(p in msg_lower for p in ["feat:", "feature:", "add:", "added", "new:", "implement"]):
         return "Added"
-    
+
     # Fix patterns
     if any(p in msg_lower for p in ["fix:", "fixed", "bug:", "bugfix", "hotfix"]):
         return "Fixed"
-    
+
     # Change patterns
     if any(p in msg_lower for p in ["change:", "update:", "refactor:", "improve", "config:"]):
         return "Changed"
-    
+
     # Remove patterns
     if any(p in msg_lower for p in ["remove:", "delete:", "deprecate"]):
         return "Removed"
-    
+
     # Auto-commits
     if msg_lower.startswith("auto:"):
         return "Changed"
-    
+
     # Skip docs, chore, etc.
     if any(p in msg_lower for p in ["docs:", "chore:", "test:", "ci:", "merge"]):
         return None
-    
+
     return "Changed"  # Default
 
 
@@ -94,25 +96,25 @@ def clean_commit_message(message: str) -> str:
     prefixes = ["feat:", "fix:", "chore:", "docs:", "refactor:", "auto:", "config:"]
     for prefix in prefixes:
         if message.lower().startswith(prefix):
-            message = message[len(prefix):].strip()
+            message = message[len(prefix) :].strip()
             break
-    
+
     # Capitalize first letter
     if message:
         message = message[0].upper() + message[1:]
-    
+
     return message
 
 
 def generate_changelog_section(version: str, commits: list[dict]) -> str:
     """Generate a changelog section for a version."""
     today = datetime.now().strftime("%Y-%m-%d")
-    
+
     lines = [
         f"## [{version}] - {today}",
         "",
     ]
-    
+
     # Group by category
     categories: dict[str, list[str]] = {}
     for commit in commits:
@@ -120,14 +122,14 @@ def generate_changelog_section(version: str, commits: list[dict]) -> str:
         if cat:
             clean_msg = clean_commit_message(commit["message"])
             categories.setdefault(cat, []).append(f"- {clean_msg}")
-    
+
     # Output in order
     for cat in ["Added", "Changed", "Fixed", "Removed"]:
         if cat in categories:
             lines.append(f"### {cat}")
             lines.extend(categories[cat])
             lines.append("")
-    
+
     return "\n".join(lines)
 
 
@@ -136,12 +138,12 @@ def update_changelog(new_section: str) -> bool:
     if CHANGELOG_PATH.exists():
         content = CHANGELOG_PATH.read_text(encoding="utf-8")
         # Check if this version already exists
-        version = re.search(r'\[(\d+\.\d+\.\d+)\]', new_section)
+        version = re.search(r"\[(\d+\.\d+\.\d+)\]", new_section)
         if version and f"[{version.group(1)}]" in content:
             # Update existing section (find and replace)
             print(f"   ℹ️  Version {version.group(1)} already in changelog")
             return False
-        
+
         # Insert after header
         if "# Changelog" in content:
             parts = content.split("\n## ", 1)
@@ -153,7 +155,7 @@ def update_changelog(new_section: str) -> bool:
             new_content = f"# Changelog\n\n{new_section}\n\n{content}"
     else:
         new_content = f"# Changelog\n\nAll notable changes to RetroAuto v2.\n\n{new_section}"
-    
+
     CHANGELOG_PATH.write_text(new_content, encoding="utf-8")
     return True
 
@@ -163,31 +165,31 @@ def main():
     parser.add_argument("--since", type=str, help="Generate since specific tag/version")
     parser.add_argument("--limit", type=int, default=30, help="Max commits to process")
     args = parser.parse_args()
-    
+
     print("=" * 60)
     print("  RetroAuto v2 - Changelog Generator")
     print("=" * 60)
-    
+
     version = get_current_version()
     print(f"\n📦 Current version: {version}")
-    
+
     print("\n📜 Fetching git commits...")
     commits = get_git_commits(since_tag=args.since, limit=args.limit)
     print(f"   Found {len(commits)} commits")
-    
+
     if not commits:
         print("   ℹ️  No new commits to add")
         return 0
-    
+
     print("\n📝 Generating changelog section...")
     section = generate_changelog_section(version, commits)
-    
+
     print("\n💾 Updating CHANGELOG.md...")
     if update_changelog(section):
         print("   ✅ Changelog updated!")
     else:
         print("   ℹ️  No changes made")
-    
+
     print(f"\n📄 Changelog saved to: {CHANGELOG_PATH}")
     return 0
 

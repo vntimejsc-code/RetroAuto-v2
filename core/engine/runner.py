@@ -15,20 +15,27 @@ from core.models import (
     Click,
     ClickImage,
     ClickRandom,
+    ClickUntil,
     Delay,
+    DelayRandom,
     Drag,
     Flow,
     Goto,
     Hotkey,
     IfImage,
+    IfPixel,
     IfText,
     Label,
+    Loop,
     Notify,
     NotifyMethod,
     ReadText,
     RunFlow,
+    Scroll,
     TypeText,
     WaitImage,
+    WaitPixel,
+    WhileImage,
 )
 from core.vision.hasher import calculate_phash, hamming_distance
 from infra import get_logger
@@ -387,15 +394,31 @@ class Runner:
             return self._exec_click_image(action)
 
         elif isinstance(action, Drag):
-            # Assuming _exec_drag exists or will receive warning for unknown
-            if hasattr(self, "_exec_drag"):
-                return self._exec_drag(action)
-            else:
-                logger.warning("Drag action execution not implemented")
-                return None
+            return self._exec_drag(action)
 
         elif isinstance(action, Notify):
             return self._exec_notify(action)
+
+        elif isinstance(action, Scroll):
+            return self._exec_scroll(action)
+
+        elif isinstance(action, DelayRandom):
+            return self._exec_delay_random(action)
+
+        elif isinstance(action, Loop):
+            return self._exec_loop(action, flow, labels)
+
+        elif isinstance(action, WhileImage):
+            return self._exec_while_image(action, flow, labels)
+
+        elif isinstance(action, WaitPixel):
+            return self._exec_wait_pixel(action)
+
+        elif isinstance(action, IfPixel):
+            return self._exec_if_pixel(action, flow, labels)
+
+        elif isinstance(action, ClickUntil):
+            return self._exec_click_until(action)
 
         else:
             logger.warning("Unknown action type: %s", type(action).__name__)
@@ -759,4 +782,199 @@ class Runner:
             clicks=action.clicks,
             interval=action.interval_ms / 1000.0,
         )
+        return None
+
+    # ═══════════════════════════════════════════════════════════════
+    # NEW EXECUTORS (Added to fix missing actions from user guide)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _exec_drag(self, action: Drag) -> None:
+        """Execute Drag action."""
+        logger.info(
+            "Drag: (%d, %d) -> (%d, %d) over %dms",
+            action.from_x, action.from_y,
+            action.to_x, action.to_y,
+            action.duration_ms,
+        )
+        self._ctx.mouse.drag(
+            from_x=action.from_x,
+            from_y=action.from_y,
+            to_x=action.to_x,
+            to_y=action.to_y,
+            duration=action.duration_ms / 1000.0,
+            button=action.button,
+        )
+        return None
+
+    def _exec_scroll(self, action: Scroll) -> None:
+        """Execute Scroll action."""
+        x = action.x if action.x is not None else self._ctx.mouse.position()[0]
+        y = action.y if action.y is not None else self._ctx.mouse.position()[1]
+        logger.info("Scroll: amount=%d at (%d, %d)", action.amount, x, y)
+        self._ctx.mouse.scroll(x=x, y=y, amount=action.amount)
+        return None
+
+    def _exec_delay_random(self, action: DelayRandom) -> None:
+        """Execute DelayRandom action."""
+        import random
+        delay_ms = random.randint(action.min_ms, action.max_ms)
+        logger.info("DelayRandom: %dms (range %d-%d)", delay_ms, action.min_ms, action.max_ms)
+
+        # Sleep in chunks for stop/pause support
+        remaining = delay_ms
+        chunk = 100
+        while remaining > 0:
+            if not self._ctx.wait_if_paused():
+                return None
+            sleep_time = min(chunk, remaining)
+            time.sleep(sleep_time / 1000.0)
+            remaining -= sleep_time
+        return None
+
+    def _exec_loop(self, action: Loop, flow: Flow, labels: dict[str, int]) -> None:
+        """Execute Loop action with nested actions."""
+        iterations = action.count if action.count is not None else 100000  # Safety limit
+        logger.info("Loop: %s iterations", "∞" if action.count is None else action.count)
+
+        for i in range(iterations):
+            if not self._ctx.wait_if_paused():
+                return False
+            logger.debug("Loop iteration %d/%s", i + 1, action.count or "∞")
+            for nested_action in action.actions:
+                result = self._dispatch_action(nested_action, flow, labels)
+                if result is False:
+                    return False
+        return None
+
+    def _exec_while_image(self, action: WhileImage, flow: Flow, labels: dict[str, int]) -> None:
+        """Execute WhileImage action - repeat while image present/absent."""
+        logger.info("WhileImage: %s (while_present=%s)", action.asset_id, action.while_present)
+
+        for i in range(action.max_iterations):
+            if not self._ctx.wait_if_paused():
+                return False
+
+            # Check if image is present
+            found = self._ctx.matcher.find(action.asset_id, roi_override=action.roi_override)
+            is_present = found.found if hasattr(found, 'found') else bool(found)
+
+            # Continue loop based on condition
+            should_continue = is_present if action.while_present else not is_present
+            if not should_continue:
+                logger.info("WhileImage: condition no longer met, exiting loop")
+                break
+
+            # Execute nested actions
+            for nested_action in action.actions:
+                result = self._dispatch_action(nested_action, flow, labels)
+                if result is False:
+                    return False
+
+        return None
+
+    def _exec_wait_pixel(self, action: WaitPixel) -> bool | None:
+        """Execute WaitPixel action - wait for pixel color."""
+        logger.info(
+            "WaitPixel: (%d, %d) color=RGB(%d,%d,%d) appear=%s",
+            action.x, action.y,
+            action.color.r, action.color.g, action.color.b,
+            action.appear,
+        )
+
+        start_time = time.time()
+        timeout_sec = action.timeout_ms / 1000.0
+
+        while True:
+            if not self._ctx.wait_if_paused():
+                return False
+
+            # Get pixel color at position
+            try:
+                img = self._ctx.capture.grab()
+                # Access pixel at (x, y) - assumed PIL Image or numpy array
+                if hasattr(img, 'getpixel'):
+                    r, g, b = img.getpixel((action.x, action.y))[:3]
+                else:
+                    r, g, b = img[action.y, action.x][:3]
+
+                color_matches = action.color.matches(r, g, b)
+                if (action.appear and color_matches) or (not action.appear and not color_matches):
+                    logger.info("WaitPixel: condition met")
+                    return None
+            except Exception as e:
+                logger.warning("WaitPixel pixel check failed: %s", e)
+
+            # Check timeout
+            if time.time() - start_time > timeout_sec:
+                logger.warning("WaitPixel: timeout after %dms", action.timeout_ms)
+                return None
+
+            time.sleep(action.poll_ms / 1000.0)
+
+    def _exec_if_pixel(self, action: IfPixel, flow: Flow, labels: dict[str, int]) -> None:
+        """Execute IfPixel conditional based on pixel color."""
+        # Get pixel color
+        try:
+            img = self._ctx.capture.grab()
+            if hasattr(img, 'getpixel'):
+                r, g, b = img.getpixel((action.x, action.y))[:3]
+            else:
+                r, g, b = img[action.y, action.x][:3]
+
+            color_matches = action.color.matches(r, g, b)
+        except Exception as e:
+            logger.warning("IfPixel pixel check failed: %s", e)
+            color_matches = False
+
+        # Execute appropriate branch
+        actions_to_run = action.then_actions if color_matches else action.else_actions
+        logger.info("IfPixel: (%d,%d) matched=%s, running %d actions",
+                    action.x, action.y, color_matches, len(actions_to_run))
+
+        for nested_action in actions_to_run:
+            result = self._dispatch_action(nested_action, flow, labels)
+            if result is False:
+                return False
+        return None
+
+    def _exec_click_until(self, action: ClickUntil) -> bool | None:
+        """Execute ClickUntil - click repeatedly until condition met."""
+        logger.info(
+            "ClickUntil: click=%s until=%s (appear=%s)",
+            action.click_asset_id, action.until_asset_id, action.until_appear,
+        )
+
+        start_time = time.time()
+        timeout_sec = action.timeout_ms / 1000.0
+        click_count = 0
+
+        while click_count < action.max_clicks:
+            if not self._ctx.wait_if_paused():
+                return False
+
+            # Check if target condition is met
+            found = self._ctx.matcher.find(action.until_asset_id)
+            is_present = found.found if hasattr(found, 'found') else bool(found)
+            condition_met = is_present if action.until_appear else not is_present
+
+            if condition_met:
+                logger.info("ClickUntil: condition met after %d clicks", click_count)
+                return None
+
+            # Find and click the click_asset
+            click_result = self._ctx.matcher.find(action.click_asset_id)
+            if click_result and (click_result.found if hasattr(click_result, 'found') else bool(click_result)):
+                cx, cy = click_result.center if hasattr(click_result, 'center') else (click_result.x, click_result.y)
+                self._ctx.mouse.click(x=cx, y=cy, button=action.button)
+                click_count += 1
+                logger.debug("ClickUntil: clicked %s (%d/%d)", action.click_asset_id, click_count, action.max_clicks)
+
+            # Check timeout
+            if time.time() - start_time > timeout_sec:
+                logger.warning("ClickUntil: timeout after %dms, %d clicks", action.timeout_ms, click_count)
+                return None
+
+            time.sleep(action.click_interval_ms / 1000.0)
+
+        logger.warning("ClickUntil: max clicks reached (%d)", action.max_clicks)
         return None
