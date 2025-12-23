@@ -628,9 +628,14 @@ class FlowView(QGraphicsView):
 class FlowEditorWidget(QWidget):
     """Main widget containing the flow editor."""
     
-    def __init__(self, parent=None) -> None:
+    # Signal to export actions
+    actions_exported = Signal(list)  # list[Action]
+    
+    def __init__(self, parent=None, actions: list = None) -> None:
         super().__init__(parent)
         from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+        
+        self._initial_actions = actions or []
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -644,13 +649,23 @@ class FlowEditorWidget(QWidget):
         add_btn.clicked.connect(self._on_add_node)
         toolbar.addWidget(add_btn)
         
-        fit_btn = QPushButton("Fit All")
+        fit_btn = QPushButton("📐 Fit All")
         fit_btn.clicked.connect(self._on_fit_all)
         toolbar.addWidget(fit_btn)
         
+        toolbar.addWidget(QLabel(" | "))
+        
+        import_btn = QPushButton("📥 Import Actions")
+        import_btn.clicked.connect(self._on_import_actions)
+        toolbar.addWidget(import_btn)
+        
+        export_btn = QPushButton("📤 Export Actions")
+        export_btn.clicked.connect(self._on_export_actions)
+        toolbar.addWidget(export_btn)
+        
         toolbar.addStretch()
         
-        zoom_label = QLabel("Zoom: 100%")
+        zoom_label = QLabel("🔍 Zoom: 100%")
         self._zoom_label = zoom_label
         toolbar.addWidget(zoom_label)
         
@@ -661,8 +676,11 @@ class FlowEditorWidget(QWidget):
         self.view = FlowView(self.scene)
         layout.addWidget(self.view)
         
-        # Add demo nodes
-        self._add_demo_nodes()
+        # Load initial actions or demo
+        if self._initial_actions:
+            self.import_actions(self._initial_actions)
+        else:
+            self._add_demo_nodes()
     
     def _add_demo_nodes(self) -> None:
         """Add demo nodes to show the editor."""
@@ -723,3 +741,100 @@ class FlowEditorWidget(QWidget):
     def _on_fit_all(self) -> None:
         """Fit all nodes in view."""
         self.view.fit_in_view_all()
+    
+    def _on_import_actions(self) -> None:
+        """Import actions from MainWindow's actions panel."""
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.information(
+            self, 
+            "Import Actions",
+            "Use import_actions(actions_list) method to import actions programmatically.\n\n"
+            "Or connect this Flow Editor to the main window to sync with ActionsPanel."
+        )
+    
+    def _on_export_actions(self) -> None:
+        """Export graph back to actions."""
+        actions = self.export_actions()
+        self.actions_exported.emit(actions)
+        
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.information(
+            self,
+            "Export Actions",
+            f"Exported {len(actions)} actions.\n\n"
+            "Connect to actions_exported signal to receive the actions list."
+        )
+    
+    def import_actions(self, actions: list) -> None:
+        """
+        Import actions into the flow editor.
+        
+        Clears current graph and creates nodes from actions.
+        """
+        from app.ui.flow_converter import flow_converter
+        
+        # Clear current scene
+        for node_id in list(self.scene.nodes.keys()):
+            self.scene.remove_node(node_id)
+        for conn in list(self.scene.connections):
+            self.scene.removeItem(conn)
+        self.scene.connections.clear()
+        
+        # Convert actions to graph
+        nodes, connections = flow_converter.actions_to_graph(actions)
+        
+        # Add nodes
+        for node_data in nodes:
+            self.scene.add_node(node_data)
+        
+        # Add connections
+        for conn_data in connections:
+            from_node = self.scene.nodes.get(conn_data.from_node)
+            to_node = self.scene.nodes.get(conn_data.to_node)
+            
+            if from_node and to_node:
+                # Find matching sockets
+                from_socket = None
+                for sock in from_node.output_sockets:
+                    if sock.pin.name == conn_data.from_pin:
+                        from_socket = sock
+                        break
+                # Fallback to first output
+                if not from_socket and from_node.output_sockets:
+                    from_socket = from_node.output_sockets[0]
+                
+                to_socket = None
+                for sock in to_node.input_sockets:
+                    if sock.pin.name == conn_data.to_pin:
+                        to_socket = sock
+                        break
+                # Fallback to first input
+                if not to_socket and to_node.input_sockets:
+                    to_socket = to_node.input_sockets[0]
+                
+                if from_socket and to_socket:
+                    self.scene.add_connection(from_socket, to_socket)
+        
+        # Fit view
+        self.view.fit_in_view_all()
+        logger.info(f"Imported {len(actions)} actions as {len(nodes)} nodes")
+    
+    def export_actions(self) -> list:
+        """
+        Export the current graph back to an actions list.
+        
+        Returns:
+            List of Action objects
+        """
+        from app.ui.flow_converter import flow_converter
+        
+        # Collect node data
+        nodes = [node.data for node in self.scene.nodes.values()]
+        
+        # Collect connection data  
+        connections = [conn.data for conn in self.scene.connections]
+        
+        # Convert to actions
+        actions = flow_converter.graph_to_actions(nodes, connections)
+        logger.info(f"Exported {len(nodes)} nodes as {len(actions)} actions")
+        return actions

@@ -10,7 +10,7 @@ from pathlib import Path
 
 # Current version - update this when releasing
 __version__ = "2.0.0"
-__build__ = "20251223.007"
+__build__ = "20251223.008"
 
 VERSION_FILE = Path(__file__).parent.parent / "VERSION"
 CHANGELOG_FILE = Path(__file__).parent.parent / "CHANGELOG.md"
