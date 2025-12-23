@@ -1,66 +1,96 @@
-# RetroAuto v2 - Advanced Windows Automation Tool
+# RetroAuto v2 - IDE Tự Động Hóa Windows Đỉnh Cao
+> **Version:** 2025.12 | **Build:** 20251223.021
 
-## Overview
-RetroAuto v2 is a comprehensive automation toolchain featuring a custom DSL (RetroScript), a Win95-styled IDE, and powerful runtime capabilities for Windows automation, game botting, and testing.
+![RetroAuto Banner](https://via.placeholder.com/800x200?text=RetroAuto+v2+-+Visual+Automation+IDE)
 
-## 🤖 For AI Agents Analyzing This Repo
-This repository is structured to be easily parseable and understandable. Here is your map:
+**RetroAuto** là bộ công cụ automation chuyên nghiệp cho Windows, sở hữu **Visual IDE** kéo thả, công nghệ **Anti-Ban** mạnh mẽ (Human Mouse), và ngôn ngữ **RetroScript** (Python-like) được thiết kế cho sự ổn định và dễ sử dụng.
 
-### 1. Core Architecture (`core/`)
-- **DSL (`core/dsl/`)**: The heart of the language.
-  - `parser.py`: Recursive descent parser.
-  - `lexer.py`: Tokenizer.
-  - `ast.py`: Abstract Syntax Tree definitions.
-  - `interpreter.py`: Runtime execution engine.
-- **Engine (`core/engine/`)**: Execution context, scope management, and built-ins.
-- **Vision (`core/vision/`)**: Computer vision capabilities (template matching, OCR stubs).
-- **Game (`core/game/`)**: Game-specific features (Pixel detection, Anti-detect, Macros).
-- **Network (`core/network/`)**: HTTP/WebSocket clients and Remote Control API.
-- **Analytics (`core/analytics/`)**: Metrics and structured logging.
-- **Package (`core/package/`)**: Dependency management (`retro.toml`).
-- **LSP (`core/lsp/`)**: Language Server Protocol implementation.
+---
 
-### 2. Application Layer (`app/`)
-- **UI (`app/ui/`)**: PySide6 (Qt) based GUI with custom Windows 95 styling.
-  - `main.py`: Entry point.
-  - `main_window.py`: The primary IDE window.
-  - `visual_editor/`: Drag-and-drop flow editing components.
-- **Tools (`app/tools/`)**: CLI utilities (`cli.py`), bundler, scaffolding.
+## 📚 Tài Liệu (Bách Khoa Toàn Thư v5.0)
 
-### 3. Key Entry Points
-- **Run App**: `python -m app.main`
-- **CLI**: `python -m app.cli`
-- **LSP**: `python -m core.lsp.server`
-- **Verification**: `python verify_all.py`
+Bộ User Guide v5.0 đầy đủ đã có sẵn:
+# 👉 **[ĐỌC FULL USER GUIDE TẠI ĐÂY](./docs/user_guide/01_start.md)**
 
-### 4. Language Syntax (RetroScript)
-RetroScript looks like a mix of Python and Rust/Go.
-```retroscript
-flow main {
-    log("Starting automation...");
-    
-    # Visual matching
-    if find("button.png") {
-        click(match.x, match.y);
-    }
-    
-    # Network
-    let data = fetch("https://api.example.com/config");
-    
-    # Game loop
-    while true {
-        wait(1s);
-    }
-}
+- **[Phần 1: Bệ Phóng (The Launchpad)](./docs/user_guide/01_start.md)** (Cài đặt & Giao diện)
+- **[Phần 2: Visual IDE Manual](./docs/user_guide/02_ide_visual.md)** (Hướng dẫn công cụ Kéo-Thả)
+- **[Phần 3: Code & Debug Manual](./docs/user_guide/03_ide_code.md)** (Lập trình & Gỡ lỗi)
+- **[Phần 5: The Cookbook](./docs/user_guide/05_cookbook.md)** (Bài mẫu: Auto-Login, Farm quái)
+- **[Phần 7: Reference Manual](./docs/user_guide/07_reference.md)** (Từ điển Lệnh)
+
+> 🖨️ **Bản In:** [Tải file HTML (Save as PDF)](./docs/RetroAuto_UserGuide_v5.html)
+> 🤖 **Cho AI Agents:** Dùng file `[docs/llms.txt](./docs/llms.txt)` hoặc `[docs/full_user_guide.md](./docs/full_user_guide.md)`.
+
+---
+
+## ✨ Tính Năng Nổi Bật
+
+### 🖱️ Human Mouse (Anti-Ban)
+Thay thế click chuột robot bằng đường cong Bezier, gia tốc Fitts' Law và rung ngẫu nhiên (micro-jitter).
+- `click_random(ROI)`: Không bao giờ click vào cùng 1 tọa độ pixel 2 lần.
+- `drag(x1, y1, x2, y2)`: Thao tác vuốt/kéo thả như người thật.
+
+### 🧠 Smart Vision (Hawk Eye)
+- **Template Matching:** Nhận diện ảnh ổn định với chế độ xám/màu.
+- **Tích hợp OCR:** Đọc chỉ số (HP, MP, Vàng) dùng Tesseract.
+- **Global Interrupts:** Logic sự kiện (vd: Tự đăng nhập lại) chạy song song ngầm.
+
+### 🎨 Visual IDE
+- **Dual Mode:** Chuyển đổi tức thì giữa GUI Kéo-Thả và Code Editor.
+- **Intellisense:** Gợi ý lệnh và Asset ID thông minh.
+- **Visual Extensions:** Minimap, Structure Panel, và ROI Editor.
+
+---
+
+## 🛠️ Bắt Đầu Nhanh
+
+### 1. Yêu cầu
+- Windows 10/11
+- Python 3.11+
+- [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) (Tùy chọn)
+
+### 2. Cài đặt
+```powershell
+git clone https://github.com/vntimejsc-code/RetroAuto-v2.git
+cd RetroAuto-v2
+pip install -r requirements.txt
 ```
 
-## Setup & Run
-1. Install dependencies: `pip install -r requirements.txt` (or manually: `PySide6`, `mss`, `numpy`, `pillow`, `requests`, `websocket-client`, `tomli`, `tomli-w`)
-2. Run IDE: `python -m app.main`
-3. Verify: `python verify_all.py`
+### 3. Chạy IDE
+```powershell
+python -m app.main
+```
 
-## Project Status
-- ✅ **Core DSL**: Fully implemented.
-- ✅ **IDE**: Complete with Debugger & LSP.
-- ✅ **Runtime**: Stable with Hot-Reload.
-- ✅ **Modules**: Network, Game, Vision, Analytics, Package Manager all active.
+---
+
+## 💻 Code Example (RetroScript)
+
+**Old syntax (Deprecated):** `{ click(10,10); }`
+**New Syntax (v2 - Python-like):**
+
+```retroscript
+@main:
+    # Human-like interaction
+    if_image("login_btn"):
+        delay_random(500, 1000)
+        click_image("login_btn")
+
+    # Logic Loop
+    loop 10:
+        run_flow("AttackPattern")
+
+        # Check HP using OCR
+        read_text("$hp", region=[10, 10, 50, 20])
+        if_text("$hp", "<", "30"):
+            hotkey("F1") # Heal
+            notify("Low HP! Healing...", method="telegram")
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see the `docs/` folder for architectural details (`core_concepts.md`) before submitting PRs.
+
+**License:** MIT
+**Maintainer:** VNTimeJSC Code Team

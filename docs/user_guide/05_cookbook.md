@@ -25,13 +25,13 @@ Vào `Flow Editor`, tạo một flow mới tên `LoginFlow`:
 @LoginFlow:
     # 1. Chờ nút Start xuất hiện (phòng khi máy chậm)
     wait_image("btn_start", timeout=10s)
-    
+
     # 2. Click vào nút Start
     click_image("btn_start")
-    
+
     # 3. Chờ loading xong (Loading screen biến mất)
     wait_image("screen_loading", appear=false, timeout=60s)
-    
+
     # 4. Thông báo đã vào lại game
     notify("Reconnected successfully!", method=popup)
 ```
@@ -70,18 +70,18 @@ Hãy viết script dạng DSL (IDE Mode) để dễ quản lý logic phức tạ
 @main:
     # Vòng lặp chính vô tận
     loop 999999:
-        
+
         # 1. Kiểm tra an toàn trước
         run_flow("SafetyCheck")
-        
+
         # 2. Tìm quái
         if_image("monster"):
             # Tìm thấy quái -> Đánh
             click_image("monster")
-            
+
             # Đợi đánh xong (Ví dụ: chờ thanh exp hiện lên hoặc quái biến mất)
             wait_image("monster", appear=false, timeout=10s)
-            
+
             # Nhặt đồ (Loop nhặt 3 lần cho chắc)
             loop 3:
                 hotkey("Space") # Phím nhặt đồ
@@ -90,7 +90,7 @@ Hãy viết script dạng DSL (IDE Mode) để dễ quản lý logic phức tạ
             # Không thấy quái -> Tìm góc khác hoặc xoay camera
             hotkey("Tab")
             sleep(1s)
-            
+
         # 3. Giả lập nghỉ ngơi (Anti-ban)
         delay_random(500, 1500)
 
@@ -99,7 +99,7 @@ Hãy viết script dạng DSL (IDE Mode) để dễ quản lý logic phức tạ
     if_image("hp_low"):
         hotkey("F1") # Phím bình máu
         sleep(500ms)
-        
+
     # 2. Check túi đầy (Logic tài nguyên)
     if_image("inventory_full"):
         notify("Inventory full! Going home...", method=telegram)

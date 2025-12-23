@@ -1,25 +1,17 @@
-# RetroAuto v2 Documentation for LLMs
+# RetroAuto v2 Documentation (The Encyclopedia v5.0)
 
-> **Project:** RetroAuto v2 (Windows Automation IDE)
-> **Description:** A Python-based automation tool featuring a visual IDE, custom DSL (RetroScript), and 'Human Mouse' anti-ban technology.
+> **Description:** Comprehensive documentation for RetroAuto v2, split into logical manuals.
 
-## 📚 Core Documentation (Reading Order)
+## 📚 Core Reading Path (v5.0)
 
-1. **[The Launchpad](user_guide/launchpad.md)** - Getting Started, Installation, UI Tour.
-2. **[The Cookbook](user_guide/cookbook.md)** - Practical Recipes (Auto-Login, Farming).
-3. **[Core Concepts](user_guide/core_concepts.md)** - Execution Model (Sync/Async), Coordinates, Matching.
-4. **[Tools Mastery](user_guide/tools_mastery.md)** - Detailed GUI & IDE Manual.
-5. **[Deep Dive](user_guide/deep_dive.md)** - Advanced Tech (OCR, Anti-Ban, Interrupts).
-6. **[Reference Manual](user_guide/reference_manual.md)** - Full API Dictionary (100% Commands).
-7. **[Troubleshooting](user_guide/troubleshooting.md)** - Error Diagnosis.
+1. **[Start Here](user_guide/01_start.md)** - Setup, Prerequisites.
+2. **[Visual IDE Manual](user_guide/02_ide_visual.md)** - Assets, Actions, Properties Panels.
+3. **[Code & Debug Manual](user_guide/03_ide_code.md)** - Code Editor, **Debugger**, Breakpoints.
+4. **[Core Concepts](user_guide/04_concepts.md)** - Execution Model, Interrupts, Vision.
+5. **[The Cookbook](user_guide/05_cookbook.md)** - Recipes (Login, Farming).
+6. **[Troubleshooting](user_guide/06_troubleshooting.md)** - Diagnostic Trees.
+7. **[Reference Manual](user_guide/07_reference.md)** - Full API Dictionary.
 
-## 🧠 Key Context for Code Generation
-
-- **Language:** Python 3.11+ (Backend), PySide6 (UI).
-- **DSL:** RetroScript (Python-like indentation).
-- **Anti-Ban:** Use `click_random` and `delay_random` instead of fixed values.
-- **Vision:** OpenCV Template Matching (Grayscale default).
-- **OCR:** Tesseract Integration.
-
-## 🔗 Full Context File
-For a single-file context dump, see: **[Full User Guide](full_user_guide.md)**
+## 🧠 for Context Windows
+- **Single File (Txt/Md):** [full_user_guide.md](full_user_guide.md)
+- **Print Version (HTML):** [RetroAuto_UserGuide_v5.html](RetroAuto_UserGuide_v5.html)

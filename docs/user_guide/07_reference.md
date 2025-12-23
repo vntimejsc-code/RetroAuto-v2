@@ -146,3 +146,52 @@ Gửi thông báo.
 
 > 💡 **Pro Tip:** Bạn có thể dùng biểu thức toán học trong tham số:
 > `click(x + 10, y * 2)`
+
+---
+
+## 🔬 Under the Hood (Cơ Chế Bên Trong)
+
+### 1. Biến & Phạm Vi (Variable Scope)
+
+RetroAuto sử dụng **Global Scope** duy nhất cho toàn bộ script.
+
+```
+┌──────────────────────────────────────────────────┐
+│                 GLOBAL SCOPE                     │
+│                                                  │
+│  $hp = 100                                       │
+│  $gold = 5000                                    │
+│                                                  │
+│  ┌────────────────┐   ┌────────────────┐         │
+│  │ @main:         │   │ @heal:         │         │
+│  │   $hp = 50     │──▶│   if $hp < 30  │ ✅ OK   │
+│  │   run_flow()   │   │     ...        │         │
+│  └────────────────┘   └────────────────┘         │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+**Kết luận:**
+- Biến `$hp` khai báo ở `@main` **có thể đọc/ghi** từ `@heal`.
+- **Không có Local Scope riêng biệt** cho mỗi Flow.
+- **Gotcha:** Tên biến dễ bị ghi đè nếu trùng. Hãy đặt tên rõ ràng (`$main_hp` thay vì `$hp`).
+
+### 2. Call Stack & Đệ Quy
+
+Khi gọi `run_flow("A")`, hệ thống **push** một Frame vào Stack:
+
+```
+Stack: [Main] -> [A] -> [B] -> [C] ...
+```
+**Giới hạn:** Stack tối đa **100 levels** (Configurable).
+**Gotcha:** Nếu Flow A gọi lại chính nó (đệ quy vô hạn), sẽ gặp `RecursionError`.
+
+### 3. Hiệu Năng Vision (Performance)
+
+| Tác vụ | Thời gian ước tính | Ghi chú |
+|--------|-------------------:|---------|
+| `if_image` (Full Screen 1080p) | 50-150 ms | Chậm, tránh dùng trong vòng lặp nhanh. |
+| `if_image` (ROI 100x100 px) | 2-10 ms | **Nhanh gấp 10x.** |
+| `wait_pixel` | < 1 ms | Cực nhanh, chỉ kiểm tra 1 điểm. |
+| OCR `read_text` | 100-500 ms | Nặng, dùng tiết kiệm. |
+
+**Best Practice:** Luôn dùng `region=[x, y, w, h]` để giới hạn vùng tìm kiếm.

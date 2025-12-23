@@ -1,0 +1,887 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>RetroAuto v2 - User Guide v5.0</title>
+    
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    body {
+        font-family: 'Merriweather', serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px;
+    }
+    h1, h2, h3 { font-family: sans-serif; color: #2c3e50; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; break-before: always; page-break-before: always; }
+    h2 { margin-top: 30px; border-bottom: 1px solid #eee; }
+    code { font-family: 'JetBrains Mono', monospace; background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #f8f8f8; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #ddd; }
+    pre code { background: none; padding: 0; }
+    blockquote { border-left: 4px solid #3498db; margin: 0; padding-left: 15px; color: #555; background: #f1f9ff; padding: 10px; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    img { max-width: 100%; height: auto; display: block; margin: 20px auto; }
+
+    @media print {
+        body { max-width: 100%; padding: 0; }
+        a { text-decoration: none; color: #333; }
+        pre, blockquote { page-break-inside: avoid; }
+        h1 { page-break-before: always; }
+        h1:first-child { page-break-before: avoid; }
+    }
+</style>
+
+</head>
+<body>
+    <div style="text-align: center; padding: 50px 0; page-break-after: always;">
+        <h1 style="font-size: 3em; border: none;">RetroAuto v2</h1>
+        <h2 style="font-size: 2em; border: none; color: #555;">The Encyclopedia (v5.0)</h2>
+        <p>Generated: 2025-12-23</p>
+    </div>
+    <section class='chapter'><h1>Part 1: The Launchpad (Bệ phóng) 🚀</h1>
+> *Từ Zero đến Hero trong 30 phút*
+
+---
+
+<h2>1.1 Prerequisites & Environment (Tiền điều kiện)</h2>
+
+Trước khi cài đặt RetroAuto, hãy đảm bảo môi trường Windows của bạn đã được cấu hình đúng. <b>60% lỗi "Image not found"</b> đến từ việc bỏ qua bước này.
+
+<h3>✅ Checklist Bắt buộc</h3>
+
+| # | Mục | Cách kiểm tra | Tại sao quan trọng? |
+|---|-----|---------------|---------------------|
+| 1 | <b>DPI Scaling = 100%</b> | Settings → Display → Scale = 100% | Pixel coordinates bị lệch nếu scale khác 100% |
+| 2 | <b>Admin Rights</b> | Chuột phải → "Run as Administrator" | Một số game chặn input từ app không có quyền Admin |
+| 3 | <b>Borderless Windowed</b> | Trong game: Settings → Display → Borderless | Fullscreen chặn screenshot/input từ bên ngoài |
+| 4 | <b>Night Light OFF</b> | Settings → Display → Night Light = Off | Màu sắc bị biến đổi làm hỏng image matching |
+
+<h3>🖥️ Multi-Monitor Setup</h3>
+
+Nếu bạn có nhiều màn hình:
+- <b>Tọa độ (0, 0):</b> Luôn ở góc trên-trái của màn hình CHÍNH (Primary).
+- <b>Màn hình phụ:</b> Có thể có tọa độ âm (ví dụ: <code>-1920, 0</code> nếu nằm bên trái).
+- <b>Khuyến nghị:</b> Chạy game trên màn hình chính để tránh rắc rối.
+
+<h3>⚡ Power Settings</h3>
+
+Nếu bạn chạy bot qua đêm:
+<code></code>`
+Settings → Power & Sleep → Screen: Never | Sleep: Never
+<code></code>`
+Hoặc: Download công cụ "Caffeine" để giữ máy tỉnh.
+
+---
+
+<h2>1.2 Quickstart: "The 5-Minute Bot" ⏱️</h2>
+
+> <b>Goal:</b> Viết bot tự động search Google trong 5 phút.
+> <b>Yêu cầu:</b> Đã cài Python 3.11+, pip.
+
+<h3>Bước 1: Cài đặt (2 phút)</h3>
+
+<code></code>`powershell
+<h1>Clone hoặc download RetroAuto</h1>
+cd C:\Auto\Newauto
+
+<h1>Cài dependencies</h1>
+pip install -r requirements.txt
+<code></code>`
+
+<h3>Bước 2: Chạy App (30 giây)</h3>
+
+<code></code>`powershell
+python -m app.main
+<code></code>`
+
+Cửa sổ RetroAuto sẽ hiện ra với 3 panel: <b>Assets | Actions | Properties</b>.
+
+<h3>Bước 3: Tạo Script đầu tiên (2 phút)</h3>
+
+1. <b>Thêm Action "Click":</b>
+   - Bấm nút <code>+ Click</code> trên Quick Add Bar.
+   - Trong Properties: Nhập <code>x=500, y=300</code> (vị trí search box của Google, bạn tự điều chỉnh).
+
+2. <b>Thêm Action "TypeText":</b>
+   - Bấm <code>+ Type</code>.
+   - Trong Properties: <code>text="Hello RetroAuto"</code>, <code>enter=true</code>.
+
+3. <b>Save & Run:</b>
+   - <code>Ctrl+S</code> để lưu.
+   - <code>F5</code> để chạy.
+
+<h3>🎉 Kết quả</h3>
+
+Nếu bạn đang mở trình duyệt với Google, con trỏ sẽ click vào ô search và gõ "Hello RetroAuto" + Enter.
+
+<b>Chúc mừng! Bạn đã viết bot đầu tiên.</b> 🎊
+
+---
+
+<h2>1.3 Installation & Dependencies</h2>
+
+<h3>Yêu cầu hệ thống</h3>
+
+| Component | Version | Ghi chú |
+|-----------|---------|---------|
+| OS | Windows 10/11 | Chưa hỗ trợ Linux/macOS |
+| Python | 3.11+ | Khuyến nghị 3.12 |
+| RAM | 4GB+ | 8GB nếu dùng OCR nặng |
+| Tesseract | 5.x (Optional) | Cho tính năng OCR |
+
+<h3>Cài đặt chi tiết</h3>
+
+<code></code>`powershell
+<h1>1. Clone repo</h1>
+git clone https://github.com/your-repo/retroauto.git
+cd retroauto
+
+<h1>2. Tạo virtual environment (khuyến nghị)</h1>
+python -m venv .venv
+.venv\Scripts\activate
+
+<h1>3. Cài dependencies</h1>
+pip install -r requirements.txt
+
+<h1>4. (Optional) Cài Tesseract cho OCR</h1>
+<h1>Download từ: https://github.com/UB-Mannheim/tesseract/wiki</h1>
+<h1>Cài vào: C:\Program Files\Tesseract-OCR</h1>
+<code></code>`
+
+<h3>Cấu trúc thư mục</h3>
+
+<code></code>`
+retroauto/
+├── app/            # UI code (PySide6)
+├── core/           # Engine, DSL parser, Runner
+├── infra/          # Logging, Crash handler
+├── assets/         # Image templates (bạn lưu ở đây)
+├── scripts/        # Saved scripts (.retro files)
+└── docs/           # Tài liệu này
+<code></code>`
+
+---
+
+<h2>1.4 Interface Tour (Khám phá giao diện)</h2>
+
+<h3>Main Window (Cửa sổ chính)</h3>
+
+<code></code>`
+┌─────────────────────────────────────────────────────────┐
+│  [Toolbar: Run | Pause | Stop | Capture | IDE | Save]   │
+├──────────┬─────────────────────────┬────────────────────┤
+│  Assets  │       Actions           │    Properties      │
+│  Panel   │       Panel             │    Panel           │
+│          │                         │                    │
+│ 📷 img1  │ 1. Click(100, 200)      │ Action: Click      │
+│ 📷 img2  │ 2. WaitImage("img1")    │ x: [100]           │
+│          │ 3. TypeText("Hello")    │ y: [200]           │
+│          │                         │ button: [left ▼]   │
+└──────────┴─────────────────────────┴────────────────────┘
+<code></code>`
+
+- <b>Assets Panel (Trái):</b> Quản lý hình ảnh mẫu.
+- <b>Actions Panel (Giữa):</b> Danh sách hành động (Flow).
+- <b>Properties Panel (Phải):</b> Chỉnh sửa tham số action đang chọn.
+
+<h3>IDE Window (Cửa sổ Code)</h3>
+
+Bấm nút <b>IDE</b> trên toolbar để mở chế độ viết code:
+
+<code></code>`
+┌─────────────────────────────────────────────────────────┐
+│  [Toolbar: Run | Save | Format]                         │
+├──────────┬─────────────────────────────────────┬────────┤
+│ Structure│         Code Editor                 │Minimap │
+│ Panel    │                                     │        │
+│          │ @main:                              │ ░░░░░░ │
+│ ▶ @main  │     click(100, 200)                 │ ░░░    │
+│ ▶ @heal  │     wait_image("btn_ok")            │ ░░░░   │
+│          │     run_flow("heal")                │        │
+└──────────┴─────────────────────────────────────┴────────┘
+<code></code>`
+
+- <b>Structure Panel (Trái):</b> Outline của flows và labels.
+- <b>Code Editor (Giữa):</b> Viết DSL với Intellisense.
+- <b>Minimap (Phải):</b> Nhìn tổng quan code, click để nhảy.
+
+---
+
+> 👉 <b>Tiếp theo:</b> [Part 3: The Cookbook](./cookbook.md) - Học qua các bài thực hành thực tế.
+</section>
+<section class='chapter'><h1>Part 2: Visual IDE Manual (Giao Diện Đồ Họa)</h1>
+> *Dành cho Operator & Non-Coder: Kéo thả để tự động hóa.*
+
+---
+
+<h2>2.1 The Workbench (Bàn Làm Việc)</h2>
+
+Giao diện RetroAuto chia làm 3 cột chính:
+
+<h3>1. Assets Panel (Kho Tài Nguyên) - Cột Trái</h3>
+Quản lý "đôi mắt" của bot.
+*   <b>Import:</b> Kéo file ảnh <code>.png</code> vào đây.
+*   <b>Capture Tool (F2):</b> Cắt ảnh trực tiếp từ game.
+*   <b>Chuột phải:</b> Rename, Delete, Copy Path.
+
+<h3>2. Actions Panel (Kịch Bản) - Cột Giữa</h3>
+Danh sách lệnh thực thi tuần tự.
+*   <b>Kéo thả:</b> Thay đổi thứ tự lệnh.
+*   <b>Disable:</b> Tắt tạm thời một lệnh (Chuột phải -> Disable).
+*   <b>Group:</b> (Sắp ra mắt) Gom nhóm lệnh.
+
+<h3>3. Properties Panel (Chi Tiết) - Cột Phải</h3>
+Chỉnh sửa tham số từng lệnh.
+*   <b>Click Action:</b> Tọa độ <code>x, y</code>, nút <code>left/right</code>.
+*   <b>Wait Action:</b> <code>Asset ID</code>, <code>Timeout</code> (ms).
+*   <b>Logic:</b> <code>Condition</code>, <code>Jump Label</code>.
+
+---
+
+<h2>2.2 Common Workflows</h2>
+
+<h3>Tạo Script mới</h3>
+1. Mở App -> File -> New Script.
+2. Bấm <code>F2</code> để cắt ảnh các nút trong game (Button Start, Button Login).
+3. Đặt tên gợi nhớ cho ảnh (vd: <code>btn_start</code>, <code>btn_login</code>).
+4. Kéo lệnh <code>ClickImage</code> từ toolbar vào Actions Panel.
+5. Chọn <code>btn_start</code> trong Properties.
+6. Bấm <code>F5</code> chạy thử.
+
+<h3>Chỉnh sửa tọa độ</h3>
+Nếu không muốn tìm ảnh, bạn có thể click theo tọa độ cứng (không khuyến khích).
+1. Dùng Action <code>Click</code>.
+2. Bấm nút "Pick" (hình ống hút) trong Properties.
+3. Click vào điểm trên màn hình để lấy tọa độ <code>x, y</code>.
+</section>
+<section class='chapter'><h1>Part 3: Code & Debugging Manual (Lập Trình & Gỡ Lỗi)</h1>
+> *Dành cho Developer: Viết code nhanh, sửa lỗi siêu tốc.*
+
+---
+
+<h2>3.1 The Code Editor (Trình Soạn Thảo)</h2>
+
+<h3>Intellisense (Gợi ý thông minh)</h3>
+- <b>Kích hoạt:</b> <code>Ctrl + Space</code>
+- <b>Chức năng:</b>
+  - Gợi ý lệnh: Gõ <code>cl</code> => <code>click</code>, <code>click_image</code>.
+  - Gợi ý Asset: Gõ <code>"</code> => Danh sách ID từ Assets Panel.
+  - Signature Help: Gõ <code>(</code> => Hiện tham số <code>(x, y, button, ...)</code>
+
+<h3>Minimap (Bản đồ Code)</h3>
+Dải bên phải hiển thị tổng quan logic.
+- <b>Màu Xanh:</b> Flow definitions (<code>@main</code>).
+- <b>Màu Tím:</b> Logic loops (<code>loop</code>, <code>if</code>).
+- <b>Thao tác:</b> Click để cuộn nhanh.
+
+---
+
+<h2>3.2 The Debugger (Trình Gỡ Lỗi) 🐞</h2>
+*Tính năng cao cấp giúp bạn "soi" từng dòng code.*
+
+<h3>Giao diện Debug Panel</h3>
+Nằm ở dưới cùng (hoặc tab bên phải):
+
+| Tab | Chức năng |
+|-----|-----------|
+| <b>Call Stack</b> | Xem bot đang chạy ở Flow nào, dòng nào. |
+| <b>Variables</b> | Xem giá trị biến (<code>$hp</code>, <code>$count</code>) theo thời gian thực. |
+| <b>Breakpoints</b> | Quản lý các điểm dừng. |
+
+<h3>Các Lệnh Điều Khiển (Debug Controls)</h3>
+
+| Icon | Lệnh | Phím tắt | Mô tả |
+| :---: | :--- | :--- | :--- |
+| ▶ | <b>Continue</b> | F5 | Chạy tiếp cho đến breakpoint tiếp theo. |
+| ⏸ | <b>Pause</b> | F6 | Tạm dừng bot ngay lập tức. |
+| ⤵ | <b>Step Over</b> | F10 | Chạy 1 dòng lệnh tiếp theo (Không chui vào Flow con). |
+| ↴ | <b>Step Into</b> | F11 | Chui vào bên trong Flow/Hàm đang gọi. |
+| ↱ | <b>Step Out</b> | Shift+F11 | Chạy cho đến khi thoát khỏi Flow hiện tại. |
+| ■ | <b>Stop</b> | F8 | Dừng hẳn chương trình. |
+
+<h3>Cách Debug Hiệu Quả</h3>
+
+#### 1. Đặt Breakpoint (Điểm dừng)
+- <b>Cách làm:</b> Click vào lề trái (số dòng) trong Code Editor -> Xuất hiện chấm đỏ 🔴.
+- <b>Tác dụng:</b> Khi chạy đến dòng này, bot sẽ tự động Pause.
+
+#### 2. Soi Biến (Variables Watch)
+- Khi bot đang Pause, chuyển sang tab <b>Variables</b>.
+- Bạn sẽ thấy giá trị hiện tại của mọi biến.
+- <b>Watch:</b> Nhập tên biến (vd: <code>$hp</code>) vào ô Watch để theo dõi riêng nó.
+
+#### 3. Stack Trace
+- Khi bot Pause trong một Flow con, <b>Call Stack</b> cho biết ai đã gọi nó.
+- <b>Ví dụ:</b> <code>Main > Loop > AttackFlow > UseSkill</code>.
+
+---
+
+<h2>3.3 Output & Diagnostics (Nhật ký & Chẩn đoán)</h2>
+
+<h3>Output Log</h3>
+Hiển thị lịch sử chạy của bot.
+- <b>Màu sắc:</b>
+  - ⚫ Info: Sự kiện thường.
+  - 🟡 Warning: Tìm ảnh độ khớp thấp.
+  - 🔴 Error: Lỗi logic.
+
+<h3>Problems Tab</h3>
+Danh sách lỗi cú pháp (Syntax Errors) và cảnh báo (Warnings).
+- Click đúp vào lỗi để nhảy đến dòng code bị sai.
+</section>
+<section class='chapter'><h1>Part 4: Core Concepts (Nguyên Lý Cốt Lõi) 🧠</h1>
+
+---
+
+<h2>4.1 Execution Model (Cơ chế Hoạt động)</h2>
+
+RetroAuto sử dụng <b>Event Loop Hybrid</b>: Kết hợp giữa tuần tự (Main Thread) và song song (Interrupt Watchdog).
+
+<h3>📐 The Runtime Loop ASCII Art</h3>
+
+<code></code>`
+┌───────────────── MAIN THREAD (Synchronous) ─────────────────┐
+│                                                             │
+│   [Start]                                                   │
+│      │                                                      │
+│      ▼                                                      │
+│   [Fetch Instruction] <───(Step Pointer)                    │
+│      │                                                      │
+│      ▼                                                      │
+│   [Execute Action] (Click, Type, Wait...)                   │
+│      │                                                      │
+│      │  ⚠️ BLOCKED? (e.g. sleep 5s)                         │
+│      │  (Main thread sleeps, but Background thread is ALIVE)│
+│      │                                                      │
+│      ▼                                                      │
+│   [Check Events] (Stop? Pause?)                             │
+│      │                                                      │
+│      └───► Loop to Next Instruction                         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+               ▲                 │
+               │ (Pause Request) │ (Resume)
+               │                 ▼
+┌────────────── BACKGROUND THREAD (Asynchronous) ─────────────┐
+│                                                             │
+│   [Sentinel Timer (500ms)]                                  │
+│      │                                                      │
+│      ▼                                                      │
+│   [Scan All Interrupt Rules]                                │
+│      │                                                      │
+│      ├──► Rule 1: Login Screen? (No)                        │
+│      │                                                      │
+│      ├──► Rule 2: Low HP? (YES!) ──┐                        │
+│      │                             │                        │
+│      └──► Rule 3: Error Popup?     │                        │
+│                                    │                        │
+│          ┌─────────────────────────┘                        │
+│          ▼                                                  │
+│   [PREEMPTION TRIGGERED]                                    │
+│   1. Pause Main Thread                                      │
+│   2. Save Context (Stack/Variables)                         │
+│   3. Run "HealFlow"                                         │
+│   4. Resume Main Thread                                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+<code></code>`
+
+---
+
+<h2>4.2 Priority System (Hệ thống Ưu tiên)</h2>
+
+Khi nhiều sự kiện xảy ra cùng lúc, ai thắng?
+
+<code></code>`
+High Priority (P10) > Medium (P5) > Low (P1)
+<code></code>`
+
+<b>Ví dụ xung đột:</b>
+- <b>Sự kiện A:</b> Hết máu (P10, Flow: "Heal")
+- <b>Sự kiện B:</b> Túi đầy (P5, Flow: "SellItems")
+
+<b>Kịch bản:</b>
+1. Bot thấy cả "Hết máu" và "Túi đầy".
+2. <b>P10 (Heal)</b> chiến thắng -> Chạy <code>Heal</code> trước.
+3. Sau khi <code>Heal</code> xong, nếu vẫn thấy "Túi đầy", chạy <code>SellItems</code>.
+
+---
+
+<h2>4.3 Coordinate Systems (Hệ Tọa Độ)</h2>
+
+Cách RetroAuto định vị trên màn hình:
+
+<code></code>`
+(0,0) Top-Left
+  ┌──────────────────────────────────────────X (Width)
+  │
+  │      [Global Coordinate]
+  │      Click(500, 300)
+  │          Target
+  │            ▼
+  │            ✕
+  │
+  │
+  Y
+(Height)
+<code></code>`
+
+<b>ROI (Region of Interest - Vùng quan tâm):</b>
+Thay vì tìm trên cả màn hình, chỉ tìm trong một hộp nhỏ.
+
+<code></code>`
+┌──────────────────────────────────────────────────┐
+│ Screen (1920x1080)                               │
+│                                                  │
+│   ┌──────── ROI (Health Bar) ───────┐            │
+│   │ [##########........] 50%        │            │
+│   └─────────────────────────────────┘            │
+│                                                  │
+└──────────────────────────────────────────────────┘
+<code></code>`
+<b>Lợi ích:</b> Tăng tốc độ tìm kiếm gấp 5-10 lần.
+</section>
+<section class='chapter'><h1>Part 3: The Cookbook (Món Ngon Thực Chiến) 🍳</h1>
+> *Học qua hành động. Copy, Paste, và Chạy.*
+
+Chào mừng bạn đến với "Căn bếp Automation". Tại đây, chúng ta sẽ không nói lý thuyết suông. Bạn sẽ học cách nấu những "món ăn" (script) phổ biến nhất mà bất kỳ pro-gamer hay operator nào cũng cần.
+
+---
+
+<h2>🥗 Recipe 1: The Login Guard (Hộ Vệ Đăng Nhập)</h2>
+<b>Level:</b> 🟢 Dễ | <b>Time:</b> 5 phút | <b>Concept:</b> Interrupts (Sự kiện)
+
+<h3>Vấn đề</h3>
+Game online hay bị disconnect (mất mạng) hoặc văng game khi treo máy đêm. Bạn muốn bot tự động đăng nhập lại khi thấy màn hình login.
+
+<h3>Nguyên liệu</h3>
+1.  Ảnh <code>screen_login.png</code>: Màn hình đăng nhập.
+2.  Ảnh <code>btn_start.png</code>: Nút "Vào game".
+3.  Flow "LoginFlow": Chuỗi hành động để đăng nhập.
+
+<h3>Cách chế biến (Step-by-Step)</h3>
+
+#### Bước 1: Tạo Flow Đăng Nhập (<code>LoginFlow</code>)
+Vào <code>Flow Editor</code>, tạo một flow mới tên <code>LoginFlow</code>:
+
+<code></code>`retroscript
+@LoginFlow:
+    # 1. Chờ nút Start xuất hiện (phòng khi máy chậm)
+    wait_image("btn_start", timeout=10s)
+
+    # 2. Click vào nút Start
+    click_image("btn_start")
+
+    # 3. Chờ loading xong (Loading screen biến mất)
+    wait_image("screen_loading", appear=false, timeout=60s)
+
+    # 4. Thông báo đã vào lại game
+    notify("Reconnected successfully!", method=popup)
+<code></code>`
+
+#### Bước 2: Cài Đặt "Hộ Vệ" (Interrupt Rule)
+Chúng ta không muốn viết lệnh <code>check_login</code> vào mọi nơi trong script chính (Farming). Hãy dùng tính năng <b>Interrupts</b> (Tương tự như phản xạ không điều kiện).
+
+1.  Chuyển sang tab <b>⚡ Interrupts</b>.
+2.  Bấm <code>Add Rule</code>.
+3.  <b>Trigger Image:</b> Chọn <code>screen_login.png</code>.
+4.  <b>Action:</b> Run Flow -> <code>LoginFlow</code>.
+5.  <b>Priority:</b> <code>High (P10)</code> (Ưu tiên cao nhất, dừng mọi việc khác để login).
+6.  <b>Cooldown:</b> <code>30s</code> (Để tránh spam login liên tục).
+
+<h3>🎯 Kết quả</h3>
+Bây giờ, dù bạn đang farm quái ở Flow nào, chỉ cần màn hình Login hiện ra, RetroAuto sẽ <b>ngay lập tức</b> tạm dừng việc farm, chạy <code>LoginFlow</code> để vào lại game, rồi tiếp tục farm.
+
+---
+
+<h2>🍲 Recipe 2: The Infinite Farming Loop (Vòng Lặp Vô Tận)</h2>
+<b>Level:</b> 🟡 Trung Bình | <b>Time:</b> 10 phút | <b>Concept:</b> Logic & State
+
+<h3>Vấn đề</h3>
+Bạn muốn nhân vật tự tìm quái, đánh quái, nhặt đồ. Khi máu thấp (< 50%) thì tự bơm máu. Khi túi đầy thì tự về thành bán đồ.
+
+<h3>Nguyên liệu</h3>
+-   <code>monster.png</code>: Quái vật.
+-   <code>hp_low.png</code>: Thanh máu khi cạn (màu đỏ nhạt).
+-   <code>inventory_full.png</code>: Thông báo túi đầy.
+
+<h3>Cách chế biến</h3>
+
+Hãy viết script dạng DSL (IDE Mode) để dễ quản lý logic phức tạp.
+
+<code></code>`retroscript
+@main:
+    # Vòng lặp chính vô tận
+    loop 999999:
+
+        # 1. Kiểm tra an toàn trước
+        run_flow("SafetyCheck")
+
+        # 2. Tìm quái
+        if_image("monster"):
+            # Tìm thấy quái -> Đánh
+            click_image("monster")
+
+            # Đợi đánh xong (Ví dụ: chờ thanh exp hiện lên hoặc quái biến mất)
+            wait_image("monster", appear=false, timeout=10s)
+
+            # Nhặt đồ (Loop nhặt 3 lần cho chắc)
+            loop 3:
+                hotkey("Space") # Phím nhặt đồ
+                sleep(200ms)
+        else:
+            # Không thấy quái -> Tìm góc khác hoặc xoay camera
+            hotkey("Tab")
+            sleep(1s)
+
+        # 3. Giả lập nghỉ ngơi (Anti-ban)
+        delay_random(500, 1500)
+
+@SafetyCheck:
+    # 1. Bơm máu (Logic sinh tồn)
+    if_image("hp_low"):
+        hotkey("F1") # Phím bình máu
+        sleep(500ms)
+
+    # 2. Check túi đầy (Logic tài nguyên)
+    if_image("inventory_full"):
+        notify("Inventory full! Going home...", method=telegram)
+        run_flow("GoHomeAndSell") # Flow về thành (bạn tự define nhé)
+<code></code>`
+
+<h3>💡 Bí kíp của Đầu bếp (Chef's Tips)</h3>
+
+1.  <b>Đừng check <code>hp_low</code> liên tục trong main loop:</b> Hãy tách ra thành <code>@SafetyCheck</code> để code gọn gàng.
+2.  <b>Anti-Ban:</b> Luôn dùng <code>delay_random</code> thay vì <code>sleep</code> cố định. Game master rất ghét những ai bấm nút đều như vắt chanh (vd: đúng 1000ms mỗi lần).
+3.  <b>Fail-safe:</b> Luôn có <code>timeout</code> cho <code>wait_image</code>. Đừng để bot chờ mãi mãi một hình ảnh có thể không bao giờ hiện (ví dụ: lag game làm mất hình quái).
+
+---
+
+> 👉 <b>Bài tập về nhà:</b> Hãy thử kết hợp Recipe 1 và Recipe 2. Chạy Farming Loop và rút dây mạng ra để test xem Login Guard có hoạt động không nhé!
+</section>
+<section class='chapter'><h1>Part 6: Troubleshooting & Diagnostics (Xử Lý Sự Cố) 🔧</h1>
+
+---
+
+<h2>6.1 Diagnostic Playbook (Quy trình Chẩn bệnh)</h2>
+
+<h3>🌡️ Symptom: "Image Not Found" (Không tìm thấy ảnh)</h3>
+
+<b>Mô tả:</b> Bot đứng yên, log báo <code>WARNING: WaitImage('xyz') timed out</code>.
+
+<b>Decision Flow (Cây quyết định):</b>
+<code></code>`
+[START]
+   │
+   ▼
+[Check Screen] -> Is the image visible to YOUR eyes?
+   │
+   ├─ NO ──> [Game Logic Issue]
+   │          Wait longer (increase timeout)
+   │          or excessive lag?
+   │
+   └─ YES (I see it!)
+        │
+        ▼
+   [Check Threshold]
+        │
+        ├─ > 0.9? ──> Too strict. Lower to 0.7.
+        │
+        └─ < 0.7? ──> [Check Rendering]
+             │
+             ├─ Different Resolution/DPI? (Check Settings)
+             │
+             ├─ Color changed? (Night mode? Hover effect?)
+             │    └─ Capture NEW image.
+             │
+             └─ Obstructed? (Mouse cursor/Tooltip covering it?)
+<code></code>`
+
+---
+
+<h3>🌡️ Symptom: "Bot click trượt" (Click Accuracy)</h3>
+
+<b>Mô tả:</b> Bot click vào chỗ không có gì, hoặc click lệch nút.
+
+<b>Nguyên nhân & Fix:</b>
+1.  <b>DPI Scaling:</b> Windows Scale != 100%.
+    *   *Fix:* Set Display Scale về 100%.
+2.  <b>Offset:</b> Ảnh mẫu có viền trong suốt (Transparent) quá lớn.
+    *   *Fix:* Cắt ảnh (Crop) sát vào nội dung nút, bỏ viền.
+3.  <b>Dynamic UI:</b> Nút di chuyển động.
+    *   *Fix:* Dùng <code>wait_image</code> liên tục để cập nhật vị trí mới nhất ngay trước khi click.
+
+---
+
+<h2>6.2 Log Analysis (Phân tích Log)</h2>
+
+Mở tab <b>Output</b> hoặc file <code>logs/retroauto.log</code>.
+
+<h3>Cấu trúc Log</h3>
+<code></code>`
+[TIME]     [LEVEL]  [MODULE]    [MESSAGE]
+14:05:01   INFO     Runner      Starting flow 'Farm'
+14:05:02   DEBUG    Matcher     Found 'mob_slime' at (500, 200) | score=0.95
+14:05:03   INFO     Input       Clicking at (505, 202)
+<code></code>`
+
+<h3>Các tín hiệu lạ</h3>
+- <b>Spam "Found...":</b> Interrupt Rule của bạn không có cooldown hoặc action quá nhanh.
+- <b>"FPS drop":</b> Quá trình tìm ảnh (Vision) tốn > 200ms. Hãy thu nhỏ ROI lại.
+
+---
+
+<h2>6.3 Reporting Bugs (Báo Lỗi)</h2>
+
+Khi cần hỗ trợ, hãy cung cấp đủ <b>3 món ăn chơi</b>:
+1.  <b>Screenshot:</b> Chụp màn hình lúc lỗi (cả game + cửa sổ RetroAuto).
+2.  <b>Log File:</b> Copy 50 dòng cuối cùng.
+3.  <b>Repro Steps:</b> "Chạy Flow A, đến bước B thì bị đơ".
+
+---
+
+<h2>6.4 Advanced Debugging (Gỡ Lỗi Nâng Cao)</h2>
+
+<h3>🧠 Lỗi Logic (Bot chạy nhưng không làm gì)</h3>
+
+<b>Symptom:</b> Script không báo lỗi, chạy qua các bước nhưng kết quả sai (vd: không click được nút).
+
+<b>Decision Tree:</b>
+<code></code>`
+[Bot chạy nhưng không click đúng]
+   │
+   ├─ [1] if_image luôn trả về FALSE?
+   │      └─ Kiểm tra Threshold / DPI / ROI.
+   │
+   ├─ [2] if_image TRUE nhưng click không trúng?
+   │      └─ Ảnh mẫu có viền trong suốt (offset sai).
+   │
+   └─ [3] Interrupt chạy liên tục chiếm quyền?
+          └─ Xem log có "Interrupt triggered" spam không? Tăng Cooldown.
+<code></code>`
+
+<h3>🔧 Lỗi Môi Trường</h3>
+
+| Triệu chứng | Nguyên nhân | Giải pháp |
+|-------------|-------------|-----------|
+| Bot không điều khiển được game | Antivirus/Game Guard chặn input | Thêm RetroAuto vào Whitelist / Tắt GameGuard. |
+| Screenshot trả về màn hình đen | Game chạy ở DirectX Fullscreen | Đổi game về <b>Borderless Windowed</b>. |
+| Tọa độ click bị lệch | Windows DPI Scaling ≠ 100% | Set Display Scale về 100%. |
+| OCR đọc sai chữ | Font game quá nhỏ/nghệ thuật | Tăng vùng ROI, dùng <code>psm=6</code> (block text). |
+
+<h3>🔥 Race Condition (Xung đột Interrupt)</h3>
+
+<b>Symptom:</b> Hai Interrupt P10 cùng kích hoạt, bot hành xử lạ.
+
+<b>Giải pháp:</b>
+1.  <b>Không nên đặt 2 rule cùng Priority cao.</b> Phân biệt rõ (Login=P10, Error=P8).
+2.  <b>Đảm bảo mỗi Interrupt Flow kết thúc rõ ràng</b> (không để vòng lặp vô tận bên trong).
+
+</section>
+<section class='chapter'><h1>Part 7: Reference Manual (Từ Điển Lệnh) 📚</h1>
+> *Tra cứu mọi chức năng. Không bỏ sót bất kỳ lệnh nào.*
+
+Tài liệu này liệt kê đầy đủ 100% các lệnh được hỗ trợ trong RetroAuto v2, tương ứng với mã nguồn <code>tokens.py</code> và <code>actions_panel.py</code>.
+
+---
+
+<h2>7.1 🎯 Clicks & Mouse (Thao tác Chuột)</h2>
+
+<h3><code>click(x, y, button="left", double=False)</code></h3>
+Click vào một tọa độ màn hình cố định.
+- <b>x, y:</b> Tọa độ pixel (số nguyên).
+- <b>button:</b> <code>"left"</code>, <code>"right"</code>, <code>"middle"</code>.
+- <b>double:</b> <code>True</code> để double-click.
+
+<h3><code>click_image(asset_id, button="left", timeout=0, double=False)</code></h3>
+Tìm ảnh và click vào tâm ảnh đó.
+- <b>asset_id:</b> ID của tài nguyên (ví dụ: <code>"btn_ok"</code>).
+- <b>timeout:</b> Thời gian chờ ảnh xuất hiện (giây). 0 = không chờ.
+- <b>Ex:</b> <code>click_image("btn_start", timeout=5s)</code>
+
+<h3><code>click_random(x1, y1, x2, y2)</code></h3>
+Click ngẫu nhiên trong vùng hình chữ nhật (Chống ban).
+- <b>x1, y1:</b> Góc trên-trái.
+- <b>x2, y2:</b> Góc dưới-phải.
+- <b>Ex:</b> <code>click_random(100, 100, 200, 200)</code>
+
+<h3><code>click_until(target_id, stop_id, max_clicks=10)</code></h3>
+Click liên tục vào <code>target_id</code> cho đến khi <code>stop_id</code> xuất hiện.
+- <b>Ex:</b> <code>click_until("btn_next", "screen_page2")</code> (Click Next cho đến khi sang trang 2).
+
+<h3><code>drag(x1, y1, x2, y2, duration=500)</code></h3>
+Kéo chuột từ A đến B (Swipe/Drop).
+- <b>duration:</b> Thời gian kéo (ms).
+
+<h3><code>scroll(dx, dy)</code></h3>
+Cuộn chuột.
+- <b>dx:</b> Cuộn ngang (thường là 0).
+- <b>dy:</b> Cuộn dọc. Dương = Lên, Âm = Xuống.
+- <b>Ex:</b> <code>scroll(0, -500)</code> (Cuộn xuống dưới).
+
+---
+
+<h2>7.2 👁️ Vision & Wait (Thị giác)</h2>
+
+<h3><code>wait_image(asset_id, timeout=infinite, appear=True)</code></h3>
+Dừng script cho đến khi ảnh xuất hiện (hoặc biến mất).
+- <b>appear:</b> <code>True</code> (chờ hiện), <code>False</code> (chờ mất).
+- <b>Ex:</b> <code>wait_image("loading_spinner", appear=False)</code> (Chờ loading xong).
+
+<h3><code>wait_pixel(x, y, color, tolerance=10)</code></h3>
+Chờ một điểm pixel có màu cụ thể.
+- <b>color:</b> Mã màu Hex (<code>#FF0000</code>) hoặc RGB tuple.
+
+<h3><code>if_image(asset_id, region=None)</code></h3>
+Trả về <code>True</code> nếu ảnh có trên màn hình. Dùng trong khối <code>if</code>.
+- <b>region:</b> <code>[x, y, w, h]</code> để giới hạn vùng tìm kiếm (Tăng tốc độ).
+
+<h3><code>while_image(asset_id)</code></h3>
+Lặp lại khối lệnh MIỄN LÀ ảnh còn trên màn hình.
+- <b>Ex:</b> <code>while_image("enemy"): attack()</code>
+
+<h3><code>if_pixel(x, y, color)</code></h3>
+Giống <code>if_image</code> nhưng kiểm tra màu của 1 pixel.
+
+<h3><code>read_text(variable, region)</code></h3>
+Đọc văn bản từ màn hình (OCR) và lưu vào biến.
+- <b>variable:</b> Tên biến (vd: <code>"$hp"</code>).
+- <b>region:</b> Vùng cần đọc <code>[x, y, w, h]</code>.
+- <b>Ex:</b> <code>read_text("$gold", [10, 10, 100, 20])</code>
+
+---
+
+<h2>7.3 ⌨️ Keyboard & Input (Bàn phím)</h2>
+
+<h3><code>type_text(text, interval=0, enter=False)</code></h3>
+Gõ văn bản như người dùng.
+- <b>interval:</b> Độ trễ giữa các phím (ms).
+- <b>enter:</b> Nhấn Enter cuối cùng.
+
+<h3><code>hotkey(sequence)</code></h3>
+Gửi tổ hợp phím.
+- <b>Ex:</b> <code>"Ctrl+C"</code>, <code>"Alt+F4"</code>, <code>"Win+R"</code>.
+
+---
+
+<h2>7.4 ⏱️ Timing & Delays (Thời gian)</h2>
+
+<h3><code>delay(amount, random=False)</code> / <code>sleep()</code></h3>
+Dừng script.
+- <b>amount:</b> <code>1s</code>, <code>500ms</code>.
+
+<h3><code>delay_random(min_ms, max_ms)</code></h3>
+Dừng ngẫu nhiên (Quan trọng cho Anti-ban).
+
+---
+
+<h2>7.5 🔄 Flow Control (Điều khiển luồng)</h2>
+
+<h3><code>if</code>, <code>elif</code>, <code>else</code>, <code>endif</code></h3>
+Cấu trúc rẽ nhánh điều kiện.
+<code></code>`retroscript
+if_image("A"):
+    click("A")
+else:
+    click("B")
+<code></code>`
+
+<h3><code>loop n</code> / <code>endloop</code></h3>
+Lặp số lần cố định. <code>loop 0</code> hoặc không tham số = Lặp vô hạn.
+
+<h3><code>run_flow(name)</code></h3>
+Gọi một Flow khác (Sub-routine).
+
+<h3><code>goto(label)</code> / <code>label(name)</code></h3>
+Nhảy đến vị trí được đánh dấu.
+
+<h3><code>if_text(variable, operator, value)</code></h3>
+So sánh giá trị văn bản/số.
+- <b>operator:</b> <code>"=="</code>, <code>"!="</code>, <code>">"</code>, <code>"<"</code>, <code>"contains"</code>.
+- <b>Ex:</b> <code>if_text("$hp", "<", 50)</code>
+
+---
+
+<h2>7.6 📡 Remote & Notify</h2>
+
+<h3><code>notify(message, method="popup")</code></h3>
+Gửi thông báo.
+- <b>method:</b> <code>"popup"</code> (Mặc định), <code>"telegram"</code>, <code>"discord"</code>, <code>"sound"</code>.
+
+---
+
+<h2>🧱 Cấu trúc DSL (Internal)</h2>
+
+<h3>Data Types</h3>
+- <b>Integer:</b> <code>123</code>
+- <b>Float:</b> <code>12.5</code>
+- <b>String:</b> <code>"Hello"</code> (Trong ngoặc kép)
+- <b>Duration:</b> <code>10s</code>, <code>500ms</code>
+- <b>Boolean:</b> <code>true</code>, <code>false</code>
+
+<h3>Operators</h3>
+- Arithmetic: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>
+- Comparison: <code>==</code>, <code>!=</code>, <code><</code>, <code>></code>
+- Logic: <code>and</code>, <code>or</code>, <code>not</code>
+
+> 💡 <b>Pro Tip:</b> Bạn có thể dùng biểu thức toán học trong tham số:
+> <code>click(x + 10, y * 2)</code>
+
+---
+
+<h2>🔬 Under the Hood (Cơ Chế Bên Trong)</h2>
+
+<h3>1. Biến & Phạm Vi (Variable Scope)</h3>
+
+RetroAuto sử dụng <b>Global Scope</b> duy nhất cho toàn bộ script.
+
+<code></code>`
+┌──────────────────────────────────────────────────┐
+│                 GLOBAL SCOPE                     │
+│                                                  │
+│  $hp = 100                                       │
+│  $gold = 5000                                    │
+│                                                  │
+│  ┌────────────────┐   ┌────────────────┐         │
+│  │ @main:         │   │ @heal:         │         │
+│  │   $hp = 50     │──▶│   if $hp < 30  │ ✅ OK   │
+│  │   run_flow()   │   │     ...        │         │
+│  └────────────────┘   └────────────────┘         │
+│                                                  │
+└──────────────────────────────────────────────────┘
+<code></code>`
+<b>Kết luận:</b>
+- Biến <code>$hp</code> khai báo ở <code>@main</code> <b>có thể đọc/ghi</b> từ <code>@heal</code>.
+- <b>Không có Local Scope riêng biệt</b> cho mỗi Flow.
+- <b>Gotcha:</b> Tên biến dễ bị ghi đè nếu trùng. Hãy đặt tên rõ ràng (<code>$main_hp</code> thay vì <code>$hp</code>).
+
+<h3>2. Call Stack & Đệ Quy</h3>
+
+Khi gọi <code>run_flow("A")</code>, hệ thống <b>push</b> một Frame vào Stack:
+
+<code></code>`
+Stack: [Main] -> [A] -> [B] -> [C] ...
+<code></code>`
+<b>Giới hạn:</b> Stack tối đa <b>100 levels</b> (Configurable).
+<b>Gotcha:</b> Nếu Flow A gọi lại chính nó (đệ quy vô hạn), sẽ gặp <code>RecursionError</code>.
+
+<h3>3. Hiệu Năng Vision (Performance)</h3>
+
+| Tác vụ | Thời gian ước tính | Ghi chú |
+|--------|-------------------:|---------|
+| <code>if_image</code> (Full Screen 1080p) | 50-150 ms | Chậm, tránh dùng trong vòng lặp nhanh. |
+| <code>if_image</code> (ROI 100x100 px) | 2-10 ms | <b>Nhanh gấp 10x.</b> |
+| <code>wait_pixel</code> | < 1 ms | Cực nhanh, chỉ kiểm tra 1 điểm. |
+| OCR <code>read_text</code> | 100-500 ms | Nặng, dùng tiết kiệm. |
+
+<b>Best Practice:</b> Luôn dùng <code>region=[x, y, w, h]</code> để giới hạn vùng tìm kiếm.
+</section>
+
+</body>
+</html>
