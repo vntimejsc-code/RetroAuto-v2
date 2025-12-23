@@ -593,6 +593,117 @@ class ImageMatcher:
         }
         return methods.get(self.method, cv2.TM_CCOEFF_NORMED)
 
+    # ═══════════════════════════════════════════════════════════════
+    # Phase 3: Multi-threaded Matching
+    # ═══════════════════════════════════════════════════════════════
+
+    def find_any(
+        self,
+        templates: list[str | Path],
+        roi: ROI | tuple[int, int, int, int] | None = None,
+        confidence: float | None = None,
+        max_workers: int = 4,
+    ) -> tuple[MatchResult, str | None]:
+        """Find any of multiple templates in parallel.
+
+        Returns as soon as first match is found.
+        Uses ThreadPoolExecutor for parallel execution.
+
+        Args:
+            templates: List of template paths to search
+            roi: Region of interest
+            confidence: Minimum confidence
+            max_workers: Maximum parallel threads
+
+        Returns:
+            Tuple of (MatchResult, matched_template_name) or (NotFound, None)
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        def search_template(template: str | Path) -> tuple[MatchResult, str]:
+            result = self.find(template, roi=roi, confidence=confidence)
+            return result, str(template)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {pool.submit(search_template, t): t for t in templates}
+
+            for future in as_completed(futures):
+                try:
+                    result, template_name = future.result()
+                    if result.found:
+                        # Cancel remaining futures
+                        for f in futures:
+                            f.cancel()
+                        return result, template_name
+                except Exception:
+                    pass
+
+        return MatchResult.not_found(), None
+
+    def find_first(
+        self,
+        templates: list[str | Path],
+        roi: ROI | tuple[int, int, int, int] | None = None,
+        confidence: float | None = None,
+    ) -> tuple[MatchResult, str | None]:
+        """Find first matching template (sequential, priority order).
+
+        Searches templates in order and returns on first match.
+        Use when template priority matters.
+
+        Args:
+            templates: List of template paths in priority order
+            roi: Region of interest
+            confidence: Minimum confidence
+
+        Returns:
+            Tuple of (MatchResult, matched_template_name) or (NotFound, None)
+        """
+        for template in templates:
+            result = self.find(template, roi=roi, confidence=confidence)
+            if result.found:
+                return result, str(template)
+        return MatchResult.not_found(), None
+
+    def find_all_templates(
+        self,
+        templates: list[str | Path],
+        roi: ROI | tuple[int, int, int, int] | None = None,
+        confidence: float | None = None,
+        max_workers: int = 4,
+    ) -> dict[str, MatchResult]:
+        """Find all templates in parallel.
+
+        Searches all templates and returns results for each.
+
+        Args:
+            templates: List of template paths
+            roi: Region of interest
+            confidence: Minimum confidence
+            max_workers: Maximum parallel threads
+
+        Returns:
+            Dict mapping template name to MatchResult
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        results: dict[str, MatchResult] = {}
+
+        def search_template(template: str | Path) -> tuple[str, MatchResult]:
+            result = self.find(template, roi=roi, confidence=confidence)
+            return str(template), result
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = [pool.submit(search_template, t) for t in templates]
+            for future in as_completed(futures):
+                try:
+                    template_name, result = future.result()
+                    results[template_name] = result
+                except Exception as e:
+                    pass
+
+        return results
+
     def _stub_find(self, template: str) -> MatchResult:
         """Stub find for when OpenCV is not available."""
         print(f"[STUB] find({template})")
