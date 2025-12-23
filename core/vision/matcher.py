@@ -144,18 +144,56 @@ class ROI:
 
 
 class ImageCache:
-    """LRU cache for loaded images."""
+    """LRU cache for loaded images with TTL expiry for 24/7 operation."""
 
-    def __init__(self, max_size: int = 100) -> None:
-        self._cache: dict[str, tuple[Any, float]] = {}  # path -> (image, mtime)
+    def __init__(self, max_size: int = 50, ttl_seconds: int = 300) -> None:
+        # path -> (image, mtime, last_access_time)
+        self._cache: dict[str, tuple[Any, float, float]] = {}
         self._max_size = max_size
+        self._ttl = ttl_seconds  # Expire entries not accessed for this long
+
+        # Start background cleanup thread
+        self._cleanup_started = False
+
+    def _start_cleanup_thread(self) -> None:
+        """Start background cleanup thread (lazy init)."""
+        if self._cleanup_started:
+            return
+        self._cleanup_started = True
+
+        import threading
+        def cleanup_loop():
+            import time
+            while True:
+                time.sleep(60)  # Cleanup every 60s
+                self._cleanup_expired()
+
+        thread = threading.Thread(target=cleanup_loop, daemon=True)
+        thread.start()
+
+    def _cleanup_expired(self) -> None:
+        """Remove entries that haven't been accessed recently."""
+        import time
+        now = time.time()
+        expired_keys = [
+            path for path, (_, _, last_access) in self._cache.items()
+            if now - last_access > self._ttl
+        ]
+        for key in expired_keys:
+            del self._cache[key]
+
+        if expired_keys:
+            from infra import get_logger
+            get_logger("ImageCache").debug(
+                "Cleaned up %d expired cache entries", len(expired_keys)
+            )
 
     def get(self, path: str) -> Any | None:
         """Get image from cache if still valid."""
         if path not in self._cache:
             return None
 
-        image, cached_mtime = self._cache[path]
+        image, cached_mtime, _ = self._cache[path]
 
         # Check if file was modified
         try:
@@ -167,13 +205,20 @@ class ImageCache:
         except OSError:
             return None
 
+        # Update last access time
+        import time
+        self._cache[path] = (image, cached_mtime, time.time())
+
         return image
 
     def put(self, path: str, image: Any) -> None:
         """Add image to cache."""
+        # Start cleanup thread on first put
+        self._start_cleanup_thread()
+
         if len(self._cache) >= self._max_size:
-            # Remove oldest entry
-            oldest = next(iter(self._cache))
+            # Remove least recently accessed
+            oldest = min(self._cache.keys(), key=lambda k: self._cache[k][2])
             del self._cache[oldest]
 
         try:
@@ -181,7 +226,8 @@ class ImageCache:
         except OSError:
             mtime = 0.0
 
-        self._cache[path] = (image, mtime)
+        import time
+        self._cache[path] = (image, mtime, time.time())
 
     def clear(self) -> None:
         """Clear the cache."""

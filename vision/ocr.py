@@ -25,13 +25,19 @@ logger = logging.getLogger(__name__)
 
 class TextReader:
     """
-    OCR Reader using Tesseract.
+    OCR Reader using Tesseract with result caching for performance.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, cache_ttl: float = 2.0) -> None:
         self.available = HAS_TESSERACT
         if not self.available:
             logger.warning("pytesseract not installed. OCR features will be disabled.")
+
+        # Performance: Cache OCR results to avoid redundant calls
+        # Key: hash of image bytes, Value: (result_text, timestamp)
+        self._ocr_cache: dict[int, tuple[str, float]] = {}
+        self._cache_ttl = cache_ttl  # Cache time-to-live in seconds
+        self._cache_max_size = 50  # Max cached results
 
     def is_available(self) -> bool:
         """
@@ -155,6 +161,7 @@ class TextReader:
     ) -> str:
         """
         Read text from a PIL Image object with options.
+        Uses caching to avoid redundant OCR calls.
         """
         if not self.available:
             return ""
@@ -169,6 +176,18 @@ class TextReader:
             # Preprocessing
             img = self.preprocess_image(img, scale, invert, binarize)
 
+            # Performance: Check cache first
+            import time
+            cache_key = self._compute_image_hash(img, allowlist)
+            if cache_key in self._ocr_cache:
+                cached_text, cached_time = self._ocr_cache[cache_key]
+                if time.time() - cached_time < self._cache_ttl:
+                    logger.debug("OCR cache hit (key=%d)", cache_key)
+                    return cached_text
+                else:
+                    # Expired - remove
+                    del self._ocr_cache[cache_key]
+
             # Build config
             # --psm 7 is "Treat the image as a single text line" - good for game stats
             config_opts = ["--psm 7"]
@@ -179,7 +198,12 @@ class TextReader:
             config_str = " ".join(config_opts)
 
             text = pytesseract.image_to_string(img, config=config_str)
-            return text.strip()
+            result = text.strip()
+
+            # Store in cache
+            self._cache_result(cache_key, result)
+
+            return result
 
         except Exception as e:
             logger.error(f"OCR Execution Error: {e}")
@@ -187,5 +211,31 @@ class TextReader:
             if "tesseract is not installed" in str(e).lower() or "not found" in str(e).lower():
                 self.available = False
                 logger.critical("Tesseract binary not found! Please install Tesseract-OCR.")
-                self.available = False
             return ""
+
+    def _compute_image_hash(self, img: Image.Image, allowlist: str) -> int:
+        """Compute hash of image for caching."""
+        try:
+            # Fast hash using image bytes + config
+            img_bytes = img.tobytes()[:4096]  # First 4KB for speed
+            return hash((img_bytes, img.size, allowlist))
+        except Exception:
+            return 0
+
+    def _cache_result(self, key: int, text: str) -> None:
+        """Store OCR result in cache with LRU eviction."""
+        import time
+
+        # Evict if over size limit
+        if len(self._ocr_cache) >= self._cache_max_size:
+            # Remove oldest entry
+            oldest_key = min(self._ocr_cache, key=lambda k: self._ocr_cache[k][1])
+            del self._ocr_cache[oldest_key]
+
+        self._ocr_cache[key] = (text, time.time())
+
+    def clear_cache(self) -> None:
+        """Clear the OCR result cache."""
+        self._ocr_cache.clear()
+        logger.debug("OCR cache cleared")
+

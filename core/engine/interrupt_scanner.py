@@ -104,6 +104,12 @@ class InterruptScanner:
         self._hotkey_listener = get_hotkey_listener()
         self._cooldown_duration = 2.0  # seconds
 
+        # Adaptive scan intervals (performance optimization)
+        self._interval_idle = 0.5  # 500ms when no script running
+        self._interval_active = scan_interval_ms / 1000.0  # User-specified
+        self._interval_fast = 0.1  # 100ms for time-critical scenarios
+        self._last_scan_had_activity = False
+
     @property
     def state(self) -> InterruptState:
         """Get current scanner state."""
@@ -205,13 +211,33 @@ class InterruptScanner:
                 match = self._check_interrupts()
                 if match is not None:
                     self._handle_interrupt(match)
+                    self._last_scan_had_activity = True
+                else:
+                    self._last_scan_had_activity = False
             except Exception as e:
                 logger.error("Error in interrupt scan: %s", e)
 
-            # Wait before next scan
-            time.sleep(self._scan_interval)
+            # Adaptive interval: slower when idle, faster when active
+            interval = self._get_adaptive_interval()
+            time.sleep(interval)
 
         self._state = InterruptState.STOPPED
+
+    def _get_adaptive_interval(self) -> float:
+        """Calculate adaptive scan interval based on engine state."""
+        # If engine is not running (idle), use slow interval to save CPU
+        engine_state = self._ctx.state
+        from core.engine.context import EngineState
+
+        if engine_state == EngineState.IDLE:
+            return self._interval_idle
+        elif engine_state == EngineState.RUNNING:
+            # If last scan had activity, use fast interval
+            if self._last_scan_had_activity:
+                return self._interval_fast
+            return self._interval_active
+        else:
+            return self._interval_active
 
     def _check_interrupts(self) -> InterruptMatch | None:
         """
