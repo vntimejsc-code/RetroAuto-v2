@@ -1,0 +1,40 @@
+# 🎮 RetroScript Interactive Sandbox
+# > Chào mừng! Đây là file script tương tác để bạn học RetroScript.
+# > Cách dùng: Ấn nút 'Run' (F5) để chạy thử.
+# > Mẹo: Bạn có thể sửa các con số bên dưới để thấy điều gì xảy ra!
+
+@main:
+    # ─── 1. Hello World (Làm quen) ─────────────────────────────
+    # RetroAuto sẽ gõ dòng chữ này. Hãy mở Notepad để test nhé!
+    # type_text("Hello from RetroAuto!", enter=true)
+    
+    # notify("Bài học 1: Hello World đã chạy xong!", method=popup)
+
+
+    # ─── 2. Mouse Movement (Di chuyển chuột) ───────────────────
+    # Thử di chuyển chuột theo hình vuông.
+    # Hãy bỏ dấu '#' ở các dòng dưới để kích hoạt bài học này.
+    
+    # drag(100, 100, 300, 100, duration=500ms)  # Sang phải
+    # drag(300, 100, 300, 300, duration=500ms)  # Xuống dưới
+    # drag(300, 300, 100, 300, duration=500ms)  # Sang trái
+    # drag(100, 300, 100, 100, duration=500ms)  # Lên trên
+
+
+    # ─── 3. Logic & Variables (Tư duy) ─────────────────────────
+    # Giả lập biến máu (HP) và kiểm tra
+    
+    # loop 3:
+    #    notify("Đang kiểm tra máu...", method=popup)
+    #    sleep(1s)
+         
+    # goto #end_tutorial
+
+
+    # ─── 4. Mời bạn tự viết ────────────────────────────────────
+    # Thử viết lệnh click vào tọa độ (500, 500) bên dưới:
+    
+    
+    
+#label end_tutorial
+    # notify("Chúc mừng! Bạn đã hoàn thành bài học Sandbox.", method=popup)
