@@ -24,7 +24,9 @@ from PySide6.QtGui import (
     QTextCursor,
     QTextFormat,
 )
-from PySide6.QtWidgets import QPlainTextEdit, QTextEdit, QToolTip, QWidget
+from PySide6.QtWidgets import QCompleter, QPlainTextEdit, QToolTip, QWidget
+
+from app.ui.minimap import Minimap
 
 from app.ui.syntax_highlighter import DSLHighlighter
 from app.ui.win95_style import COLORS
@@ -118,9 +120,12 @@ class DSLCodeEditor(QPlainTextEdit):
         self._init_highlighter()
         self._connect_signals()
 
-        # Asset Peek
         self.setMouseTracking(True)
         self._asset_provider = None  # Callable[[str], Path | None]
+
+        # Minimap (Overlay)
+        self.minimap = Minimap(self)
+        self.minimap.show()
 
     def set_asset_provider(self, provider) -> None:
         """Set callback to lookup asset path from ID."""
@@ -327,6 +332,22 @@ class DSLCodeEditor(QPlainTextEdit):
     # Key Events (Auto-indent, Tab handling)
     # ─────────────────────────────────────────────────────────────
 
+        # Minimap (Overlay)
+        self.minimap = Minimap(self)
+        self.minimap.show()
+
+    def resizeEvent(self, event) -> None:
+        """Handle resize to update minimap position."""
+        super().resizeEvent(event)
+        if hasattr(self, "minimap"):
+            cr = self.contentsRect()
+            w = self.minimap.WIDTH
+            self.minimap.setGeometry(
+                QRect(cr.right() - w, cr.top(), w, cr.height())
+            )
+            # Adjust viewport margins so text doesn't go under minimap
+            self.setViewportMargins(0, 0, w, 0)
+    
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle key events for editor behavior."""
         # Tab -> spaces

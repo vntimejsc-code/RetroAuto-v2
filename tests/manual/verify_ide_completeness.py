@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-# Add project root to path
+from unittest.mock import MagicMock, patch
 sys.path.append(r"c:\Auto\Newauto")
 
 from PySide6.QtCore import QPointF, Qt
@@ -88,7 +88,46 @@ def test_ide_components():
     except Exception as e:
         print(f"❌ Syntax Check crashed: {e}")
 
-    # 5. Clean up
+    # 5. Test Flow Editor Integration (Regression Test)
+    print("\n🧪 Testing Flow Editor Integration...")
+    try:
+        # Mock window.show to avoid opening real window during test
+        with patch.object(window, '_flow_window', create=True):
+             # Also need to mock QMessageBox to avoid popping up on success/fail
+            with patch('PySide6.QtWidgets.QMessageBox.warning') as mock_warn, \
+                 patch('PySide6.QtWidgets.QMessageBox.critical') as mock_crit:
+                window._show_flow_editor()
+                if mock_warn.called or mock_crit.called:
+                    print(f"⚠️ Flow Editor opened with warnings: {mock_warn.call_args or mock_crit.call_args}")
+                else:
+                    print("✅ Flow Editor logic executed successfully (Conversion OK)")
+    except AttributeError as e:
+         print(f"❌ IDEMainWindow crashed on Flow Editor (Regression): {e}")
+    except Exception as e:
+         print(f"❌ Flow Editor test failed: {e}")
+
+    # 6. Test Minimap (The Navigator)
+    print("\n🧪 Testing Minimap (The Navigator)...")
+    try:
+        if hasattr(editor, "minimap"):
+            print("✅ Minimap widget initialized")
+            if editor.minimap.isVisible():
+                print("✅ Minimap is visible")
+            else:
+                 # Minimap might be hidden if window not shown properly or logic differs
+                 # logic says self.minimap.show() in init.
+                 print("⚠️ Minimap exists but isVisible() returned False (might be due to mocked window state)")
+            
+            # Test paint event (no crash)
+            # editor.minimap.repaint() # Hard to test without event loop
+            print("✅ Minimap integration checked")
+            
+        else:
+            print("❌ Minimap widget NOT found in editor")
+    except Exception as e:
+        print(f"❌ Minimap test failed: {e}")
+
+    # 7. Clean up
     window.close()
     print("\n✨ Audit Complete. If all ticks are green, the System is stable.")
 

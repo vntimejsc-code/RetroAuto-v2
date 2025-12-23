@@ -644,16 +644,47 @@ class IDEMainWindow(QMainWindow):
     def _show_flow_editor(self) -> None:
         """Show the visual flow editor in a new window."""
         from PySide6.QtWidgets import QMainWindow
-
         from app.ui.flow_editor import FlowEditorWidget
+        from core.dsl.document import ScriptDocument
+        from core.dsl.ir import ir_to_actions
+
+        # Parse current code to IR
+        code = self.editor.get_code()
+        doc = ScriptDocument()
+        doc.update_from_code(code)
+
+        if not doc.ir.is_valid:
+            QMessageBox.warning(
+                self,
+                "Parse Error",
+                "Cannot open Flow Editor because the code contains syntax errors.\nPlease fix the errors and try again.",
+            )
+            return
+
+        # Convert IR to Actions
+        try:
+            # Flatten all flows into a single list for now (or handle multiple flows)
+            # FlowEditor usually expects a list of actions for a single flow.
+            # Let's use the 'main' flow or the first flow.
+            target_flow = doc.ir.get_flow("main") or (doc.ir.flows[0] if doc.ir.flows else None)
+            
+            if not target_flow:
+                current_actions = []
+            else:
+                # We need a converter from IR to Actions (GUI objects)
+                # core.dsl.adapter.ir_to_action ? No, adapter is for single action
+                # Let's grab the adapter
+                from core.dsl.adapter import ir_to_action
+                current_actions = [ir_to_action(a) for a in target_flow.actions]
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Conversion Error", f"Failed to convert code to actions: {e}")
+            return
 
         # Create flow editor window
         self._flow_window = QMainWindow(self)
         self._flow_window.setWindowTitle("🎨 Visual Flow Editor - RetroAuto")
         self._flow_window.setMinimumSize(800, 600)
-
-        # Get current actions
-        current_actions = self.actions_panel.get_actions()
 
         flow_widget = FlowEditorWidget(actions=current_actions)
         flow_widget.actions_exported.connect(self._on_flow_actions_exported)
@@ -665,9 +696,52 @@ class IDEMainWindow(QMainWindow):
 
     def _on_flow_actions_exported(self, actions: list) -> None:
         """Handle actions exported from flow editor."""
-        self.actions_panel.load_actions(actions)
-        self.output.log_info(f"Updated Actions Panel with {len(actions)} actions from Flow Editor")
-        self.status_bar.showMessage("Synced actions from Flow Editor")
+        from core.dsl.adapter import action_to_ir
+        from core.dsl.document import ScriptDocument
+        from core.dsl.ir import FlowIR, ScriptIR, ir_to_code
+
+        try:
+            # Convert UI Actions back to IR
+            action_irs = []
+            for action in actions:
+                ir = action_to_ir(action)
+                if ir:
+                    action_irs.append(ir)
+            
+            # Reconstruct Code
+            # We preserve existing IR structure (assets, config)
+            # regenerate with new main flow
+            
+            current_code = self.editor.get_code()
+            doc = ScriptDocument()
+            doc.update_from_code(current_code)
+            
+            # Find main flow to replace
+            # If doc was invalid, maybe we overwrite? But safer to rely on valid doc.
+            if not doc.ir.is_valid:
+                # If code was invalid, we might lose data. 
+                # But we checked validity on open.
+                pass
+                
+            main_flow = doc.ir.get_flow("main")
+            if not main_flow:
+                main_flow = FlowIR(name="main")
+                doc.ir.flows.append(main_flow)
+                
+            main_flow.actions = action_irs
+            
+            # Generate new code
+            new_code = ir_to_code(doc.ir)
+            
+            # Update Editor
+            self.editor.set_code(new_code)
+            
+            self.output.log_success(f"Synced {len(actions)} actions from Flow Editor")
+            self.status_bar.showMessage("Synced actions from Flow Editor")
+            
+        except Exception as e:
+            self.output.log_error(f"Failed to sync actions: {e}")
+            QMessageBox.critical(self, "Sync Error", f"Failed to sync actions: {e}")
 
     # ─────────────────────────────────────────────────────────────
     # UI Updates
