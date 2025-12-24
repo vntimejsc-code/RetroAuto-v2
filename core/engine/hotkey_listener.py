@@ -7,12 +7,13 @@ Uses pynput for cross-process key detection.
 
 from __future__ import annotations
 
-import logging
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 
-logger = logging.getLogger(__name__)
+from infra import get_logger
+
+logger = get_logger("HotkeyListener")
 
 # Try to import pynput
 try:
