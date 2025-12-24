@@ -236,7 +236,8 @@ class KeyboardController:
             win32clipboard.OpenClipboard()
             try:
                 old_data = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
-            except Exception:
+            except (TypeError, OSError):
+                # Clipboard empty or wrong format
                 old_data = None
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, text)
@@ -259,8 +260,9 @@ class KeyboardController:
             if old_data:
                 win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, old_data)
             win32clipboard.CloseClipboard()
-        except Exception:
-            pass
+        except (OSError, TypeError) as e:
+            # Clipboard restore failed - non-critical, log and continue
+            logger.debug("Clipboard restore failed: %s", e)
 
     def _type_direct(self, text: str) -> None:
         """Type directly using SendInput (for ASCII only)."""

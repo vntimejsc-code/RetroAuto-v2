@@ -123,7 +123,8 @@ class MemoryManager:
             import sys
 
             return sum(sys.getsizeof(obj) for obj in gc.get_objects()[:1000])
-        except Exception:
+        except (OSError, PermissionError) as e:
+            logger.debug("Failed to get memory usage: %s", e)
             return 0
 
     def _force_cleanup(self) -> None:

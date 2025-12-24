@@ -55,7 +55,11 @@ class TextReader:
 
             version = pytesseract.get_tesseract_version()
             return version is not None
-        except Exception:
+        except (OSError, FileNotFoundError) as e:
+            logger.debug("Tesseract not found: %s", e)
+            return False
+        except ImportError:
+            logger.debug("pytesseract module not available")
             return False
 
         # Check for Tesseract binary in common Windows paths if not in PATH

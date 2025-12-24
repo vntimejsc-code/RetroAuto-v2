@@ -117,8 +117,8 @@ class AutosaveManager:
             try:
                 oldest.unlink()
                 logger.debug("Removed old backup: %s", oldest.name)
-            except Exception:
-                pass
+            except (OSError, PermissionError) as e:
+                logger.warning("Failed to remove old backup %s: %s", oldest.name, e)
 
         # Create new backup name
         timestamp = time.strftime("%Y%m%d_%H%M%S")

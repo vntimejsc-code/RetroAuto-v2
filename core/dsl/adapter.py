@@ -586,8 +586,10 @@ def ir_to_action(ir: ActionIR) -> Action | None:
         if action_type in ("end_while", "endwhile"):
             return EndWhile()
 
-    except Exception:
-        pass
+    except KeyError as e:
+        logger.warning("Missing required parameter for action '%s': %s", action_type, e)
+    except (ValueError, TypeError) as e:
+        logger.warning("Invalid parameter value for action '%s': %s", action_type, e)
 
     return None
 
