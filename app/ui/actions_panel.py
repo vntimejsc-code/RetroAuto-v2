@@ -332,6 +332,28 @@ class ActionListWidget(QListWidget):
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.viewport().setAcceptDrops(True)
 
+    def keyPressEvent(self, event) -> None:  # type: ignore
+        """Handle keyboard shortcuts directly when list has focus."""
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QKeySequence
+
+        # Del key - emit signal to parent to delete
+        if event.key() == Qt.Key.Key_Delete:
+            parent = self.parent()
+            while parent:
+                if hasattr(parent, "_on_delete"):
+                    parent._on_delete()
+                    return
+                parent = parent.parent()
+
+        # Ctrl+A - select all
+        if event.key() == Qt.Key.Key_A and event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            self.selectAll()
+            return
+
+        # Pass to base class for default handling
+        super().keyPressEvent(event)
+
     def dragEnterEvent(self, event) -> None:  # type: ignore
         """Accept drag from Assets panel or internal move."""
         mime = event.mimeData()
