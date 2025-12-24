@@ -624,54 +624,56 @@ class ActionsPanel(QWidget):
 
     def _setup_shortcuts(self) -> None:
         """Setup keyboard shortcuts for gamer-friendly workflow."""
+        # Use WidgetWithChildrenShortcut so shortcuts work when panel or any child has focus
+
         # Delete key
-        self.del_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self.action_list)
-        self.del_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.del_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self)
+        self.del_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.del_shortcut.activated.connect(self._on_delete)
 
         # Ctrl+A to select all
-        self.select_all_shortcut = QShortcut(QKeySequence.StandardKey.SelectAll, self.action_list)
+        self.select_all_shortcut = QShortcut(QKeySequence.StandardKey.SelectAll, self)
         self.select_all_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.select_all_shortcut.activated.connect(self.action_list.selectAll)
 
         # Ctrl+D to duplicate
-        self.dup_shortcut = QShortcut(QKeySequence("Ctrl+D"), self.action_list)
-        self.dup_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.dup_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
+        self.dup_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.dup_shortcut.activated.connect(self._on_duplicate)
 
         # Ctrl+C to copy
-        self.copy_shortcut = QShortcut(QKeySequence.StandardKey.Copy, self.action_list)
-        self.copy_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.copy_shortcut = QShortcut(QKeySequence.StandardKey.Copy, self)
+        self.copy_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.copy_shortcut.activated.connect(self._on_copy)
 
         # Ctrl+V to paste
-        self.paste_shortcut = QShortcut(QKeySequence.StandardKey.Paste, self.action_list)
-        self.paste_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.paste_shortcut = QShortcut(QKeySequence.StandardKey.Paste, self)
+        self.paste_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.paste_shortcut.activated.connect(self._on_paste)
 
         # Ctrl+Shift+Up to move up
-        self.move_up_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Up"), self.action_list)
-        self.move_up_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.move_up_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Up"), self)
+        self.move_up_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.move_up_shortcut.activated.connect(self._on_move_up)
 
         # Ctrl+Shift+Down to move down
-        self.move_down_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Down"), self.action_list)
-        self.move_down_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.move_down_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Down"), self)
+        self.move_down_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.move_down_shortcut.activated.connect(self._on_move_down)
 
         # Ctrl+Z to undo
-        self.undo_shortcut = QShortcut(QKeySequence.StandardKey.Undo, self.action_list)
-        self.undo_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.undo_shortcut = QShortcut(QKeySequence.StandardKey.Undo, self)
+        self.undo_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.undo_shortcut.activated.connect(self._on_undo)
 
         # Ctrl+Y to redo
-        self.redo_shortcut = QShortcut(QKeySequence.StandardKey.Redo, self.action_list)
-        self.redo_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.redo_shortcut = QShortcut(QKeySequence.StandardKey.Redo, self)
+        self.redo_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.redo_shortcut.activated.connect(self._on_redo)
 
         # Space to test current step
-        self.test_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Space), self.action_list)
-        self.test_shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
+        self.test_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Space), self)
+        self.test_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.test_shortcut.activated.connect(self._on_test_step)
 
     def load_actions(self, actions: list[Action]) -> None:
