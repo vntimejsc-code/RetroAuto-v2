@@ -4,6 +4,8 @@ RetroAuto v2 - Template Matcher
 OpenCV template matching with ROI optimization.
 """
 
+import time
+
 import cv2
 import numpy as np
 
@@ -40,6 +42,44 @@ class Matcher:
     ) -> None:
         self._templates = templates
         self._capture = capture or get_capture()
+        # O1: Screen cache for rapid multi-asset matching (50ms TTL)
+        self._screen_cache: dict[str, tuple[float, np.ndarray]] = {}
+        self._cache_ttl_ms = 50  # Cache valid for 50ms
+
+    def _get_cached_screen(
+        self, roi: ROI | None, grayscale: bool
+    ) -> np.ndarray:
+        """Get screen with caching (50ms TTL) for rapid multi-asset checks."""
+        # Create cache key based on ROI and grayscale
+        if roi:
+            cache_key = f"{roi.x},{roi.y},{roi.w},{roi.h},{grayscale}"
+        else:
+            cache_key = f"full,{grayscale}"
+
+        now = time.time() * 1000  # Current time in ms
+
+        # Check if cached version is still valid
+        if cache_key in self._screen_cache:
+            cached_time, cached_screen = self._screen_cache[cache_key]
+            if (now - cached_time) < self._cache_ttl_ms:
+                return cached_screen
+
+        # Capture new screen
+        if roi:
+            screen = self._capture.capture_roi(roi, grayscale=grayscale)
+        else:
+            screen = self._capture.capture_full(grayscale=grayscale)
+
+        # Cache it (limit cache size to prevent memory leak)
+        if len(self._screen_cache) > 10:
+            self._screen_cache.clear()
+        self._screen_cache[cache_key] = (now, screen)
+
+        return screen
+
+    def clear_cache(self) -> None:
+        """Clear screen cache (call after each action for fresh captures)."""
+        self._screen_cache.clear()
 
     def find(
         self,
@@ -71,12 +111,11 @@ class Matcher:
         # Determine ROI
         roi = roi_override or asset.roi
 
-        # Capture screen
+        # O1: Use cached screen capture if available and fresh (50ms TTL)
+        screen = self._get_cached_screen(roi, asset.grayscale)
         if roi:
-            screen = self._capture.capture_roi(roi, grayscale=asset.grayscale)
             offset_x, offset_y = roi.x, roi.y
         else:
-            screen = self._capture.capture_full(grayscale=asset.grayscale)
             offset_x, offset_y = 0, 0
 
         # Match
