@@ -796,10 +796,17 @@ class IDEMainWindow(QMainWindow):
         self.cursor_label.setText(f"Ln {line}, Col {col}")
 
     def _update_title(self) -> None:
-        """Update window title."""
-        name = str(self._current_file) if self._current_file else "Untitled"
+        """Update window title with full script path."""
+        if self._current_file:
+            file_path = Path(self._current_file)
+            file_name = file_path.name
+            parent_dir = file_path.parent
+            display = f"{file_name} - {parent_dir}"
+        else:
+            display = "Untitled"
+
         modified = " *" if self._is_modified else ""
-        self.setWindowTitle(f"MacroIDE 95 - {name}{modified}")
+        self.setWindowTitle(f"RetroAuto v2 - {display}{modified}")
 
     def _show_about(self) -> None:
         """Show about dialog."""

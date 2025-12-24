@@ -208,12 +208,18 @@ class CaptureTool:
 
     def _on_region_selected(self, rect: QRect, pixmap: QPixmap) -> None:
         """Handle successful region selection."""
-        # Generate unique filename
+        # Get existing asset names to avoid duplicates
+        existing_names = self._get_existing_asset_names()
+
+        # Generate unique filename that doesn't conflict with existing assets
         counter = 1
         while True:
             filename = f"capture_{counter}.png"
+            asset_id = f"capture_{counter}"  # ID without extension
             path = self._assets_dir / filename
-            if not path.exists():
+
+            # Check both: file doesn't exist AND name not in existing assets
+            if not path.exists() and asset_id not in existing_names:
                 break
             counter += 1
 
@@ -223,7 +229,6 @@ class CaptureTool:
         logger.info("Saved capture: %s", path)
 
         # Create asset
-        asset_id = path.stem
         asset = AssetImage(
             id=asset_id,
             path=filename,
@@ -245,3 +250,21 @@ class CaptureTool:
     def _on_cancelled(self) -> None:
         """Handle cancellation."""
         logger.info("Capture cancelled by user")
+
+    def _get_existing_asset_names(self) -> set[str]:
+        """Get set of existing asset IDs/names in assets directory.
+
+        Returns:
+            Set of asset names (without extension) to avoid duplicates.
+        """
+        existing = set()
+        try:
+            if self._assets_dir.exists():
+                # Get all image files and extract their names
+                for ext in ["*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"]:
+                    for path in self._assets_dir.glob(ext):
+                        existing.add(path.stem)  # Name without extension
+        except Exception as e:
+            logger.warning("Error scanning assets: %s", e)
+        return existing
+
