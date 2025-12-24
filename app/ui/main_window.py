@@ -784,6 +784,11 @@ class MainWindow(QMainWindow):
         # Save draft before closing
         self._save_draft()
 
+        # Stop global hotkey listener
+        if hasattr(self, "_hotkey_listener") and self._hotkey_listener:
+            self._hotkey_listener.stop()
+            logger.info("Hotkey listener stopped")
+
         if self.engine.isRunning():
             self.engine.stop()
             if not self.engine.wait(2000):
