@@ -6,41 +6,127 @@ hotkeys:
   start: F5
   stop: F6
   pause: F7
-assets: []
+assets:
+- id: capture_7
+  path: capture_7.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 1081
+    y: 15
+    w: 46
+    h: 59
+- id: capture_8
+  path: capture_8.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 1074
+    y: 10
+    w: 58
+    h: 64
+- id: capture_9
+  path: capture_9.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 698
+    y: 3
+    w: 1056
+    h: 494
+- id: capture_1
+  path: capture_1.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+- id: capture_2
+  path: capture_2.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+- id: capture_11
+  path: capture_11.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 1373
+    y: 9
+    w: 256
+    h: 293
+- id: capture_12
+  path: capture_12.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 985
+    y: 11
+    w: 169
+    h: 193
+- id: capture_13
+  path: capture_13.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 913
+    y: 0
+    w: 859
+    h: 179
+- id: capture_14
+  path: capture_14.png
+  threshold: 0.8
+  method: TM_CCOEFF_NORMED
+  grayscale: true
+  roi:
+    x: 772
+    y: 408
+    w: 377
+    h: 226
 flows:
 - name: main
   actions:
   - comment: ''
-    action: Click
-    x: 1261
-    y: 514
-    button: left
-    clicks: 1
-    interval_ms: 80
-    use_match: false
+    action: Loop
+    count: 3
+    actions: []
+  - comment: ''
+    action: WaitImage
+    asset_id: capture_7
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
   - comment: ''
     action: Click
-    x: 1286
-    y: 494
+    x: 1098
+    y: 48
     button: left
-    clicks: 1
-    interval_ms: 80
+    clicks: 2
+    interval_ms: 100
     use_match: false
   - comment: ''
-    action: Click
-    x: 1288
-    y: 371
-    button: left
-    clicks: 1
-    interval_ms: 80
-    use_match: false
+    action: WaitImage
+    asset_id: capture_14
+    appear: true
+    timeout_ms: 10000
+    poll_ms: 100
+    smart_wait: true
+    roi_override:
   - comment: ''
-    action: Click
-    x: 1243
-    y: 253
-    button: left
-    clicks: 1
-    interval_ms: 80
-    use_match: false
+    action: Hotkey
+    keys:
+    - ALT
+    - F4
+  - comment: ''
+    action: EndLoop
+  graph:
 interrupts: []
 main_flow: main

@@ -12,6 +12,8 @@ from core.engine import ExecutionContext, InterruptManager, Runner
 from core.models import Script
 from core.script.io import create_empty_script, load_script, save_script
 from core.templates import TemplateStore
+from vision.matcher import Matcher
+from vision.waiter import ImageWaiter
 from infra import get_logger
 
 logger = get_logger("EngineWorker")
@@ -154,13 +156,30 @@ class EngineWorker(QThread):
             return
 
         try:
+            # Debug: log what assets we have
+            logger.info("Script assets count: %d", len(self._script.assets) if self._script.assets else 0)
+            if self._script.assets:
+                asset_ids = [a.id for a in self._script.assets]
+                logger.info("Available asset IDs: %s", asset_ids)
+
+            # Ensure templates store exists
+            if self._templates is None:
+                logger.warning("TemplateStore was None, creating new one")
+                self._templates = TemplateStore(self._project_path or Path("."))
+                # Also need to update context's matcher
+                if self._ctx:
+                    self._ctx.templates = self._templates
+                    self._ctx.matcher = Matcher(self._templates, self._ctx.capture)
+                    self._ctx.waiter = ImageWaiter(self._ctx.matcher)
+
             # Refresh templates before run to pick up newly added assets
-            if self._templates and self._script.assets:
+            if self._script.assets:
+                logger.info("Calling preload with %d assets...", len(self._script.assets))
                 errors = self._templates.preload(self._script.assets)
                 if errors:
                     logger.warning("Template preload errors: %s", errors)
                 else:
-                    logger.info("Preloaded %d assets for script run", len(self._script.assets))
+                    logger.info("✅ Preloaded %d assets successfully", len(self._script.assets))
 
             # Start interrupt watching
             if self._interrupt_mgr:
