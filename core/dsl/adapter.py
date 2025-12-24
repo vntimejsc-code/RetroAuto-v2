@@ -15,6 +15,7 @@ from core.models import (
     Click,
     ClickImage,
     ClickRandom,
+    ClickUntil,
     Delay,
     DelayRandom,
     Drag,
@@ -26,6 +27,9 @@ from core.models import (
     Goto,
     Hotkey,
     IfImage,
+    IfNotImage,
+    IfAllImages,
+    IfAnyImage,
     IfPixel,
     IfText,
     InterruptRule,
@@ -220,7 +224,11 @@ def action_to_ir(action: Action) -> ActionIR:
         "Click": "click",
         "ClickImage": "click_image",
         "ClickRandom": "click_random",
+        "ClickUntil": "click_until",
         "IfImage": "if_image",
+        "IfNotImage": "if_not_image",
+        "IfAllImages": "if_all_images",
+        "IfAnyImage": "if_any_image",
         "IfPixel": "if_pixel",
         "IfText": "if_text",
         "Hotkey": "hotkey",
@@ -237,6 +245,8 @@ def action_to_ir(action: Action) -> ActionIR:
         "ReadText": "read_text",
         "Notify": "notify",
         "EndIf": "end_if",
+        "EndLoop": "end_loop",
+        "EndWhile": "end_while",
         "Else": "else",
     }
 
@@ -269,6 +279,21 @@ def action_to_ir(action: Action) -> ActionIR:
     elif isinstance(action, IfImage):
         params["arg0"] = action.asset_id
         # Nested actions would need recursive conversion
+
+    elif isinstance(action, IfNotImage):
+        params["arg0"] = action.asset_id
+
+    elif isinstance(action, IfAllImages):
+        params["asset_ids"] = action.asset_ids
+
+    elif isinstance(action, IfAnyImage):
+        params["asset_ids"] = action.asset_ids
+
+    elif isinstance(action, ClickUntil):
+        params["click_asset_id"] = action.click_asset_id
+        params["until_asset_id"] = action.until_asset_id
+        params["timeout_ms"] = action.timeout_ms
+        params["interval_ms"] = action.interval_ms
 
     elif isinstance(action, IfPixel):
         params["x"] = action.x
@@ -408,6 +433,29 @@ def ir_to_action(ir: ActionIR) -> Action | None:
         if action_type == "if_image":
             return IfImage(
                 asset_id=params.get("arg0", ""),
+            )
+
+        if action_type == "if_not_image":
+            return IfNotImage(
+                asset_id=params.get("arg0", ""),
+            )
+
+        if action_type == "if_all_images":
+            return IfAllImages(
+                asset_ids=params.get("asset_ids", []),
+            )
+
+        if action_type == "if_any_image":
+            return IfAnyImage(
+                asset_ids=params.get("asset_ids", []),
+            )
+
+        if action_type == "click_until":
+            return ClickUntil(
+                click_asset_id=params.get("click_asset_id", ""),
+                until_asset_id=params.get("until_asset_id", ""),
+                timeout_ms=params.get("timeout_ms", 10000),
+                interval_ms=params.get("interval_ms", 1000),
             )
 
         if action_type == "if_pixel":
