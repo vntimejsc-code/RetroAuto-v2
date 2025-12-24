@@ -125,6 +125,7 @@ class AssetsPanel(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._assets: list[AssetImage] = []
+        self._assets_dir: Path | None = None
         self._default_style = ""
         self._init_ui()
 
@@ -425,6 +426,16 @@ class AssetsPanel(QWidget):
         asset = next((a for a in self._assets if a.id == asset_id), None)
 
         if asset and asset.path:
+            # Construct full path
+            if self._assets_dir:
+                full_path = self._assets_dir / asset.path
+            else:
+                full_path = Path(asset.path)
+
+            if not full_path.exists():
+                logger.warning("Asset image not found: %s", full_path)
+                return
+
             # Show image preview in dialog
             from PySide6.QtWidgets import QDialog, QVBoxLayout
 
@@ -438,10 +449,14 @@ class AssetsPanel(QWidget):
             layout.setContentsMargins(0, 0, 0, 0)
 
             preview = ImagePreview()
-            preview.load_image(asset.path)
+            preview.load_image(full_path)
             layout.addWidget(preview)
 
             dialog.exec()
+
+    def set_assets_dir(self, path: Path) -> None:
+        """Set the assets directory for resolving relative paths."""
+        self._assets_dir = path
 
     def _rename_asset(self, old_id: str) -> None:
         """Rename an asset with improved dialog."""

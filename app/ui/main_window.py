@@ -87,6 +87,10 @@ class MainWindow(QMainWindow):
         # Load draft if exists
         self._load_draft()
 
+        # Set assets directory for preview functionality
+        if self._project_path:
+            self.assets_panel.set_assets_dir(self._project_path / "assets")
+
         # Auto-save timer (every 30 seconds)
         self._auto_save_timer = QTimer(self)
         self._auto_save_timer.timeout.connect(self._save_draft)
