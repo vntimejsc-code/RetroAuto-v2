@@ -494,6 +494,46 @@ class Parser:
         if self._check(TokenType.MATCH):
             return self._parse_match()
 
+        # ─────────────────────────────────────────────────────────────
+        # Block end statements: endif, endloop, endwhile
+        # These are parsed as function calls: endif();
+        # ─────────────────────────────────────────────────────────────
+        if self._check(TokenType.ENDIF):
+            start = self._advance()
+            self._match(TokenType.SEMICOLON)
+            return ExprStmt(
+                span=self._span_from(start),
+                expr=CallExpr(
+                    span=self._span_from(start),
+                    callee=Identifier(span=self._span_from(start), name="end_if"),
+                    arguments=[],
+                ),
+            )
+
+        if self._check(TokenType.ENDLOOP):
+            start = self._advance()
+            self._match(TokenType.SEMICOLON)
+            return ExprStmt(
+                span=self._span_from(start),
+                expr=CallExpr(
+                    span=self._span_from(start),
+                    callee=Identifier(span=self._span_from(start), name="end_loop"),
+                    arguments=[],
+                ),
+            )
+
+        if self._check(TokenType.ENDWHILE):
+            start = self._advance()
+            self._match(TokenType.SEMICOLON)
+            return ExprStmt(
+                span=self._span_from(start),
+                expr=CallExpr(
+                    span=self._span_from(start),
+                    callee=Identifier(span=self._span_from(start), name="end_while"),
+                    arguments=[],
+                ),
+            )
+
         # Expression statement
         return self._parse_expression_statement()
 

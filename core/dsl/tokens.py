@@ -70,6 +70,9 @@ class TokenType(Enum):
     SLEEP = auto()  # sleep
     SCROLL = auto()  # scroll
     DRAG = auto()  # drag
+    ENDIF = auto()  # endif (ends if block)
+    ENDLOOP = auto()  # endloop (ends loop block)
+    ENDWHILE = auto()  # endwhile (ends while block)
 
     # RetroScript logical keywords (word form)
     AND_KW = auto()  # and (word form)
@@ -197,6 +200,10 @@ KEYWORDS: dict[str, TokenType] = {
     "meta": TokenType.META,
     "import": TokenType.IMPORT,
     "as": TokenType.AS,
+    # Block end keywords
+    "endif": TokenType.ENDIF,
+    "endloop": TokenType.ENDLOOP,
+    "endwhile": TokenType.ENDWHILE,
 }
 
 
