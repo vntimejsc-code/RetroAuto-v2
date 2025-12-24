@@ -216,14 +216,56 @@ class AssetsPanel(QWidget):
         self.asset_list.setVisible(has_assets)
 
     def load_assets(self, assets: list[AssetImage]) -> None:
-        """Load assets from script."""
-        self._assets = list(assets)
+        """Load assets from script with auto-migration for legacy relative paths."""
+        self._assets = []
         self.asset_list.clear()
 
-        for asset in self._assets:
-            self._add_list_item(asset)
+        for asset in assets:
+            # Auto-migrate relative paths to absolute
+            migrated_asset = self._migrate_asset_path(asset)
+            self._assets.append(migrated_asset)
+            self._add_list_item(migrated_asset)
 
         self._update_visibility()
+
+    def _migrate_asset_path(self, asset: AssetImage) -> AssetImage:
+        """Migrate relative path to absolute path by searching known locations."""
+        asset_path = Path(asset.path)
+
+        # Already absolute - no migration needed
+        if asset_path.is_absolute() and asset_path.exists():
+            return asset
+
+        # Try to find file in known locations
+        candidates = []
+
+        # If we have an assets directory, look there first
+        if self._assets_dir:
+            candidates.append(self._assets_dir / asset.path)
+            candidates.append(self._assets_dir / asset_path.name)
+
+        # Also try project-relative paths
+        if self._assets_dir and self._assets_dir.parent:
+            project_dir = self._assets_dir.parent
+            candidates.append(project_dir / "assets" / asset.path)
+            candidates.append(project_dir / asset.path)
+
+        for candidate in candidates:
+            if candidate.exists():
+                new_path = str(candidate.resolve().as_posix())
+                logger.info("Migrated asset path: %s -> %s", asset.path, new_path)
+                return AssetImage(
+                    id=asset.id,
+                    path=new_path,
+                    threshold=asset.threshold,
+                    method=asset.method,
+                    grayscale=asset.grayscale,
+                    roi=asset.roi,
+                )
+
+        # File not found - keep original path, will fail at load time with clear error
+        logger.warning("Could not migrate asset path: %s (file not found)", asset.path)
+        return asset
 
     def get_assets(self) -> list[AssetImage]:
         """Get current assets list for syncing to script."""
