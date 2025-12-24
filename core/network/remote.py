@@ -78,8 +78,8 @@ class RemoteAPIHandler(BaseHTTPRequestHandler):
             if length:
                 body = self.rfile.read(length)
                 return json.loads(body.decode("utf-8"))
-        except Exception:
-            pass
+        except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
+            pass  # Invalid JSON or encoding - return empty dict
         return {}
 
     def do_OPTIONS(self) -> None:

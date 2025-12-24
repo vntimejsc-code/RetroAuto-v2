@@ -157,7 +157,7 @@ class WebSocketClient:
             else:
                 self._ws.send(data)
             return True
-        except Exception:
+        except (ConnectionError, OSError, AttributeError):
             return False
 
     def send_json(self, data: Any) -> bool:
@@ -308,7 +308,7 @@ class WebSocketServer:
         try:
             client.send(data)
             return True
-        except Exception:
+        except (ConnectionError, OSError, AttributeError):
             return False
 
 

@@ -37,8 +37,8 @@ def main() -> int:
             if listener.is_running():
                 listener.stop()
                 logger.info("Hotkey listener cleaned up on exit")
-        except Exception:
-            pass  # Ignore errors during cleanup
+        except (ImportError, AttributeError, RuntimeError):
+            pass  # Ignore errors during cleanup - app is exiting
 
     atexit.register(cleanup_hotkey_listener)
 

@@ -223,7 +223,8 @@ class TextReader:
             # Fast hash using image bytes + config
             img_bytes = img.tobytes()[:4096]  # First 4KB for speed
             return hash((img_bytes, img.size, allowlist))
-        except Exception:
+        except (OSError, MemoryError, AttributeError):
+            # Image buffer error - return 0 (no caching)
             return 0
 
     def _cache_result(self, key: int, text: str) -> None:

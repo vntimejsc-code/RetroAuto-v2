@@ -46,7 +46,8 @@ class GUIHandler(logging.Handler):
             timestamp = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
             message = self.format(record)
             log_emitter.emit(record.levelname, timestamp, message)
-        except Exception:
+        except (RecursionError, RuntimeError):
+            # Prevent infinite recursion if emit fails
             self.handleError(record)
 
 
