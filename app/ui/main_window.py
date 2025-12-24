@@ -10,7 +10,7 @@ import contextlib
 import json
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -113,6 +113,7 @@ class MainWindow(QMainWindow):
         from PySide6.QtCore import QMetaObject, Qt as QtCore_Qt, Q_ARG
         QMetaObject.invokeMethod(self, "_trigger_capture_from_hotkey", QtCore_Qt.ConnectionType.QueuedConnection)
 
+    @Slot()
     def _trigger_capture_from_hotkey(self) -> None:
         """Actually trigger capture - this runs on Qt main thread."""
         logger.info("Triggering capture from hotkey on main thread")
