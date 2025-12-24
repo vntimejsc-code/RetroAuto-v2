@@ -154,6 +154,14 @@ class EngineWorker(QThread):
             return
 
         try:
+            # Refresh templates before run to pick up newly added assets
+            if self._templates and self._script.assets:
+                errors = self._templates.preload(self._script.assets)
+                if errors:
+                    logger.warning("Template preload errors: %s", errors)
+                else:
+                    logger.info("Preloaded %d assets for script run", len(self._script.assets))
+
             # Start interrupt watching
             if self._interrupt_mgr:
                 self._interrupt_mgr.start_watching()
