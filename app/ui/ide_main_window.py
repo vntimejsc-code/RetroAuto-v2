@@ -22,7 +22,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt, Signal
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
@@ -73,6 +73,7 @@ class IDEMainWindow(QMainWindow):
         self._init_menu()
         self._init_toolbar()
         self._init_status_bar()
+        self._init_shortcuts()  # Keyboard shortcuts
         self._connect_signals()
         self._restore_state()
 
@@ -351,6 +352,42 @@ class IDEMainWindow(QMainWindow):
 
         # Status message
         self.status_bar.showMessage("Ready")
+
+    def _init_shortcuts(self) -> None:
+        """Initialize keyboard shortcuts."""
+        # Run Script - Ctrl+R (alternative to F5)
+        run_shortcut = QShortcut(QKeySequence("Ctrl+R"), self)
+        run_shortcut.activated.connect(self._run_script)
+
+        # Stop Script - Ctrl+. (Escape-like stop)
+        stop_shortcut = QShortcut(QKeySequence("Ctrl+."), self)
+        stop_shortcut.activated.connect(self._stop_script)
+
+        # Toggle Breakpoint - F9
+        breakpoint_shortcut = QShortcut(QKeySequence("F9"), self)
+        breakpoint_shortcut.activated.connect(self._toggle_breakpoint)
+
+        # Trigger IntelliSense - Ctrl+Space
+        autocomplete_shortcut = QShortcut(QKeySequence("Ctrl+Space"), self)
+        autocomplete_shortcut.activated.connect(self._trigger_autocomplete)
+
+        # Quick check - Ctrl+Shift+B (build/check)
+        check_shortcut = QShortcut(QKeySequence("Ctrl+Shift+B"), self)
+        check_shortcut.activated.connect(self._check_syntax)
+
+    def _toggle_breakpoint(self) -> None:
+        """Toggle breakpoint on current line."""
+        cursor = self.editor.textCursor()
+        line = cursor.blockNumber() + 1
+        # TODO: Implement breakpoint toggle in debugger
+        self.output.log_info(f"Toggle breakpoint at line {line}")
+
+    def _trigger_autocomplete(self) -> None:
+        """Trigger autocomplete popup."""
+        if self._intellisense:
+            self._intellisense.show_completions()
+        else:
+            self.output.log_warning("IntelliSense not available")
 
     def _connect_signals(self) -> None:
         """Connect signals from child widgets."""

@@ -4,15 +4,28 @@ RetroAuto v2 - Windows Automation Tool
 Entry point for the application.
 """
 
+import os
 import sys
 from pathlib import Path
+
+# ─────────────────────────────────────────────────────────────
+# High DPI Support - Must be set BEFORE QApplication import
+# ─────────────────────────────────────────────────────────────
+os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
+os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 
 # Add project root to path for direct execution
 _project_root = Path(__file__).parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
+from PySide6.QtCore import Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication, QStyleFactory  # noqa: E402
+
+# Set high DPI rounding policy
+QApplication.setHighDpiScaleFactorRoundingPolicy(
+    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+)
 
 from app.ui.main_window import MainWindow  # noqa: E402
 from infra import setup_logging  # noqa: E402
