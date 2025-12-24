@@ -196,12 +196,17 @@ class MainWindow(QMainWindow):
         self.action_new = toolbar.addAction("📄 New", self._on_new)
         self.action_open = toolbar.addAction("📂 Open", self._on_open)
         self.action_save = toolbar.addAction("💾 Save", self._on_save)
+        self.action_save_as = toolbar.addAction("💾 Save As", self._on_save_as)
         toolbar.addSeparator()
 
         # Run actions
         self.action_run = toolbar.addAction("▶ Run", self._on_run)
+        self.action_run.setShortcut("F10")
+        self.action_run.setToolTip("Run script (F10)")
         self.action_pause = toolbar.addAction("⏸ Pause", self._on_pause)
         self.action_stop = toolbar.addAction("⏹ Stop", self._on_stop)
+        self.action_stop.setShortcut("Ctrl+F10")
+        self.action_stop.setToolTip("Stop script (Ctrl+F10)")
         self.action_pause.setEnabled(False)
         self.action_stop.setEnabled(False)
         toolbar.addSeparator()
@@ -214,11 +219,6 @@ class MainWindow(QMainWindow):
 
         # IDE
         self.action_open_ide = toolbar.addAction("🖥️ Open IDE", self._on_open_ide)
-
-        # View Menu
-        menu_bar = self.menuBar()
-        view_menu = menu_bar.addMenu("View")
-        self.action_view_flow = view_menu.addAction("🎨 Visual Flow Editor", self._show_flow_editor)
 
     def _connect_panel_signals(self) -> None:
         """Connect panel signals."""
@@ -344,6 +344,29 @@ class MainWindow(QMainWindow):
         if self.engine.save_project(path):
             self._update_title()
             logger.info("Saved project: %s", path)
+
+    def _on_save_as(self) -> None:
+        """Save project to a new location."""
+        self._sync_script_from_ui()
+
+        path_str, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Script As",
+            "script.yaml",
+            "YAML Files (*.yaml);;All Files (*)",
+        )
+        if not path_str:
+            return
+
+        path = Path(path_str)
+        self._project_path = path.parent
+
+        # Update assets directory for the new location
+        self.assets_panel.set_assets_dir(self._project_path / "assets")
+
+        if self.engine.save_project(path):
+            self._update_title()
+            logger.info("Saved project as: %s", path)
 
     def _on_run(self) -> None:
         """Start script execution."""

@@ -69,9 +69,11 @@ class HybridActionsPanel(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
-        self._view_mode = "hybrid"  # "gui", "code", "hybrid"
+        self._view_mode = "gui"  # "gui", "code", "hybrid" - default GUI mode
         self._init_ui()
         self._connect_signals()
+        # Hide code preview for default GUI mode
+        self.code_preview.hide()
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -84,6 +86,7 @@ class HybridActionsPanel(QWidget):
 
         self.btn_gui = QPushButton("📋 GUI")
         self.btn_gui.setCheckable(True)
+        self.btn_gui.setChecked(True)  # Default to GUI mode
         self.btn_gui.clicked.connect(lambda: self._set_view_mode("gui"))
 
         self.btn_code = QPushButton("📝 Code")
@@ -92,7 +95,6 @@ class HybridActionsPanel(QWidget):
 
         self.btn_hybrid = QPushButton("🔀 Hybrid")
         self.btn_hybrid.setCheckable(True)
-        self.btn_hybrid.setChecked(True)
         self.btn_hybrid.clicked.connect(lambda: self._set_view_mode("hybrid"))
 
         btn_bar.addWidget(self.btn_gui)
