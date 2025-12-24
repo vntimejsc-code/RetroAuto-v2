@@ -212,6 +212,32 @@ class IfNotImage(ActionBase):
     roi_override: ROI | None = Field(default=None)
 
 
+class IfAllImages(ActionBase):
+    """AND logic - all images must be present.
+
+    Use case: Execute actions only when ALL specified images are found.
+    Supports else_actions for when any image is missing.
+    """
+
+    action: Literal["IfAllImages"] = "IfAllImages"
+    asset_ids: list[str] = Field(default_factory=list, description="All must be found")
+    then_actions: list[Action] = Field(default_factory=list)
+    else_actions: list[Action] = Field(default_factory=list)
+
+
+class IfAnyImage(ActionBase):
+    """OR logic - at least one image must be present.
+
+    Use case: Execute actions when ANY of the specified images is found.
+    Supports else_actions for when no images are found.
+    """
+
+    action: Literal["IfAnyImage"] = "IfAnyImage"
+    asset_ids: list[str] = Field(default_factory=list, description="At least one must be found")
+    then_actions: list[Action] = Field(default_factory=list)
+    else_actions: list[Action] = Field(default_factory=list)
+
+
 class Hotkey(ActionBase):
     """Press hotkey combination."""
 
@@ -381,6 +407,8 @@ Action = Annotated[
     | ClickImage
     | IfImage
     | IfNotImage
+    | IfAllImages
+    | IfAnyImage
     | Hotkey
     | TypeText
     | Label

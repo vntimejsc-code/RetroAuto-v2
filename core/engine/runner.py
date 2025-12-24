@@ -24,6 +24,8 @@ from core.models import (
     Hotkey,
     IfImage,
     IfNotImage,
+    IfAllImages,
+    IfAnyImage,
     IfPixel,
     IfText,
     Label,
@@ -424,6 +426,12 @@ class Runner:
         elif isinstance(action, IfNotImage):
             return self._exec_if_not_image(action, flow, labels)
 
+        elif isinstance(action, IfAllImages):
+            return self._exec_if_all_images(action, flow, labels)
+
+        elif isinstance(action, IfAnyImage):
+            return self._exec_if_any_image(action, flow, labels)
+
         else:
             logger.warning("Unknown action type: %s", type(action).__name__)
             return None
@@ -705,6 +713,81 @@ class Runner:
                 return False
             if isinstance(result, int):
                 return result  # Propagate Goto
+
+        return None
+
+    def _exec_if_all_images(
+        self,
+        action: IfAllImages,
+        flow: Flow,
+        labels: dict[str, int],
+    ) -> bool | int | None:
+        """Execute IfAllImages - AND logic, all images must be found."""
+        all_found = True
+        found_ids = []
+
+        for asset_id in action.asset_ids:
+            match = self._ctx.matcher.find(asset_id)
+            if match:
+                found_ids.append(asset_id)
+                self._ctx.last_match = match
+            else:
+                all_found = False
+                logger.info("IfAllImages: %s NOT FOUND - AND failed", asset_id)
+                break
+
+        if all_found:
+            logger.info("IfAllImages: ALL found (%s) - executing then_actions", found_ids)
+            branch = action.then_actions
+        else:
+            logger.info("IfAllImages: Not all found - executing else_actions")
+            branch = action.else_actions
+
+        for sub_action in branch:
+            if not self._ctx.wait_if_paused():
+                return False
+            result = self._execute_action(sub_action, flow, labels)
+            if result is False:
+                return False
+            if isinstance(result, int):
+                return result
+
+        return None
+
+    def _exec_if_any_image(
+        self,
+        action: IfAnyImage,
+        flow: Flow,
+        labels: dict[str, int],
+    ) -> bool | int | None:
+        """Execute IfAnyImage - OR logic, at least one image must be found."""
+        any_found = False
+        found_id = None
+
+        for asset_id in action.asset_ids:
+            match = self._ctx.matcher.find(asset_id)
+            if match:
+                any_found = True
+                found_id = asset_id
+                self._ctx.last_match = match
+                logger.info("IfAnyImage: %s FOUND - OR satisfied", asset_id)
+                break
+
+        if any_found:
+            logger.info("IfAnyImage: Found '%s' - executing then_actions", found_id)
+            branch = action.then_actions
+        else:
+            logger.info("IfAnyImage: NONE found - executing else_actions")
+            branch = action.else_actions
+
+        for sub_action in branch:
+            if not self._ctx.wait_if_paused():
+                return False
+            result = self._execute_action(sub_action, flow, labels)
+            if result is False:
+                return False
+            if isinstance(result, int):
+                return result
 
         return None
 
