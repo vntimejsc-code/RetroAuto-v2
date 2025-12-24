@@ -735,7 +735,10 @@ class ActionsPanel(QWidget):
                 label = f"{label}: {detail}"
 
             # Determine depth and flags for this item
-            is_block_start = action_type in ("IfImage", "Loop", "WhileImage")
+            is_block_start = action_type in (
+                "IfImage", "IfNotImage", "IfAllImages", "IfAnyImage",
+                "IfPixel", "IfText", "Loop", "WhileImage"
+            )
             item_depth = block_depth
 
             # Block openers increase depth AFTER this item
@@ -786,7 +789,10 @@ class ActionsPanel(QWidget):
             if detail:
                 label = f"{label}: {detail}"
 
-            is_block_start = action_type in ("IfImage", "Loop", "WhileImage")
+            is_block_start = action_type in (
+                "IfImage", "IfNotImage", "IfAllImages", "IfAnyImage",
+                "IfPixel", "IfText", "Loop", "WhileImage"
+            )
             item_depth = block_depth
 
             if is_block_start:
