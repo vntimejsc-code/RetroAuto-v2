@@ -217,7 +217,7 @@ class IDEController(QObject):
 
     def start_run(self) -> bool:
         """
-        Start script execution.
+        Start script execution using EngineWorker (QThread).
 
         Returns True if started successfully.
         """
@@ -229,66 +229,88 @@ class IDEController(QObject):
         if any(d.severity.value == "error" for d in errors):
             return False
 
-        self._is_running = True
-        self.run_started.emit()
-
-        # Convert IR to Script and start runner in thread
-        from threading import Thread
-
         from core.dsl.adapter import ir_to_script
 
         try:
             script = ir_to_script(self._document.ir)
 
-            # Create context and runner
-            # Note: Real implementation needs vision/input services
-            self._run_thread = Thread(
-                target=self._run_worker,
-                args=(script,),
-                daemon=True,
-            )
-            self._run_thread.start()
+            # Use EngineWorker (QThread) instead of threading.Thread
+            from app.ui.engine_worker import EngineWorker
+
+            self._engine_worker = EngineWorker()
+            self._engine_worker.step_started.connect(self._on_step_started)
+            self._engine_worker.flow_completed.connect(self._on_flow_completed)
+            self._engine_worker.error_occurred.connect(self._on_error)
+            self._engine_worker.finished.connect(self._on_run_finished)
+
+            # Set script and start
+            self._engine_worker._script = script
+            self._engine_worker._setup_context()
+            self._engine_worker.start()
+
+            self._is_running = True
+            self.run_started.emit()
+            return True
+
         except Exception as e:
-            self._is_running = False
+            from infra import get_logger
+            logger = get_logger("IDEController")
+            logger.exception("Failed to start script: %s", e)
             self.errors_found.emit([str(e)])
             return False
 
-        return True
+    def _on_step_started(self, flow: str, index: int, action_type: str) -> None:
+        """Handle step started from engine."""
+        from infra import get_logger
+        logger = get_logger("IDEController")
+        logger.info("[%s] Step %d: %s", flow, index, action_type)
 
-    def _run_worker(self, script: Any) -> None:
-        """Worker thread for script execution."""
-        try:
-            # For now, just simulate execution
-            import time
+    def _on_flow_completed(self, flow: str, success: bool) -> None:
+        """Handle flow completion from engine."""
+        from infra import get_logger
+        logger = get_logger("IDEController")
+        if success:
+            logger.info("Flow '%s' completed successfully", flow)
+        else:
+            logger.warning("Flow '%s' stopped", flow)
 
-            from infra import get_logger
+    def _on_error(self, message: str) -> None:
+        """Handle error from engine."""
+        self.errors_found.emit([message])
 
-            logger = get_logger("IDEController")
-
-            for flow in script.flows:
-                if not self._is_running:
-                    break
-                logger.info(f"Executing flow: {flow.name}")
-                for i, action in enumerate(flow.actions):
-                    if not self._is_running:
-                        break
-                    logger.info(f"Step {i}: {action.action}")
-                    time.sleep(0.1)  # Simulated execution
-
-        finally:
-            self._is_running = False
-            self.run_stopped.emit()
+    def _on_run_finished(self) -> None:
+        """Handle engine worker finished."""
+        self._is_running = False
+        self._engine_worker = None
+        self.run_stopped.emit()
 
     def stop_run(self) -> None:
         """Stop script execution."""
-        if self._is_running:
-            self._is_running = False
-            self.run_stopped.emit()
+        if self._is_running and hasattr(self, '_engine_worker') and self._engine_worker:
+            from core.engine.context import EngineState
+            if self._engine_worker.context:
+                self._engine_worker.context.set_state(EngineState.STOPPING)
+            self._engine_worker.wait(timeout=2000)
+        self._is_running = False
+        self.run_stopped.emit()
 
     def pause_run(self) -> None:
         """Toggle pause on script execution."""
-        # TODO: Implement pause with context
-        pass
+        if not self._is_running:
+            return
+
+        if hasattr(self, '_engine_worker') and self._engine_worker:
+            from core.engine.context import EngineState
+            ctx = self._engine_worker.context
+            if ctx:
+                if ctx.state == EngineState.RUNNING:
+                    ctx.set_state(EngineState.PAUSED)
+                    from infra import get_logger
+                    get_logger("IDEController").info("Script paused")
+                elif ctx.state == EngineState.PAUSED:
+                    ctx.set_state(EngineState.RUNNING)
+                    from infra import get_logger
+                    get_logger("IDEController").info("Script resumed")
 
     # ─────────────────────────────────────────────────────────────
     # Formatting
