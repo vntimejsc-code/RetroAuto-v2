@@ -105,8 +105,20 @@ class Matcher:
             return None
 
         asset: AssetImage = tmpl_data["asset"]
-        tmpl_img: np.ndarray = tmpl_data["gray"] if asset.grayscale else tmpl_data["color"]
         tmpl_h, tmpl_w = tmpl_data["shape"]
+
+        # A1 FIX: Null-safe template image access
+        # After O4 optimization, grayscale assets have color=None
+        if asset.grayscale:
+            tmpl_img: np.ndarray = tmpl_data["gray"]
+        else:
+            color_img = tmpl_data.get("color")
+            if color_img is None:
+                # Fallback to grayscale if color not available
+                tmpl_img = tmpl_data["gray"]
+                logger.debug("Using grayscale fallback for %s", asset_id)
+            else:
+                tmpl_img = color_img
 
         # Determine ROI
         roi = roi_override or asset.roi
