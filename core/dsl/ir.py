@@ -352,9 +352,13 @@ class IRMapper:
         if action_type in ("break", "continue", "return"):
             return f"{action_type};"
 
-        # Block markers (skip - these are structural)
+        # Block markers - output as keywords (not comments!)
         if action_type in ("end_if", "endif"):
-            return "// end_if"
+            return "endif;"
+        if action_type in ("end_loop", "endloop"):
+            return "endloop;"
+        if action_type in ("end_while", "endwhile"):
+            return "endwhile;"
         if action_type == "else":
             return "// else"
 
