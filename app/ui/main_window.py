@@ -98,10 +98,11 @@ class MainWindow(QMainWindow):
         self._auto_save_timer.start(30000)  # 30 seconds
 
         # Global hotkey for capture (works even when app is minimized)
-        # Note: pynput callbacks run on a different thread, so we use QTimer.singleShot
+        # Note: pynput callbacks run on a different thread, so we use QMetaObject.invokeMethod
         # to marshal the call to the Qt main thread
         self._hotkey_listener = get_hotkey_listener()
         self._hotkey_listener.register("ctrl+shift+c", self._on_capture_hotkey)
+        self._hotkey_listener.register("ctrl+shift+s", self._on_stop_hotkey)  # Global stop
         self._hotkey_listener.start()
 
         logger.info("MainWindow initialized")
@@ -110,8 +111,23 @@ class MainWindow(QMainWindow):
         """Handle global capture hotkey - marshals to Qt main thread."""
         logger.info("Hotkey callback invoked, scheduling capture on main thread...")
         # Use QMetaObject.invokeMethod for thread-safe cross-thread invocation
-        from PySide6.QtCore import QMetaObject, Qt as QtCore_Qt, Q_ARG
+        from PySide6.QtCore import QMetaObject, Qt as QtCore_Qt
         QMetaObject.invokeMethod(self, "_trigger_capture_from_hotkey", QtCore_Qt.ConnectionType.QueuedConnection)
+
+    def _on_stop_hotkey(self) -> None:
+        """Handle global stop hotkey - stops script execution from anywhere."""
+        logger.info("Global stop hotkey triggered")
+        from PySide6.QtCore import QMetaObject, Qt as QtCore_Qt
+        QMetaObject.invokeMethod(self, "_trigger_stop_from_hotkey", QtCore_Qt.ConnectionType.QueuedConnection)
+
+    @Slot()
+    def _trigger_stop_from_hotkey(self) -> None:
+        """Actually stop script - this runs on Qt main thread."""
+        logger.info("Stopping script from global hotkey")
+        if self.engine.isRunning():
+            self._on_stop()
+            # Show notification
+            self.statusBar().showMessage("⏹ Script stopped via Ctrl+Shift+S", 3000)
 
     @Slot()
     def _trigger_capture_from_hotkey(self) -> None:
@@ -120,9 +136,13 @@ class MainWindow(QMainWindow):
         # Show/restore window first if minimized
         if self.isMinimized():
             self.showNormal()
+            self.raise_()  # Bring to front
             self.activateWindow()
+            # Ensure window is fully visible before capture
+            from PySide6.QtWidgets import QApplication
+            QApplication.processEvents()
         # Small delay to ensure window is visible
-        QTimer.singleShot(100, self._on_capture)
+        QTimer.singleShot(150, self._on_capture)
 
     def _init_ui(self) -> None:
         """Initialize UI components."""

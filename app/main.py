@@ -27,6 +27,21 @@ def main() -> int:
     # Install Global Crash Handler
     CrashHandler.install()
 
+    # Register cleanup handler for global hotkey listener
+    import atexit
+    def cleanup_hotkey_listener() -> None:
+        """Ensure hotkey listener is stopped on exit."""
+        try:
+            from core.engine.hotkey_listener import get_hotkey_listener
+            listener = get_hotkey_listener()
+            if listener.is_running():
+                listener.stop()
+                logger.info("Hotkey listener cleaned up on exit")
+        except Exception:
+            pass  # Ignore errors during cleanup
+
+    atexit.register(cleanup_hotkey_listener)
+
     logger.info("RetroAuto v2 starting...")
 
     # Check OCR availability
