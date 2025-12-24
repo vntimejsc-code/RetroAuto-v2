@@ -40,8 +40,8 @@ class MemoryManager:
 
     def __init__(
         self,
-        threshold_mb: int = 300,
-        check_interval_seconds: int = 60,
+        threshold_mb: int = 200,  # Lowered from 300 for 24/7 stability
+        check_interval_seconds: int = 30,  # More frequent from 60 for proactive cleanup
     ) -> None:
         if self._initialized:
             return
