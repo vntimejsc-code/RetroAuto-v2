@@ -195,7 +195,7 @@ class HotkeyListener:
                 # Create a closure to capture the binding
                 def make_callback(b: HotkeyBinding) -> Callable[[], None]:
                     def cb() -> None:
-                        logger.debug(f"Hotkey triggered: {b.hotkey}")
+                        logger.info(f">>> Global hotkey triggered: {b.hotkey} <<<")
                         try:
                             b.callback()
                         except Exception as e:
@@ -205,7 +205,10 @@ class HotkeyListener:
 
                 hotkey_map[normalized] = make_callback(binding)
 
+        # Log registered hotkeys for debugging
+        logger.info(f"Creating GlobalHotKeys with bindings: {list(hotkey_map.keys())}")
         self._listener = keyboard.GlobalHotKeys(hotkey_map)
+        self._listener.daemon = True  # Ensure daemon thread
         self._listener.start()
 
     def _restart_listener(self) -> None:
