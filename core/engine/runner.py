@@ -246,31 +246,56 @@ class Runner:
         """
         Validate all referenced assets exist before running.
 
+        B2 OPTIMIZATION: Uses O(1) set membership test instead of repeated lookups.
+        Also handles nested actions (then_actions, else_actions, actions).
+
         Returns:
             List of error messages (empty if all valid)
         """
-        # Skip validation if context doesn't support get_asset (e.g., tests)
-        if not hasattr(self._ctx, "get_asset"):
-            return []
+        errors: list[str] = []
+        checked: set[str] = set()  # Avoid duplicate checks
 
-        errors = []
-        checked = set()
+        def check_asset(asset_id: str) -> None:
+            """Check single asset exists with O(1) lookup."""
+            if not asset_id or asset_id in checked:
+                return
+            checked.add(asset_id)
 
-        for action in flow.actions:
-            # Check asset_id if action has one
+            # B2: Use O(1) templates membership test
+            if self._ctx.templates and asset_id not in self._ctx.templates:
+                errors.append(f"Asset '{asset_id}' not loaded or image is None")
+
+        def check_action(action: Action) -> None:
+            """Recursively check action and all nested actions."""
+            # Check single asset_id attribute
             if hasattr(action, "asset_id") and action.asset_id:
-                asset_id = action.asset_id
-                if asset_id in checked:
-                    continue
-                checked.add(asset_id)
+                check_asset(action.asset_id)
 
-                # Try to get asset from context
-                try:
-                    asset = self._ctx.get_asset(asset_id)
-                    if asset is None or getattr(asset, "image", None) is None:
-                        errors.append(f"Asset '{asset_id}' not loaded or image is None")
-                except Exception as e:
-                    errors.append(f"Asset '{asset_id}' error: {e}")
+            # Check asset_ids list (IfAllImages, IfAnyImage)
+            if hasattr(action, "asset_ids") and action.asset_ids:
+                for aid in action.asset_ids:
+                    check_asset(aid)
+
+            # Check click_asset_id and until_asset_id (ClickUntil)
+            for attr in ("click_asset_id", "until_asset_id"):
+                val = getattr(action, attr, None)
+                if val:
+                    check_asset(val)
+
+            # Recursively check nested actions
+            for attr in ("then_actions", "else_actions", "actions"):
+                nested = getattr(action, attr, None)
+                if nested:
+                    for sub in nested:
+                        check_action(sub)
+
+        # Validate all actions in flow
+        for action in flow.actions:
+            check_action(action)
+
+        # Log errors if any
+        for err in errors:
+            logger.error("❌ Pre-flight check failed: %s", err)
 
         return errors
 
