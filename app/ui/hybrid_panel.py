@@ -72,8 +72,28 @@ class HybridActionsPanel(QWidget):
         self._view_mode = "gui"  # "gui", "code", "hybrid" - default GUI mode
         self._init_ui()
         self._connect_signals()
+        self._setup_shortcuts()
         # Hide code preview for default GUI mode
         self.code_preview.hide()
+
+    def _setup_shortcuts(self) -> None:
+        """Setup keyboard shortcuts for the hybrid panel."""
+        from PySide6.QtGui import QKeySequence, QShortcut
+
+        # Delete shortcut - forward to ActionsPanel
+        self.del_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self)
+        self.del_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.del_shortcut.activated.connect(self.actions_panel._on_delete)
+
+        # Ctrl+A - select all in action list
+        self.select_all_shortcut = QShortcut(QKeySequence.StandardKey.SelectAll, self)
+        self.select_all_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.select_all_shortcut.activated.connect(self.actions_panel.action_list.selectAll)
+
+        # Ctrl+D - duplicate
+        self.dup_shortcut = QShortcut(QKeySequence("Ctrl+D"), self)
+        self.dup_shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.dup_shortcut.activated.connect(self.actions_panel._on_duplicate)
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
