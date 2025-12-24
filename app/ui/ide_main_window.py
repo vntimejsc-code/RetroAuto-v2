@@ -646,19 +646,93 @@ class IDEMainWindow(QMainWindow):
     # ─────────────────────────────────────────────────────────────
 
     def _run_script(self) -> None:
-        """Run the current script."""
+        """Run the current script using EngineWorker."""
         self.output.log_info("Running script...")
         self.run_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
-        # TODO: Implement actual script execution
         self.status_bar.showMessage("Running...")
+
+        # Parse current code to Script
+        from core.dsl.adapter import ir_to_script
+        from core.dsl.document import ScriptDocument
+
+        try:
+            # Create document from current code
+            doc = ScriptDocument()
+            doc.update_from_code(self.editor.get_code(), source="run")
+
+            # Check for parse errors
+            if doc.errors:
+                self.output.log_error(f"Parse errors: {doc.errors}")
+                self._stop_script()
+                return
+
+            if not doc.ir.is_valid:
+                self.output.log_error("Invalid IR - cannot run")
+                self._stop_script()
+                return
+
+            # Convert IR to Script
+            script = ir_to_script(doc.ir)
+
+            # Create and start engine worker
+            from app.ui.engine_worker import EngineWorker
+
+            self._engine = EngineWorker()
+            self._engine.step_started.connect(self._on_step_started)
+            self._engine.step_completed.connect(self._on_step_completed)
+            self._engine.flow_completed.connect(self._on_flow_completed)
+            self._engine.error_occurred.connect(self._on_engine_error)
+            self._engine.finished.connect(self._on_engine_finished)
+
+            # Set the script and start
+            self._engine._script = script
+            self._engine._setup_context()
+            self._engine.start()
+            self.output.log_info("Engine started")
+
+        except Exception as e:
+            self.output.log_error(f"Failed to start: {e}")
+            self._stop_script()
 
     def _stop_script(self) -> None:
         """Stop the running script."""
+        if hasattr(self, '_engine') and self._engine:
+            if self._engine.context:
+                from core.engine.context import EngineState
+                self._engine.context.set_state(EngineState.STOPPING)
+            self._engine.wait(timeout=2000)  # Wait up to 2 seconds
+            self._engine = None
+
         self.output.log_warning("Script stopped")
         self.run_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.status_bar.showMessage("Stopped")
+
+    def _on_step_started(self, flow: str, index: int, action_type: str) -> None:
+        """Handle step started signal from engine."""
+        self.output.log_info(f"[{flow}] Step {index}: {action_type}")
+
+    def _on_step_completed(self, flow: str, index: int, elapsed_ms: int) -> None:
+        """Handle step completed signal from engine."""
+        self.output.log_debug(f"[{flow}] Step {index} done in {elapsed_ms}ms")
+
+    def _on_flow_completed(self, flow: str, success: bool) -> None:
+        """Handle flow completed signal from engine."""
+        if success:
+            self.output.log_info(f"✅ Flow '{flow}' completed")
+        else:
+            self.output.log_warning(f"⚠️ Flow '{flow}' stopped")
+
+    def _on_engine_error(self, message: str) -> None:
+        """Handle error signal from engine."""
+        self.output.log_error(f"❌ {message}")
+
+    def _on_engine_finished(self) -> None:
+        """Handle engine thread finished."""
+        self.run_btn.setEnabled(True)
+        self.stop_btn.setEnabled(False)
+        self.status_bar.showMessage("Ready")
 
     def _show_flow_editor(self) -> None:
         """Show the visual flow editor in a new window."""
