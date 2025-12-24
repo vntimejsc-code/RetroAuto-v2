@@ -199,6 +199,19 @@ class EndIf(ActionBase):
     action: Literal["EndIf"] = "EndIf"
 
 
+class IfNotImage(ActionBase):
+    """Conditional branch when image is NOT present.
+
+    Use case: If image is NOT found in ROI, execute actions.
+    Inverse of IfImage - useful for "else" logic without nesting.
+    """
+
+    action: Literal["IfNotImage"] = "IfNotImage"
+    asset_id: str = Field(description="Asset to check (action runs if NOT found)")
+    then_actions: list[Action] = Field(default_factory=list)
+    roi_override: ROI | None = Field(default=None)
+
+
 class Hotkey(ActionBase):
     """Press hotkey combination."""
 
@@ -367,6 +380,7 @@ Action = Annotated[
     | Click
     | ClickImage
     | IfImage
+    | IfNotImage
     | Hotkey
     | TypeText
     | Label

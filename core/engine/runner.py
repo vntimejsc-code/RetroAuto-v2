@@ -23,6 +23,7 @@ from core.models import (
     Goto,
     Hotkey,
     IfImage,
+    IfNotImage,
     IfPixel,
     IfText,
     Label,
@@ -420,6 +421,9 @@ class Runner:
         elif isinstance(action, ClickUntil):
             return self._exec_click_until(action)
 
+        elif isinstance(action, IfNotImage):
+            return self._exec_if_not_image(action, flow, labels)
+
         else:
             logger.warning("Unknown action type: %s", type(action).__name__)
             return None
@@ -667,6 +671,33 @@ class Runner:
 
         # Execute branch actions inline
         for sub_action in branch:
+            if not self._ctx.wait_if_paused():
+                return False
+            result = self._execute_action(sub_action, flow, labels)
+            if result is False:
+                return False
+            if isinstance(result, int):
+                return result  # Propagate Goto
+
+        return None
+
+    def _exec_if_not_image(
+        self,
+        action: IfNotImage,
+        flow: Flow,
+        labels: dict[str, int],
+    ) -> bool | int | None:
+        """Execute IfNotImage conditional (runs when image NOT found)."""
+        match = self._ctx.matcher.find(action.asset_id, action.roi_override)
+
+        if match:
+            logger.info("IfNotImage: %s FOUND - skipping actions", action.asset_id)
+            return None  # Image found, skip then_actions
+
+        logger.info("IfNotImage: %s NOT FOUND - executing actions", action.asset_id)
+
+        # Execute then_actions since image is NOT found
+        for sub_action in action.then_actions:
             if not self._ctx.wait_if_paused():
                 return False
             result = self._execute_action(sub_action, flow, labels)

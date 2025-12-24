@@ -38,6 +38,7 @@ from core.models import (
     Goto,
     Hotkey,
     IfImage,
+    IfNotImage,
     IfPixel,
     IfText,
     Label,
@@ -69,6 +70,7 @@ ACTION_CATEGORIES = {
     "👁️ Vision & Wait": [
         ("WaitImage", "👁️ Wait Image"),
         ("IfImage", "❓ If Image"),
+        ("IfNotImage", "❌ If Not Image"),
         ("WhileImage", "🔄 While Image"),
         ("WaitPixel", "🎨 Wait Pixel"),
         ("IfPixel", "🎯 If Pixel"),
@@ -169,6 +171,7 @@ ACTION_DEFAULTS = {
     "WaitPixel": lambda: WaitPixel(x=0, y=0, color=PixelColor(r=255, g=0, b=0)),
     "Click": lambda: Click(),
     "IfImage": lambda: IfImage(asset_id=""),
+    "IfNotImage": lambda: IfNotImage(asset_id=""),
     "IfText": lambda: IfText(variable_name="$var", value="0"),
     "Else": lambda: Else(),
     "EndIf": lambda: EndIf(),
