@@ -98,11 +98,18 @@ class MainWindow(QMainWindow):
         self._auto_save_timer.start(30000)  # 30 seconds
 
         # Global hotkey for capture (works even when app is minimized)
+        # Note: pynput callbacks run on a different thread, so we use QTimer.singleShot
+        # to marshal the call to the Qt main thread
         self._hotkey_listener = get_hotkey_listener()
-        self._hotkey_listener.register("ctrl+shift+c", self._on_capture)
+        self._hotkey_listener.register("ctrl+shift+c", self._on_capture_hotkey)
         self._hotkey_listener.start()
 
         logger.info("MainWindow initialized")
+
+    def _on_capture_hotkey(self) -> None:
+        """Handle global capture hotkey - marshals to Qt main thread."""
+        # QTimer.singleShot(0) schedules the call on the Qt event loop (main thread)
+        QTimer.singleShot(0, self._on_capture)
 
     def _init_ui(self) -> None:
         """Initialize UI components."""
