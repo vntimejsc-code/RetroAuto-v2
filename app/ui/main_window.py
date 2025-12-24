@@ -178,6 +178,8 @@ class MainWindow(QMainWindow):
 
         # Tools
         self.action_capture = toolbar.addAction("📷 Capture", self._on_capture)
+        self.action_capture.setShortcut("Ctrl+Shift+X")
+        self.action_capture.setToolTip("Capture screen region (Ctrl+Shift+X)")
         toolbar.addSeparator()
 
         # IDE
@@ -365,7 +367,7 @@ class MainWindow(QMainWindow):
 
         # Create capture tool with existing asset info
         self._capture_tool = CaptureTool(assets_dir, existing_asset_ids)
-        self._capture_tool.capture(self._on_capture_complete)
+        self._capture_tool.capture(self._on_capture_complete, parent_window=self)
 
     def _on_capture_complete(self, asset, roi) -> None:  # type: ignore
         """Handle capture completion."""
