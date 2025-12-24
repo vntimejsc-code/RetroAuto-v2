@@ -340,6 +340,19 @@ class MainWindow(QMainWindow):
         logger.info("Stopping script...")
         self.engine.stop()
 
+    def _update_title(self) -> None:
+        """Update window title with project path and script name."""
+        if self._project_path:
+            script_file = self._project_path / "script.yaml"
+            if script_file.exists():
+                title = f"RetroAuto v2 - script.yaml - {self._project_path}"
+            else:
+                title = f"RetroAuto v2 - Untitled - {self._project_path}"
+        else:
+            title = "RetroAuto v2 - Untitled"
+
+        self.setWindowTitle(title)
+
     def _on_capture(self) -> None:
         """Open capture tool."""
         logger.info("Opening capture tool...")
@@ -347,8 +360,11 @@ class MainWindow(QMainWindow):
         # Determine assets directory
         assets_dir = self._project_path / "assets" if self._project_path else Path(".")
 
-        # Create capture tool
-        self._capture_tool = CaptureTool(assets_dir)
+        # Get existing asset IDs from the assets panel to avoid duplicates
+        existing_asset_ids = {asset.id for asset in self.assets_panel.get_assets()}
+
+        # Create capture tool with existing asset info
+        self._capture_tool = CaptureTool(assets_dir, existing_asset_ids)
         self._capture_tool.capture(self._on_capture_complete)
 
     def _on_capture_complete(self, asset, roi) -> None:  # type: ignore

@@ -186,9 +186,16 @@ class CaptureTool:
         # On selection, creates asset and saves image
     """
 
-    def __init__(self, assets_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        assets_dir: Path | None = None,
+        existing_asset_ids: set[str] | None = None,
+    ) -> None:
         self._assets_dir = assets_dir or Path(".")
         self._overlay = CaptureOverlay()
+
+        # Existing asset IDs from the script (in-memory, may not be on disk)
+        self._existing_asset_ids = existing_asset_ids or set()
 
         # Connect signals
         self._overlay.region_selected.connect(self._on_region_selected)
@@ -257,10 +264,12 @@ class CaptureTool:
         Returns:
             Set of asset names (without extension) to avoid duplicates.
         """
-        existing = set()
+        # Start with in-memory asset IDs from the script
+        existing = set(self._existing_asset_ids)
+
         try:
             if self._assets_dir.exists():
-                # Get all image files and extract their names
+                # Also add all image files on disk
                 for ext in ["*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"]:
                     for path in self._assets_dir.glob(ext):
                         existing.add(path.stem)  # Name without extension
