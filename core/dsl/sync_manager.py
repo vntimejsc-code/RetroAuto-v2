@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from core.dsl.adapter import action_to_ir, ir_to_action
+from core.dsl.adapter import action_to_ir, ir_to_action, ir_to_actions
 from core.dsl.document import ScriptDocument
 from core.models import Action
 from infra import get_logger
@@ -232,18 +232,17 @@ class SyncManager(QObject):
     # ─────────────────────────────────────────────────────────────
 
     def get_flow_actions(self, flow_name: str) -> list[Action]:
-        """Get all actions for a flow as Action models."""
+        """Get all actions for a flow as Action models.
+
+        Uses ir_to_actions() which automatically adds EndIf/EndLoop/EndWhile
+        markers for proper GUI flat list display.
+        """
         flow = self._doc.ir.get_flow(flow_name)
         if not flow:
             return []
 
-        actions = []
-        for action_ir in flow.actions:
-            action = ir_to_action(action_ir)
-            if action:
-                actions.append(action)
-
-        return actions
+        # Use ir_to_actions which adds auto-EndIf markers
+        return ir_to_actions(flow.actions)
 
     def get_flow_names(self) -> list[str]:
         """Get all flow names."""

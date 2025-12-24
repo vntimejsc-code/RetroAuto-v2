@@ -13,5 +13,5 @@ flow main {
   click(button="left", clicks=2, use_match=false, x=1, y=1);
   if_image("capture_3");
   if_image("capture_5");
-  click(button="left", clicks=2, use_match=false, x=1, y=1);  
+  click(button="left", clicks=2, use_match=false, x=1, y=1);
 }
