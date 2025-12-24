@@ -155,20 +155,33 @@ class HotkeyListener:
     def _normalize_hotkey(self, hotkey: str) -> str:
         """
         Normalize hotkey string to pynput format.
+        "Ctrl+Shift+C" -> "<ctrl>+<shift>+c"
         "Ctrl+F4" -> "<ctrl>+<f4>"
-        "F4" -> "<f4>"
         """
+        # Special keys that need angle brackets
+        special_keys = {
+            "ctrl", "control", "alt", "shift", "cmd", "win", "windows",
+            "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12",
+            "space", "enter", "return", "tab", "escape", "esc",
+            "backspace", "delete", "insert", "home", "end", "pageup", "pagedown",
+            "up", "down", "left", "right", "caps_lock", "num_lock", "scroll_lock",
+        }
+
         parts = hotkey.lower().replace(" ", "").split("+")
         normalized_parts = []
 
         for part in parts:
-            # Map common names
-            part = part.replace("ctrl", "ctrl").replace("control", "ctrl")
-            part = part.replace("win", "cmd").replace("windows", "cmd")
+            # Map common aliases
+            if part in ("control",):
+                part = "ctrl"
+            if part in ("win", "windows"):
+                part = "cmd"
 
-            # Wrap in angle brackets for pynput
-            if not part.startswith("<"):
-                part = f"<{part}>"
+            # Only wrap special keys in angle brackets
+            # Regular character keys like 'a', 'c', '1' stay as-is
+            if part in special_keys:
+                if not part.startswith("<"):
+                    part = f"<{part}>"
             normalized_parts.append(part)
 
         return "+".join(normalized_parts)
