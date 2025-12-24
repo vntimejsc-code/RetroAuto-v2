@@ -204,8 +204,8 @@ class Debugger:
                 try:
                     if not self._evaluate_condition(bp.condition):
                         return True  # Condition not met
-                except Exception:
-                    pass  # Ignore condition errors
+                except (SyntaxError, NameError, TypeError, ValueError):
+                    pass  # Ignore condition evaluation errors
 
             self._state = DebugState.PAUSED
             if self.on_break:
@@ -263,5 +263,6 @@ class Debugger:
         # Simple evaluation using current variables
         try:
             return bool(eval(condition, {}, self._context.variables))
-        except Exception:
+        except (SyntaxError, NameError, TypeError, ValueError, AttributeError):
+            # Invalid condition expression
             return False

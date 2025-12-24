@@ -183,7 +183,7 @@ class QuickFixProvider:
                     diagnostic.span.start_col,
                 )
                 fixes.extend(pattern_fixes)
-            except Exception:
+            except (AttributeError, KeyError, IndexError, TypeError):
                 pass  # Silently ignore fixer errors
 
         return fixes

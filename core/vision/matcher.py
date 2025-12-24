@@ -533,7 +533,8 @@ class ImageMatcher:
                     ]
 
                 return screen
-            except Exception:
+            except (OSError, AttributeError, ValueError):
+                # PIL capture failed
                 return None
 
         with mss.mss() as sct:
@@ -635,8 +636,8 @@ class ImageMatcher:
                         for f in futures:
                             f.cancel()
                         return result, template_name
-                except Exception:
-                    pass
+                except (TimeoutError, RuntimeError, OSError):
+                    pass  # Thread execution error
 
         return MatchResult.not_found(), None
 
