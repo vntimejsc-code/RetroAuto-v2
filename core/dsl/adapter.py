@@ -548,37 +548,13 @@ def ir_to_actions(actions_ir: list[ActionIR]) -> list[Action]:
     """
     Convert a list of ActionIR to Action models.
 
-    Automatically adds EndIf/EndLoop/EndWhile markers after conditional
-    actions for proper GUI flat list display.
+    Note: Does NOT auto-add EndIf markers. DSL uses nested structure
+    for sequential guards (semicolon syntax), so auto-EndIf would break
+    the semantic. Users add EndIf in GUI mode when needed.
     """
-    from core.models import (
-        EndIf,
-        EndLoop,
-        EndWhile,
-        IfAllImages,
-        IfAnyImage,
-        IfImage,
-        IfNotImage,
-        IfPixel,
-        IfText,
-        Loop,
-        WhileImage,
-    )
-
     actions: list[Action] = []
-
     for ir in actions_ir:
         action = ir_to_action(ir)
         if action:
             actions.append(action)
-
-            # Auto-add End markers after conditional/loop actions
-            if isinstance(action, (IfImage, IfNotImage, IfAllImages, IfAnyImage, IfPixel, IfText)):
-                actions.append(EndIf())
-            elif isinstance(action, Loop):
-                actions.append(EndLoop())
-            elif isinstance(action, WhileImage):
-                actions.append(EndWhile())
-
     return actions
-
