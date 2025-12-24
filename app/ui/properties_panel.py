@@ -32,12 +32,14 @@ from core.models import (
     IfText,
     InterruptRule,  # Add import
     Label,
+    Loop,
     Notify,
     NotifyMethod,
     ReadText,
     RunFlow,
     TypeText,
     WaitImage,
+    WhileImage,
 )
 from infra import get_logger
 
@@ -224,6 +226,17 @@ class PropertiesPanel(QWidget):
             self._add_combo_field("method", action.method.value, [m.value for m in NotifyMethod])
             self._add_text_field("title", action.title)
             self._add_text_field("target", action.target)
+
+        elif isinstance(action, Loop):
+            # count: None = infinite, otherwise N times
+            count_value = action.count if action.count is not None else 0
+            self._add_spin_field("count", count_value, 0, 999999)
+            self._add_label("(0 = infinite loop)")
+
+        elif isinstance(action, WhileImage):
+            self._add_text_field("asset_id", action.asset_id)
+            self._add_bool_field("while_present", action.while_present)
+            self._add_spin_field("max_iterations", action.max_iterations, 1, 100000)
 
         # Comment field (common to all)
         comment = getattr(action, "comment", "")
@@ -505,6 +518,23 @@ class PropertiesPanel(QWidget):
                 method=NotifyMethod(self._fields["method"].currentText()),
                 title=self._fields["title"].text(),
                 target=self._fields["target"].text(),
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, Loop):
+            count_val = self._fields["count"].value()
+            return Loop(
+                count=count_val if count_val > 0 else None,  # 0 = infinite
+                actions=action.actions,  # Preserve existing nested actions
+                comment=self._fields["comment"].text(),
+            )
+
+        elif isinstance(action, WhileImage):
+            return WhileImage(
+                asset_id=self._fields["asset_id"].text(),
+                while_present=self._fields["while_present"].isChecked(),
+                max_iterations=self._fields["max_iterations"].value(),
+                actions=action.actions,  # Preserve existing nested actions
                 comment=self._fields["comment"].text(),
             )
 
