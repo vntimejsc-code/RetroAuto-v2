@@ -19,6 +19,7 @@ from core.dsl.ast import (
     CallExpr,
     ConstStmt,
     ContinueStmt,
+    ExprStmt,
     FlowDecl,
     ForStmt,
     GotoStmt,
@@ -505,8 +506,8 @@ class Parser:
                 span=self._span_from(start),
                 expr=CallExpr(
                     span=self._span_from(start),
-                    callee=Identifier(span=self._span_from(start), name="end_if"),
-                    arguments=[],
+                    callee="end_if",
+                    args=[],
                 ),
             )
 
@@ -517,8 +518,8 @@ class Parser:
                 span=self._span_from(start),
                 expr=CallExpr(
                     span=self._span_from(start),
-                    callee=Identifier(span=self._span_from(start), name="end_loop"),
-                    arguments=[],
+                    callee="end_loop",
+                    args=[],
                 ),
             )
 
@@ -529,8 +530,8 @@ class Parser:
                 span=self._span_from(start),
                 expr=CallExpr(
                     span=self._span_from(start),
-                    callee=Identifier(span=self._span_from(start), name="end_while"),
-                    arguments=[],
+                    callee="end_while",
+                    args=[],
                 ),
             )
 
