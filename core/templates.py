@@ -55,7 +55,13 @@ class TemplateStore:
 
     def _load_asset(self, asset: AssetImage) -> None:
         """Load single asset into cache."""
-        path = self._base_path / asset.path
+        asset_path = Path(asset.path)
+
+        # Support both absolute and relative paths
+        if asset_path.is_absolute():
+            path = asset_path
+        else:
+            path = self._base_path / asset.path
 
         if not path.exists():
             raise FileNotFoundError(f"Template not found: {path}")

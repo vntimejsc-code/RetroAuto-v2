@@ -304,11 +304,11 @@ class AssetsPanel(QWidget):
 
         asset = AssetImage(
             id=asset_id,
-            path=path.name,
+            path=str(path.resolve().as_posix()),  # Absolute path with forward slashes
             threshold=0.8,
         )
         self.add_asset(asset)
-        logger.info("Imported asset: %s from %s", asset_id, path)
+        logger.info("Imported asset: %s from %s (absolute path)", asset_id, path)
 
     def _clean_name(self, name: str) -> str:
         """Clean a name to valid ID format (lowercase, alphanumeric + underscore)."""
@@ -434,11 +434,14 @@ class AssetsPanel(QWidget):
         if not asset or not asset.path:
             return
 
-        # Construct full path
-        if self._assets_dir:
+        # Construct full path - support absolute paths
+        asset_path = Path(asset.path)
+        if asset_path.is_absolute():
+            full_path = asset_path
+        elif self._assets_dir:
             full_path = self._assets_dir / asset.path
         else:
-            full_path = Path(asset.path)
+            full_path = asset_path
 
         if full_path.exists():
             # Open folder and select the file on Windows
@@ -453,11 +456,14 @@ class AssetsPanel(QWidget):
         asset = next((a for a in self._assets if a.id == asset_id), None)
 
         if asset and asset.path:
-            # Construct full path
-            if self._assets_dir:
+            # Construct full path - support absolute paths
+            asset_path = Path(asset.path)
+            if asset_path.is_absolute():
+                full_path = asset_path
+            elif self._assets_dir:
                 full_path = self._assets_dir / asset.path
             else:
-                full_path = Path(asset.path)
+                full_path = asset_path
 
             if not full_path.exists():
                 logger.warning("Asset image not found: %s", full_path)
