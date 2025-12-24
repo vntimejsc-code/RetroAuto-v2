@@ -37,6 +37,7 @@ class CaptureOverlay(QWidget):
         self._current_pos: QPoint | None = None
         self._screenshot: QPixmap | None = None
         self._selection: QRect | None = None
+        self._parent_window: QWidget | None = None
 
         self._init_ui()
 
@@ -57,8 +58,18 @@ class CaptureOverlay(QWidget):
             geometry = screen.geometry()
             self.setGeometry(geometry)
 
-    def start_capture(self) -> None:
+    def start_capture(self, parent_window: QWidget | None = None) -> None:
         """Start the capture process."""
+        self._parent_window = parent_window
+
+        # Hide parent window before capturing screen
+        if parent_window:
+            parent_window.hide()
+            QGuiApplication.processEvents()  # Ensure window is fully hidden
+            # Small delay to ensure window is hidden
+            import time
+            time.sleep(0.15)
+
         # Take screenshot first
         screen = QGuiApplication.primaryScreen()
         if screen:
@@ -153,6 +164,7 @@ class CaptureOverlay(QWidget):
     def keyPressEvent(self, event) -> None:  # type: ignore
         """Handle keyboard input."""
         if event.key() == Qt.Key.Key_Escape:
+            self._restore_parent_window()
             self.hide()
             self.cancelled.emit()
             logger.info("Capture cancelled")
@@ -165,6 +177,7 @@ class CaptureOverlay(QWidget):
         # Crop selection from screenshot
         cropped = self._screenshot.copy(self._selection)
 
+        self._restore_parent_window()
         self.hide()
         self.region_selected.emit(self._selection, cropped)
         logger.info(
@@ -174,6 +187,12 @@ class CaptureOverlay(QWidget):
             self._selection.x(),
             self._selection.y(),
         )
+
+    def _restore_parent_window(self) -> None:
+        """Restore the parent window after capture."""
+        if self._parent_window:
+            self._parent_window.show()
+            self._parent_window.activateWindow()
 
 
 class CaptureTool:
@@ -203,15 +222,16 @@ class CaptureTool:
 
         self._callback: Callable | None = None
 
-    def capture(self, callback: Callable | None = None) -> None:
+    def capture(self, callback: Callable | None = None, parent_window: QWidget | None = None) -> None:
         """
         Start capture process.
 
         Args:
             callback: Function(asset: AssetImage, roi: ROI) called on success
+            parent_window: Main window to hide during capture (optional)
         """
         self._callback = callback
-        self._overlay.start_capture()
+        self._overlay.start_capture(parent_window)
 
     def _on_region_selected(self, rect: QRect, pixmap: QPixmap) -> None:
         """Handle successful region selection."""

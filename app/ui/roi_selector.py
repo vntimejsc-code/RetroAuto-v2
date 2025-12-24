@@ -53,8 +53,11 @@ class ROISelector(QWidget):
     region_selected = Signal(Region)
     selection_cancelled = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, parent_window: QWidget | None = None) -> None:
         super().__init__(parent)
+
+        # Parent window to hide during capture
+        self._parent_window = parent_window
 
         # Window setup
         self.setWindowFlags(
@@ -79,6 +82,15 @@ class ROISelector(QWidget):
 
     def start(self) -> None:
         """Start the region selection."""
+        # Hide parent window before capturing screen
+        if self._parent_window:
+            self._parent_window.hide()
+            QApplication.processEvents()  # Ensure window is fully hidden
+
+        # Small delay to ensure window is hidden
+        import time
+        time.sleep(0.15)
+
         # Capture screen
         screen = QApplication.primaryScreen()
         if screen:
@@ -145,13 +157,23 @@ class ROISelector(QWidget):
                     )
                     self.region_selected.emit(region)
 
+            # Restore parent window before closing
+            self._restore_parent_window()
             self.close()
 
     def keyPressEvent(self, event) -> None:
         """Handle key press - ESC to cancel."""
         if event.key() == Qt.Key.Key_Escape:
             self.selection_cancelled.emit()
+            # Restore parent window before closing
+            self._restore_parent_window()
             self.close()
+
+    def _restore_parent_window(self) -> None:
+        """Restore the parent window after capture."""
+        if self._parent_window:
+            self._parent_window.show()
+            self._parent_window.activateWindow()
 
 
 class ROISelectorDialog:
