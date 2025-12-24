@@ -153,9 +153,9 @@ class AssetsPanel(QWidget):
         )
         group_layout.addWidget(self.drop_hint)
 
-        # Asset list with custom drag support
+        # Asset list with custom drag support (ExtendedSelection enables Ctrl+A and Shift+arrows)
         self.asset_list = AssetListWidget()
-        self.asset_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.asset_list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.asset_list.currentItemChanged.connect(self._on_selection_changed)
         self.asset_list.itemDoubleClicked.connect(self._on_asset_double_clicked)
         self.asset_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -195,6 +195,14 @@ class AssetsPanel(QWidget):
 
         self.rename_shortcut = QShortcut(QKeySequence(Qt.Key.Key_F2), self.asset_list)
         self.rename_shortcut.activated.connect(self._start_inline_rename)
+
+        # Del shortcut for delete selected items
+        self.delete_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Delete), self.asset_list)
+        self.delete_shortcut.activated.connect(self._on_delete)
+
+        # Ctrl+A shortcut for select all
+        self.select_all_shortcut = QShortcut(QKeySequence("Ctrl+A"), self.asset_list)
+        self.select_all_shortcut.activated.connect(self.asset_list.selectAll)
 
         # Handle inline editing
         self.asset_list.setItemDelegate(RenameDelegate(self.asset_list))
@@ -347,17 +355,24 @@ class AssetsPanel(QWidget):
         return clean_id
 
     def _on_delete(self) -> None:
-        """Delete selected asset."""
-        current = self.asset_list.currentItem()
-        if current:
-            asset_id = current.data(Qt.ItemDataRole.UserRole)
-            row = self.asset_list.row(current)
+        """Delete selected asset(s)."""
+        selected_items = self.asset_list.selectedItems()
+        if not selected_items:
+            return
+
+        # Collect asset IDs to delete
+        deleted_ids = []
+        for item in selected_items:
+            asset_id = item.data(Qt.ItemDataRole.UserRole)
+            deleted_ids.append(asset_id)
+            row = self.asset_list.row(item)
             self.asset_list.takeItem(row)
 
-            self._assets = [a for a in self._assets if a.id != asset_id]
-            self._update_visibility()
-            self.assets_changed.emit()
-            logger.info("Deleted asset: %s", asset_id)
+        # Remove from internal list
+        self._assets = [a for a in self._assets if a.id not in deleted_ids]
+        self._update_visibility()
+        self.assets_changed.emit()
+        logger.info("Deleted %d asset(s): %s", len(deleted_ids), ", ".join(deleted_ids))
 
     def _on_test(self) -> None:
         """Test find selected asset on screen."""
