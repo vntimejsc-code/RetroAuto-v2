@@ -5,7 +5,7 @@ sys.path.insert(0, ".")
 
 from core.dsl.document import ScriptDocument
 from core.dsl.adapter import ir_to_actions
-from core.dsl.adapter import ir_to_actions
+from core.dsl.formatter import format_code
 
 # Test code with endif
 code = """
@@ -16,6 +16,7 @@ flow main {
 }
 """
 
+print("=== Test 1: Code → IR → Actions ===")
 doc = ScriptDocument()
 doc.update_from_code(code)
 print("IR valid:", doc.ir.is_valid)
@@ -31,3 +32,9 @@ if doc.ir.flows:
     actions = ir_to_actions(doc.ir.flows[0].actions)
     for a in actions:
         print("  -", type(a).__name__)
+
+print("\n=== Test 2: Formatter Output ===")
+formatted = format_code(code)
+print("Formatted code:")
+print(formatted)
+print("\nContains 'endif':", "endif" in formatted)

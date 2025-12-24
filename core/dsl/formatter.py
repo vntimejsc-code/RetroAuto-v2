@@ -385,6 +385,16 @@ class Formatter:
 
     def _format_call(self, expr: CallExpr) -> None:
         """Format function call."""
+        # Special case: block end keywords should be formatted as keywords, not function calls
+        keyword_map = {
+            "end_if": "endif",
+            "end_loop": "endloop",
+            "end_while": "endwhile",
+        }
+        if expr.callee in keyword_map:
+            self._write(keyword_map[expr.callee])
+            return
+
         self._write(f"{expr.callee}(")
 
         # Format positional arguments
