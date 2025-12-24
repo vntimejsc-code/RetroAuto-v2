@@ -411,6 +411,11 @@ class AssetsPanel(QWidget):
         test_action.triggered.connect(self._on_test)
         menu.addAction(test_action)
 
+        # Open Folder
+        open_folder_action = QAction("📂 Open Folder", self)
+        open_folder_action.triggered.connect(lambda: self._open_asset_folder(asset_id))
+        menu.addAction(open_folder_action)
+
         menu.addSeparator()
 
         # Delete
@@ -419,6 +424,28 @@ class AssetsPanel(QWidget):
         menu.addAction(delete_action)
 
         menu.exec(self.asset_list.mapToGlobal(pos))
+
+    def _open_asset_folder(self, asset_id: str) -> None:
+        """Open the folder containing the asset in file explorer."""
+        import os
+        import subprocess
+
+        asset = next((a for a in self._assets if a.id == asset_id), None)
+        if not asset or not asset.path:
+            return
+
+        # Construct full path
+        if self._assets_dir:
+            full_path = self._assets_dir / asset.path
+        else:
+            full_path = Path(asset.path)
+
+        if full_path.exists():
+            # Open folder and select the file on Windows
+            subprocess.run(["explorer", "/select,", str(full_path)], check=False)
+        elif self._assets_dir and self._assets_dir.exists():
+            # Just open the assets folder if file doesn't exist
+            os.startfile(str(self._assets_dir))  # type: ignore
 
     def _on_asset_double_clicked(self, item: QListWidgetItem) -> None:
         """Show image preview when double-clicking asset."""

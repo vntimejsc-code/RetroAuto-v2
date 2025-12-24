@@ -31,6 +31,7 @@ from app.ui.log_panel import LogPanel
 from app.ui.properties_panel import PropertiesPanel
 from core.dsl.document import ScriptDocument
 from core.dsl.sync_manager import SyncManager
+from core.engine.hotkey_listener import get_hotkey_listener
 from infra import get_logger
 
 logger = get_logger("MainWindow")
@@ -95,6 +96,11 @@ class MainWindow(QMainWindow):
         self._auto_save_timer = QTimer(self)
         self._auto_save_timer.timeout.connect(self._save_draft)
         self._auto_save_timer.start(30000)  # 30 seconds
+
+        # Global hotkey for capture (works even when app is minimized)
+        self._hotkey_listener = get_hotkey_listener()
+        self._hotkey_listener.register("ctrl+shift+c", self._on_capture)
+        self._hotkey_listener.start()
 
         logger.info("MainWindow initialized")
 
@@ -182,8 +188,8 @@ class MainWindow(QMainWindow):
 
         # Tools
         self.action_capture = toolbar.addAction("📷 Capture", self._on_capture)
-        self.action_capture.setShortcut("Ctrl+Shift+X")
-        self.action_capture.setToolTip("Capture screen region (Ctrl+Shift+X)")
+        self.action_capture.setShortcut("Ctrl+Shift+C")
+        self.action_capture.setToolTip("Capture screen region (Ctrl+Shift+C)")
         toolbar.addSeparator()
 
         # IDE
