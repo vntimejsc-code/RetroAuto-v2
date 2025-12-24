@@ -239,8 +239,8 @@ class PixelChecker:
                                 y=y + offset_y,
                                 color=color,
                             )
-        except Exception:
-            pass
+        except (IndexError, ValueError, TypeError):
+            pass  # Screen capture failed or index out of bounds
 
         return None
 
@@ -290,8 +290,8 @@ class PixelChecker:
                                     color=color,
                                 )
                             )
-        except Exception:
-            pass
+        except (IndexError, ValueError, TypeError):
+            pass  # Screen capture failed or index out of bounds
 
         return results
 

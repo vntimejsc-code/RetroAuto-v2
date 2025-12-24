@@ -456,10 +456,11 @@ class RetroScriptLanguageServer:
                         Position(0, 0),
                         Position(lines, len(doc.get_line(lines))),
                     ).to_dict(),
-                    "newText": formatted,
+                    \"newText\": formatted,
                 }
             ]
-        except Exception:
+        except (ImportError, AttributeError, ValueError):
+            # Formatter not available or failed
             return []
 
     def _analyze_document(self, uri: str) -> None:

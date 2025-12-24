@@ -223,7 +223,8 @@ class FlowConverter:
         """Extract action properties as dict."""
         try:
             return action.model_dump(exclude={"action"})
-        except Exception:
+        except (AttributeError, TypeError):
+            # Action doesn't support model_dump or has incompatible fields
             return {}
 
     def _add_action_pins(self, node: NodeData, action: Action) -> None:
@@ -348,12 +349,12 @@ class FlowConverter:
 
         try:
             return action_class(**props)
-        except Exception as e:
+        except (TypeError, ValueError) as e:
             logger.warning(f"Failed to create {action_type}: {e}")
             # Try with defaults
             try:
                 return action_class()
-            except Exception:
+            except (TypeError, ValueError):
                 return None
 
 

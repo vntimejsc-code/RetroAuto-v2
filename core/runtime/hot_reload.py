@@ -122,7 +122,7 @@ class FileWatcher:
                         watched.last_modified = current_mtime
                         self._fire_event(watched.path, "modified")
 
-            except Exception:
+            except (OSError, PermissionError, FileNotFoundError):
                 pass  # Ignore file access errors
 
     def _fire_event(self, path: Path, event_type: str) -> None:
@@ -140,7 +140,7 @@ class FileWatcher:
         try:
             content = path.read_bytes()
             return hashlib.md5(content).hexdigest()
-        except Exception:
+        except (OSError, PermissionError, FileNotFoundError):
             return ""
 
 
