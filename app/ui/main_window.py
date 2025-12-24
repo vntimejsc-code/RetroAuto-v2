@@ -108,8 +108,20 @@ class MainWindow(QMainWindow):
 
     def _on_capture_hotkey(self) -> None:
         """Handle global capture hotkey - marshals to Qt main thread."""
-        # QTimer.singleShot(0) schedules the call on the Qt event loop (main thread)
-        QTimer.singleShot(0, self._on_capture)
+        logger.info("Hotkey callback invoked, scheduling capture on main thread...")
+        # Use QMetaObject.invokeMethod for thread-safe cross-thread invocation
+        from PySide6.QtCore import QMetaObject, Qt as QtCore_Qt, Q_ARG
+        QMetaObject.invokeMethod(self, "_trigger_capture_from_hotkey", QtCore_Qt.ConnectionType.QueuedConnection)
+
+    def _trigger_capture_from_hotkey(self) -> None:
+        """Actually trigger capture - this runs on Qt main thread."""
+        logger.info("Triggering capture from hotkey on main thread")
+        # Show/restore window first if minimized
+        if self.isMinimized():
+            self.showNormal()
+            self.activateWindow()
+        # Small delay to ensure window is visible
+        QTimer.singleShot(100, self._on_capture)
 
     def _init_ui(self) -> None:
         """Initialize UI components."""
