@@ -103,6 +103,8 @@ class MainWindow(QMainWindow):
         self._hotkey_listener = get_hotkey_listener()
         self._hotkey_listener.register("ctrl+shift+c", self._on_capture_hotkey)
         self._hotkey_listener.register("ctrl+shift+s", self._on_stop_hotkey)  # Global stop
+        self._hotkey_listener.register("f4", self._on_coord_capture_hotkey)  # Coordinate capture
+        self._hotkey_listener.register("ctrl+space", self._on_coord_capture_hotkey)  # Alt coordinate capture
         self._hotkey_listener.start()
 
         logger.info("MainWindow initialized")
@@ -143,6 +145,27 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
         # Small delay to ensure window is visible
         QTimer.singleShot(150, self._on_capture)
+
+    def _on_coord_capture_hotkey(self) -> None:
+        """Handle global coordinate capture hotkey (F4 / Ctrl+Space)."""
+        logger.info("Coordinate capture hotkey triggered (F4 / Ctrl+Space)")
+        from PySide6.QtCore import QMetaObject, Qt as QtCore_Qt
+        QMetaObject.invokeMethod(self, "_trigger_coord_capture_from_hotkey", QtCore_Qt.ConnectionType.QueuedConnection)
+
+    @Slot()
+    def _trigger_coord_capture_from_hotkey(self) -> None:
+        """Capture current mouse coordinates - this runs on Qt main thread."""
+        # Get current mouse position
+        from PySide6.QtGui import QCursor
+        pos = QCursor.pos()
+        x, y = pos.x(), pos.y()
+        logger.info(f"Captured coordinates via global hotkey: ({x}, {y})")
+
+        # Add to coordinates panel
+        if hasattr(self, 'coordinates_panel'):
+            self.coordinates_panel._on_capture()
+            # Show notification in status bar
+            self.statusBar().showMessage(f"📍 Captured: ({x}, {y})", 3000)
 
     def _init_ui(self) -> None:
         """Initialize UI components."""
