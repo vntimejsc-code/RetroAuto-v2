@@ -116,7 +116,6 @@ class DSLCodeEditor(QPlainTextEdit):
         self._init_style()
         self._init_line_numbers()
         self._init_highlighter()
-        self._init_highlighter()
         self._connect_signals()
 
         self.setMouseTracking(True)

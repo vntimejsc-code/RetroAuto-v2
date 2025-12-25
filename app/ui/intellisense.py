@@ -162,6 +162,14 @@ class IntelliSenseManager:
         self.completer.setWidget(editor)
         self.completer.activated.connect(self._insert_completion)
 
+        # Debounce timer for completion (100ms)
+        from PySide6.QtCore import QTimer
+
+        self._debounce_timer = QTimer()
+        self._debounce_timer.setSingleShot(True)
+        self._debounce_timer.setInterval(100)
+        self._debounce_timer.timeout.connect(self._do_completion)
+
         # Connect to editor events
         editor.textChanged.connect(self._on_text_changed)
         editor.cursorPositionChanged.connect(self._on_cursor_moved)
@@ -220,7 +228,12 @@ class IntelliSenseManager:
         # QToolTip.hideText()
 
     def _on_text_changed(self) -> None:
-        """Check if we should show completion popup."""
+        """Trigger debounced completion update."""
+        # Restart debounce timer on each keystroke
+        self._debounce_timer.start()
+
+    def _do_completion(self) -> None:
+        """Perform completion (called after debounce)."""
         cursor = self.editor.textCursor()
 
         # Get current word being typed
@@ -232,8 +245,6 @@ class IntelliSenseManager:
             self.completer.setCompletionPrefix(prefix)
 
             if self.completer.completionCount() > 0:
-                self.completer.popup()
-
                 # Position popup below cursor
                 rect = self.editor.cursorRect()
                 rect.setWidth(250)
@@ -242,6 +253,10 @@ class IntelliSenseManager:
                 self.completer.popup().hide()
         else:
             self.completer.popup().hide()
+
+    def show_completions(self) -> None:
+        """Manually trigger completion popup (Ctrl+Space)."""
+        self._do_completion()
 
     def _insert_completion(self, completion: str) -> None:
         """Insert selected completion into editor."""
