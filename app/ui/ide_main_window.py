@@ -68,8 +68,10 @@ class IDEMainWindow(QMainWindow):
         self._is_modified = False
         self._script = None  # Current loaded script
         self._intellisense = None  # Will be initialized after editor
+        self._command_palette = None  # Command Palette
         self._init_ui()
         self._init_intellisense()
+        self._init_command_palette()
         self._init_menu()
         self._init_toolbar()
         self._init_status_bar()
@@ -167,6 +169,24 @@ class IDEMainWindow(QMainWindow):
         from app.ui.intellisense import IntelliSenseManager
 
         self._intellisense = IntelliSenseManager(self.editor)
+
+    def _init_command_palette(self) -> None:
+        """Initialize Command Palette (Ctrl+Shift+P)."""
+        from app.ui.command_palette import CommandPalette
+
+        self._command_palette = CommandPalette(self)
+
+        # Wire up command handlers
+        self._command_palette.set_command_handler("file.new", self._new_project)
+        self._command_palette.set_command_handler("file.open", self._open_single_file)
+        self._command_palette.set_command_handler("file.save", self._save_file)
+        self._command_palette.set_command_handler("file.saveAs", self._save_file_as)
+        self._command_palette.set_command_handler("edit.find", self._show_find_bar)
+        self._command_palette.set_command_handler("edit.goToLine", self._goto_line_dialog)
+        self._command_palette.set_command_handler("edit.format", self._format_document)
+        self._command_palette.set_command_handler("run.start", self._run_script)
+        self._command_palette.set_command_handler("run.stop", self._stop_script)
+        self._command_palette.set_command_handler("build.check", self._check_syntax)
 
     def _init_menu(self) -> None:
         """Initialize menu bar."""
@@ -382,6 +402,15 @@ class IDEMainWindow(QMainWindow):
         # Find - Ctrl+F
         find_shortcut = QShortcut(QKeySequence("Ctrl+F"), self)
         find_shortcut.activated.connect(self._show_find_bar)
+
+        # Command Palette - Ctrl+Shift+P
+        palette_shortcut = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
+        palette_shortcut.activated.connect(self._show_command_palette)
+
+    def _show_command_palette(self) -> None:
+        """Show Command Palette (Ctrl+Shift+P)."""
+        if self._command_palette:
+            self._command_palette.show_palette()
 
     def _toggle_breakpoint(self) -> None:
         """Toggle breakpoint on current line."""
