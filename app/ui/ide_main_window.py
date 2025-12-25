@@ -375,6 +375,14 @@ class IDEMainWindow(QMainWindow):
         check_shortcut = QShortcut(QKeySequence("Ctrl+Shift+B"), self)
         check_shortcut.activated.connect(self._check_syntax)
 
+        # Go To Line - Ctrl+G
+        goto_line_shortcut = QShortcut(QKeySequence("Ctrl+G"), self)
+        goto_line_shortcut.activated.connect(self._goto_line_dialog)
+
+        # Find - Ctrl+F
+        find_shortcut = QShortcut(QKeySequence("Ctrl+F"), self)
+        find_shortcut.activated.connect(self._show_find_bar)
+
     def _toggle_breakpoint(self) -> None:
         """Toggle breakpoint on current line."""
         cursor = self.editor.textCursor()
@@ -677,6 +685,45 @@ class IDEMainWindow(QMainWindow):
         """Go to diagnostic location in editor."""
         self.editor.goto_line(line, col)
         self.editor.setFocus()
+
+    def _goto_line_dialog(self) -> None:
+        """Show Go To Line dialog (Ctrl+G)."""
+        from app.ui.editor_dialogs import GoToLineDialog
+
+        max_line = self.editor.blockCount()
+        line = GoToLineDialog.get_line(self, max_line)
+        if line is not None:
+            self.editor.goto_line(line)
+            self.editor.setFocus()
+
+    def _show_find_bar(self) -> None:
+        """Show find bar (Ctrl+F)."""
+        # Get selected text for initial search
+        cursor = self.editor.textCursor()
+        selected = cursor.selectedText() if cursor.hasSelection() else ""
+
+        # TODO: Integrate FindBar into editor widget
+        # For now, use simple input dialog
+        from PySide6.QtWidgets import QInputDialog
+
+        text, ok = QInputDialog.getText(self, "Find", "Search for:", text=selected)
+        if ok and text:
+            self._find_and_highlight(text)
+
+    def _find_and_highlight(self, text: str) -> None:
+        """Find and highlight text in editor."""
+        from PySide6.QtGui import QTextDocument
+
+        # Find first occurrence
+        cursor = self.editor.textCursor()
+        cursor.movePosition(cursor.MoveOperation.Start)
+        self.editor.setTextCursor(cursor)
+
+        found = self.editor.find(text)
+        if found:
+            self.output.log_info(f"Found: '{text}'")
+        else:
+            self.output.log_warning(f"Not found: '{text}'")
 
     # ─────────────────────────────────────────────────────────────
     # Run Operations
