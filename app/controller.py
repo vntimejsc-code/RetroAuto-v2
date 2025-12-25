@@ -304,11 +304,13 @@ class IDEController(QObject):
             ctx = self._engine_worker.context
             if ctx:
                 if ctx.state == EngineState.RUNNING:
-                    ctx.set_state(EngineState.PAUSED)
+                    # FIX ENG-001: Use request_pause which actually blocks runner
+                    ctx.request_pause()
                     from infra import get_logger
                     get_logger("IDEController").info("Script paused")
                 elif ctx.state == EngineState.PAUSED:
-                    ctx.set_state(EngineState.RUNNING)
+                    # FIX ENG-001: Use request_resume which actually unblocks runner
+                    ctx.request_resume()
                     from infra import get_logger
                     get_logger("IDEController").info("Script resumed")
 
