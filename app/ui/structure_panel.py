@@ -116,9 +116,35 @@ class StructurePanel(QWidget):
         # For now, just flows and labels as requested.
 
     def _filter_items(self, text: str) -> None:
-        """Filter tree items."""
-        # TODO: Implement filtering logic
-        pass
+        """Filter tree items by text match."""
+        search_text = text.lower().strip()
+
+        def filter_item(item: QTreeWidgetItem) -> bool:
+            """Recursively filter item and children. Returns True if visible."""
+            # Check if this item matches
+            item_text = item.text(0).lower()
+            matches = not search_text or search_text in item_text
+
+            # Check children
+            child_visible = False
+            for i in range(item.childCount()):
+                child = item.child(i)
+                if filter_item(child):
+                    child_visible = True
+
+            # Show if matches or has visible children
+            visible = matches or child_visible
+            item.setHidden(not visible)
+
+            # Expand if has visible children
+            if child_visible:
+                item.setExpanded(True)
+
+            return visible
+
+        # Filter all top-level items
+        for i in range(self.tree.topLevelItemCount()):
+            filter_item(self.tree.topLevelItem(i))
 
     def _on_item_double_clicked(self, item: QTreeWidgetItem, column: int) -> None:
         """Handle navigation."""
