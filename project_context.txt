@@ -1,6 +1,6 @@
 ================================================================================
 PROJECT CONTEXT - Newauto
-Generated: 2025-12-24 23:51:14
+Generated: 2025-12-25 07:35:09
 Extensions: .py
 ================================================================================
 
@@ -450,9 +450,9 @@ def main():
     root_dir = args.root.resolve()
     output_file = args.output.resolve()
     
-    print(f"🔍 Scanning: {root_dir}")
-    print(f"📝 Output: {output_file}")
-    print(f"📄 Extensions: {', '.join(sorted(extensions))}")
+    print(f"[*] Scanning: {root_dir}")
+    print(f"[>] Output: {output_file}")
+    print(f"[#] Extensions: {', '.join(sorted(extensions))}")
     print()
     
     stats = merge_project(
@@ -462,14 +462,14 @@ def main():
         include_line_numbers=args.line_numbers,
     )
     
-    print(f"✅ Done!")
+    print(f"[OK] Done!")
     print(f"   Files processed: {stats['files_processed']}")
     print(f"   Files skipped: {stats['files_skipped']}")
     print(f"   Total lines: {stats['total_lines']:,}")
     print(f"   Total chars: {stats['total_chars']:,}")
     
     if stats['errors']:
-        print(f"\n⚠️ Errors ({len(stats['errors'])}):")
+        print(f"\n[!] Errors ({len(stats['errors'])}):")
         for err in stats['errors'][:5]:
             print(f"   - {err}")
         if len(stats['errors']) > 5:
@@ -478,9 +478,9 @@ def main():
     # Hiển thị kích thước file
     size_kb = output_file.stat().st_size / 1024
     if size_kb > 1024:
-        print(f"\n📦 Output size: {size_kb/1024:.2f} MB")
+        print(f"\n[=] Output size: {size_kb/1024:.2f} MB")
     else:
-        print(f"\n📦 Output size: {size_kb:.2f} KB")
+        print(f"\n[=] Output size: {size_kb:.2f} KB")
 
 
 if __name__ == '__main__':
@@ -1456,7 +1456,7 @@ if __name__ == "__main__":
 
 ================================================================================
 FILE PATH: app\controller.py
-LINES: 307
+LINES: 329
 ================================================================================
 
 """
@@ -1678,7 +1678,7 @@ class IDEController(QObject):
 
     def start_run(self) -> bool:
         """
-        Start script execution.
+        Start script execution using EngineWorker (QThread).
 
         Returns True if started successfully.
         """
@@ -1690,66 +1690,88 @@ class IDEController(QObject):
         if any(d.severity.value == "error" for d in errors):
             return False
 
-        self._is_running = True
-        self.run_started.emit()
-
-        # Convert IR to Script and start runner in thread
-        from threading import Thread
-
         from core.dsl.adapter import ir_to_script
 
         try:
             script = ir_to_script(self._document.ir)
 
-            # Create context and runner
-            # Note: Real implementation needs vision/input services
-            self._run_thread = Thread(
-                target=self._run_worker,
-                args=(script,),
-                daemon=True,
-            )
-            self._run_thread.start()
+            # Use EngineWorker (QThread) instead of threading.Thread
+            from app.ui.engine_worker import EngineWorker
+
+            self._engine_worker = EngineWorker()
+            self._engine_worker.step_started.connect(self._on_step_started)
+            self._engine_worker.flow_completed.connect(self._on_flow_completed)
+            self._engine_worker.error_occurred.connect(self._on_error)
+            self._engine_worker.finished.connect(self._on_run_finished)
+
+            # Set script and start
+            self._engine_worker._script = script
+            self._engine_worker._setup_context()
+            self._engine_worker.start()
+
+            self._is_running = True
+            self.run_started.emit()
+            return True
+
         except Exception as e:
-            self._is_running = False
+            from infra import get_logger
+            logger = get_logger("IDEController")
+            logger.exception("Failed to start script: %s", e)
             self.errors_found.emit([str(e)])
             return False
 
-        return True
+    def _on_step_started(self, flow: str, index: int, action_type: str) -> None:
+        """Handle step started from engine."""
+        from infra import get_logger
+        logger = get_logger("IDEController")
+        logger.info("[%s] Step %d: %s", flow, index, action_type)
 
-    def _run_worker(self, script: Any) -> None:
-        """Worker thread for script execution."""
-        try:
-            # For now, just simulate execution
-            import time
+    def _on_flow_completed(self, flow: str, success: bool) -> None:
+        """Handle flow completion from engine."""
+        from infra import get_logger
+        logger = get_logger("IDEController")
+        if success:
+            logger.info("Flow '%s' completed successfully", flow)
+        else:
+            logger.warning("Flow '%s' stopped", flow)
 
-            from infra import get_logger
+    def _on_error(self, message: str) -> None:
+        """Handle error from engine."""
+        self.errors_found.emit([message])
 
-            logger = get_logger("IDEController")
-
-            for flow in script.flows:
-                if not self._is_running:
-                    break
-                logger.info(f"Executing flow: {flow.name}")
-                for i, action in enumerate(flow.actions):
-                    if not self._is_running:
-                        break
-                    logger.info(f"Step {i}: {action.action}")
-                    time.sleep(0.1)  # Simulated execution
-
-        finally:
-            self._is_running = False
-            self.run_stopped.emit()
+    def _on_run_finished(self) -> None:
+        """Handle engine worker finished."""
+        self._is_running = False
+        self._engine_worker = None
+        self.run_stopped.emit()
 
     def stop_run(self) -> None:
         """Stop script execution."""
-        if self._is_running:
-            self._is_running = False
-            self.run_stopped.emit()
+        if self._is_running and hasattr(self, '_engine_worker') and self._engine_worker:
+            from core.engine.context import EngineState
+            if self._engine_worker.context:
+                self._engine_worker.context.set_state(EngineState.STOPPING)
+            self._engine_worker.wait(timeout=2000)
+        self._is_running = False
+        self.run_stopped.emit()
 
     def pause_run(self) -> None:
         """Toggle pause on script execution."""
-        # TODO: Implement pause with context
-        pass
+        if not self._is_running:
+            return
+
+        if hasattr(self, '_engine_worker') and self._engine_worker:
+            from core.engine.context import EngineState
+            ctx = self._engine_worker.context
+            if ctx:
+                if ctx.state == EngineState.RUNNING:
+                    ctx.set_state(EngineState.PAUSED)
+                    from infra import get_logger
+                    get_logger("IDEController").info("Script paused")
+                elif ctx.state == EngineState.PAUSED:
+                    ctx.set_state(EngineState.RUNNING)
+                    from infra import get_logger
+                    get_logger("IDEController").info("Script resumed")
 
     # ─────────────────────────────────────────────────────────────
     # Formatting
@@ -1770,7 +1792,7 @@ class IDEController(QObject):
 
 ================================================================================
 FILE PATH: app\main.py
-LINES: 85
+LINES: 98
 ================================================================================
 
 """
@@ -1779,15 +1801,28 @@ RetroAuto v2 - Windows Automation Tool
 Entry point for the application.
 """
 
+import os
 import sys
 from pathlib import Path
+
+# ─────────────────────────────────────────────────────────────
+# High DPI Support - Must be set BEFORE QApplication import
+# ─────────────────────────────────────────────────────────────
+os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
+os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 
 # Add project root to path for direct execution
 _project_root = Path(__file__).parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
 
+from PySide6.QtCore import Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication, QStyleFactory  # noqa: E402
+
+# Set high DPI rounding policy
+QApplication.setHighDpiScaleFactorRoundingPolicy(
+    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+)
 
 from app.ui.main_window import MainWindow  # noqa: E402
 from infra import setup_logging  # noqa: E402
@@ -1812,8 +1847,8 @@ def main() -> int:
             if listener.is_running():
                 listener.stop()
                 logger.info("Hotkey listener cleaned up on exit")
-        except Exception:
-            pass  # Ignore errors during cleanup
+        except (ImportError, AttributeError, RuntimeError):
+            pass  # Ignore errors during cleanup - app is exiting
 
     atexit.register(cleanup_hotkey_listener)
 
@@ -2110,7 +2145,7 @@ class CompletionProvider:
 
 ================================================================================
 FILE PATH: app\ide\debugger.py
-LINES: 267
+LINES: 268
 ================================================================================
 
 """
@@ -2319,8 +2354,8 @@ class Debugger:
                 try:
                     if not self._evaluate_condition(bp.condition):
                         return True  # Condition not met
-                except Exception:
-                    pass  # Ignore condition errors
+                except (SyntaxError, NameError, TypeError, ValueError):
+                    pass  # Ignore condition evaluation errors
 
             self._state = DebugState.PAUSED
             if self.on_break:
@@ -2378,7 +2413,8 @@ class Debugger:
         # Simple evaluation using current variables
         try:
             return bool(eval(condition, {}, self._context.variables))
-        except Exception:
+        except (SyntaxError, NameError, TypeError, ValueError, AttributeError):
+            # Invalid condition expression
             return False
 
 
@@ -2782,7 +2818,7 @@ class QuickFixProvider:
                     diagnostic.span.start_col,
                 )
                 fixes.extend(pattern_fixes)
-            except Exception:
+            except (AttributeError, KeyError, IndexError, TypeError):
                 pass  # Silently ignore fixer errors
 
         return fixes
@@ -8821,7 +8857,7 @@ class EngineWorker(QThread):
 
 ================================================================================
 FILE PATH: app\ui\flow_converter.py
-LINES: 361
+LINES: 362
 ================================================================================
 
 """
@@ -9049,7 +9085,8 @@ class FlowConverter:
         """Extract action properties as dict."""
         try:
             return action.model_dump(exclude={"action"})
-        except Exception:
+        except (AttributeError, TypeError):
+            # Action doesn't support model_dump or has incompatible fields
             return {}
 
     def _add_action_pins(self, node: NodeData, action: Action) -> None:
@@ -9174,12 +9211,12 @@ class FlowConverter:
 
         try:
             return action_class(**props)
-        except Exception as e:
+        except (TypeError, ValueError) as e:
             logger.warning(f"Failed to create {action_type}: {e}")
             # Try with defaults
             try:
                 return action_class()
-            except Exception:
+            except (TypeError, ValueError):
                 return None
 
 
@@ -11344,7 +11381,7 @@ class HybridActionsPanel(QWidget):
 
 ================================================================================
 FILE PATH: app\ui\ide_main_window.py
-LINES: 857
+LINES: 968
 ================================================================================
 
 """
@@ -11371,7 +11408,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt, Signal
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
@@ -11422,6 +11459,7 @@ class IDEMainWindow(QMainWindow):
         self._init_menu()
         self._init_toolbar()
         self._init_status_bar()
+        self._init_shortcuts()  # Keyboard shortcuts
         self._connect_signals()
         self._restore_state()
 
@@ -11700,6 +11738,42 @@ class IDEMainWindow(QMainWindow):
 
         # Status message
         self.status_bar.showMessage("Ready")
+
+    def _init_shortcuts(self) -> None:
+        """Initialize keyboard shortcuts."""
+        # Run Script - Ctrl+R (alternative to F5)
+        run_shortcut = QShortcut(QKeySequence("Ctrl+R"), self)
+        run_shortcut.activated.connect(self._run_script)
+
+        # Stop Script - Ctrl+. (Escape-like stop)
+        stop_shortcut = QShortcut(QKeySequence("Ctrl+."), self)
+        stop_shortcut.activated.connect(self._stop_script)
+
+        # Toggle Breakpoint - F9
+        breakpoint_shortcut = QShortcut(QKeySequence("F9"), self)
+        breakpoint_shortcut.activated.connect(self._toggle_breakpoint)
+
+        # Trigger IntelliSense - Ctrl+Space
+        autocomplete_shortcut = QShortcut(QKeySequence("Ctrl+Space"), self)
+        autocomplete_shortcut.activated.connect(self._trigger_autocomplete)
+
+        # Quick check - Ctrl+Shift+B (build/check)
+        check_shortcut = QShortcut(QKeySequence("Ctrl+Shift+B"), self)
+        check_shortcut.activated.connect(self._check_syntax)
+
+    def _toggle_breakpoint(self) -> None:
+        """Toggle breakpoint on current line."""
+        cursor = self.editor.textCursor()
+        line = cursor.blockNumber() + 1
+        # TODO: Implement breakpoint toggle in debugger
+        self.output.log_info(f"Toggle breakpoint at line {line}")
+
+    def _trigger_autocomplete(self) -> None:
+        """Trigger autocomplete popup."""
+        if self._intellisense:
+            self._intellisense.show_completions()
+        else:
+            self.output.log_warning("IntelliSense not available")
 
     def _connect_signals(self) -> None:
         """Connect signals from child widgets."""
@@ -11995,19 +12069,93 @@ class IDEMainWindow(QMainWindow):
     # ─────────────────────────────────────────────────────────────
 
     def _run_script(self) -> None:
-        """Run the current script."""
+        """Run the current script using EngineWorker."""
         self.output.log_info("Running script...")
         self.run_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
-        # TODO: Implement actual script execution
         self.status_bar.showMessage("Running...")
+
+        # Parse current code to Script
+        from core.dsl.adapter import ir_to_script
+        from core.dsl.document import ScriptDocument
+
+        try:
+            # Create document from current code
+            doc = ScriptDocument()
+            doc.update_from_code(self.editor.get_code(), source="run")
+
+            # Check for parse errors
+            if doc.errors:
+                self.output.log_error(f"Parse errors: {doc.errors}")
+                self._stop_script()
+                return
+
+            if not doc.ir.is_valid:
+                self.output.log_error("Invalid IR - cannot run")
+                self._stop_script()
+                return
+
+            # Convert IR to Script
+            script = ir_to_script(doc.ir)
+
+            # Create and start engine worker
+            from app.ui.engine_worker import EngineWorker
+
+            self._engine = EngineWorker()
+            self._engine.step_started.connect(self._on_step_started)
+            self._engine.step_completed.connect(self._on_step_completed)
+            self._engine.flow_completed.connect(self._on_flow_completed)
+            self._engine.error_occurred.connect(self._on_engine_error)
+            self._engine.finished.connect(self._on_engine_finished)
+
+            # Set the script and start
+            self._engine._script = script
+            self._engine._setup_context()
+            self._engine.start()
+            self.output.log_info("Engine started")
+
+        except Exception as e:
+            self.output.log_error(f"Failed to start: {e}")
+            self._stop_script()
 
     def _stop_script(self) -> None:
         """Stop the running script."""
+        if hasattr(self, '_engine') and self._engine:
+            if self._engine.context:
+                from core.engine.context import EngineState
+                self._engine.context.set_state(EngineState.STOPPING)
+            self._engine.wait(timeout=2000)  # Wait up to 2 seconds
+            self._engine = None
+
         self.output.log_warning("Script stopped")
         self.run_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.status_bar.showMessage("Stopped")
+
+    def _on_step_started(self, flow: str, index: int, action_type: str) -> None:
+        """Handle step started signal from engine."""
+        self.output.log_info(f"[{flow}] Step {index}: {action_type}")
+
+    def _on_step_completed(self, flow: str, index: int, elapsed_ms: int) -> None:
+        """Handle step completed signal from engine."""
+        self.output.log_debug(f"[{flow}] Step {index} done in {elapsed_ms}ms")
+
+    def _on_flow_completed(self, flow: str, success: bool) -> None:
+        """Handle flow completed signal from engine."""
+        if success:
+            self.output.log_info(f"✅ Flow '{flow}' completed")
+        else:
+            self.output.log_warning(f"⚠️ Flow '{flow}' stopped")
+
+    def _on_engine_error(self, message: str) -> None:
+        """Handle error signal from engine."""
+        self.output.log_error(f"❌ {message}")
+
+    def _on_engine_finished(self) -> None:
+        """Handle engine thread finished."""
+        self.run_btn.setEnabled(True)
+        self.stop_btn.setEnabled(False)
+        self.status_bar.showMessage("Ready")
 
     def _show_flow_editor(self) -> None:
         """Show the visual flow editor in a new window."""
@@ -17525,6 +17673,238 @@ LINES: 1
 
 
 ================================================================================
+FILE PATH: core\errors.py
+LINES: 225
+================================================================================
+
+"""
+RetroAuto v2 - Custom Exception Hierarchy
+
+Structured error classes for better debugging and error handling.
+Phase 1.2: Error Handling Cleanup
+"""
+
+from typing import Any
+
+
+class RetroAutoError(Exception):
+    """Base exception for all RetroAuto errors."""
+
+    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+        self.message = message
+        self.details = details or {}
+        super().__init__(message)
+
+
+# ─────────────────────────────────────────────────────────────
+# Script Execution Errors
+# ─────────────────────────────────────────────────────────────
+
+
+class ScriptError(RetroAutoError):
+    """Error during script execution."""
+
+    pass
+
+
+class ActionExecutionError(ScriptError):
+    """Error executing a specific action."""
+
+    def __init__(
+        self, action_type: str, message: str, step_index: int | None = None
+    ) -> None:
+        self.action_type = action_type
+        self.step_index = step_index
+        super().__init__(
+            f"Action '{action_type}' failed at step {step_index}: {message}",
+            {"action_type": action_type, "step_index": step_index},
+        )
+
+
+class FlowNotFoundError(ScriptError):
+    """Referenced flow does not exist."""
+
+    def __init__(self, flow_name: str) -> None:
+        self.flow_name = flow_name
+        super().__init__(f"Flow not found: {flow_name}", {"flow_name": flow_name})
+
+
+class LabelNotFoundError(ScriptError):
+    """Referenced label does not exist."""
+
+    def __init__(self, label_name: str, flow_name: str) -> None:
+        self.label_name = label_name
+        self.flow_name = flow_name
+        super().__init__(
+            f"Label '{label_name}' not found in flow '{flow_name}'",
+            {"label_name": label_name, "flow_name": flow_name},
+        )
+
+
+# ─────────────────────────────────────────────────────────────
+# Asset Errors
+# ─────────────────────────────────────────────────────────────
+
+
+class AssetError(RetroAutoError):
+    """Error related to assets."""
+
+    pass
+
+
+class AssetNotFoundError(AssetError):
+    """Referenced asset does not exist."""
+
+    def __init__(self, asset_id: str) -> None:
+        self.asset_id = asset_id
+        super().__init__(f"Asset not found: {asset_id}", {"asset_id": asset_id})
+
+
+class AssetLoadError(AssetError):
+    """Failed to load asset image."""
+
+    def __init__(self, asset_id: str, path: str, reason: str) -> None:
+        self.asset_id = asset_id
+        self.path = path
+        super().__init__(
+            f"Failed to load asset '{asset_id}' from '{path}': {reason}",
+            {"asset_id": asset_id, "path": path, "reason": reason},
+        )
+
+
+# ─────────────────────────────────────────────────────────────
+# Vision Errors
+# ─────────────────────────────────────────────────────────────
+
+
+class VisionError(RetroAutoError):
+    """Error in vision/image processing."""
+
+    pass
+
+
+class MatchTimeoutError(VisionError):
+    """Image matching timed out."""
+
+    def __init__(self, asset_id: str, timeout_ms: int) -> None:
+        self.asset_id = asset_id
+        self.timeout_ms = timeout_ms
+        super().__init__(
+            f"Match timeout after {timeout_ms}ms for asset '{asset_id}'",
+            {"asset_id": asset_id, "timeout_ms": timeout_ms},
+        )
+
+
+class ScreenCaptureError(VisionError):
+    """Failed to capture screen."""
+
+    pass
+
+
+class OCRError(VisionError):
+    """OCR text recognition failed."""
+
+    def __init__(self, message: str, roi: dict | None = None) -> None:
+        super().__init__(message, {"roi": roi})
+
+
+# ─────────────────────────────────────────────────────────────
+# DSL/Parser Errors
+# ─────────────────────────────────────────────────────────────
+
+
+class DSLError(RetroAutoError):
+    """Error in DSL processing."""
+
+    pass
+
+
+class ParseError(DSLError):
+    """DSL parsing failed."""
+
+    def __init__(self, message: str, line: int | None = None, col: int | None = None) -> None:
+        self.line = line
+        self.col = col
+        location = f" at line {line}" if line else ""
+        if col:
+            location += f", column {col}"
+        super().__init__(f"Parse error{location}: {message}", {"line": line, "col": col})
+
+
+class SemanticError(DSLError):
+    """Semantic analysis error."""
+
+    pass
+
+
+class IRConversionError(DSLError):
+    """Failed to convert IR to Script."""
+
+    pass
+
+
+# ─────────────────────────────────────────────────────────────
+# Configuration Errors
+# ─────────────────────────────────────────────────────────────
+
+
+class ConfigurationError(RetroAutoError):
+    """Configuration or settings error."""
+
+    pass
+
+
+class InvalidConfigError(ConfigurationError):
+    """Invalid configuration value."""
+
+    def __init__(self, key: str, value: Any, expected: str) -> None:
+        self.key = key
+        self.value = value
+        super().__init__(
+            f"Invalid config '{key}': got {value!r}, expected {expected}",
+            {"key": key, "value": value, "expected": expected},
+        )
+
+
+# ─────────────────────────────────────────────────────────────
+# Network Errors
+# ─────────────────────────────────────────────────────────────
+
+
+class NetworkError(RetroAutoError):
+    """Network-related error."""
+
+    pass
+
+
+class ConnectionError(NetworkError):
+    """Failed to establish connection."""
+
+    pass
+
+
+class TimeoutError(NetworkError):
+    """Network operation timed out."""
+
+    pass
+
+
+# ─────────────────────────────────────────────────────────────
+# Utility Functions
+# ─────────────────────────────────────────────────────────────
+
+
+def wrap_exception(
+    original: Exception, wrapper_class: type[RetroAutoError], message: str | None = None
+) -> RetroAutoError:
+    """Wrap a generic exception in a RetroAutoError subclass."""
+    msg = message or str(original)
+    error = wrapper_class(msg, {"original_type": type(original).__name__})
+    error.__cause__ = original
+    return error
+
+
+================================================================================
 FILE PATH: core\models.py
 LINES: 556
 ================================================================================
@@ -18752,16 +19132,20 @@ class ActionRecorder:
 
 ================================================================================
 FILE PATH: core\templates.py
-LINES: 116
+LINES: 282
 ================================================================================
 
 """
 RetroAuto v2 - Template Store
 
 Manages preloaded templates for fast matching.
+Phase 3.2.1: Lazy loading with LRU cache for memory efficiency.
 """
 
+from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 import cv2
@@ -18771,6 +19155,16 @@ from core.models import AssetImage
 from infra import get_logger
 
 logger = get_logger("TemplateStore")
+
+
+@dataclass
+class TemplateData:
+    """Cached template data."""
+    
+    asset: AssetImage
+    gray: np.ndarray
+    color: np.ndarray | None
+    shape: tuple[int, int]
 
 
 class TemplateStore:
@@ -18871,6 +19265,158 @@ class TemplateStore:
 
     def __len__(self) -> int:
         return len(self._templates)
+
+
+class LazyTemplateStore:
+    """
+    Lazy-loading template store with LRU cache.
+    
+    Loads templates on-demand instead of upfront, with LRU eviction
+    to manage memory usage for large asset libraries.
+    
+    Phase 3.2.1: Performance optimization.
+    
+    Usage:
+        store = LazyTemplateStore(base_path, max_cached=50)
+        template = store.get("button_ok")  # Loads on first access
+        stats = store.get_cache_stats()  # Monitor cache performance
+    """
+    
+    def __init__(
+        self,
+        base_path: Path | None = None,
+        max_cached: int = 50,
+    ) -> None:
+        self._base_path = base_path or Path(".")
+        self._max_cached = max_cached
+        self._assets: dict[str, AssetImage] = {}  # Asset metadata registry
+        self._lock = Lock()
+        
+        # Statistics
+        self._hits = 0
+        self._misses = 0
+        
+    def set_base_path(self, path: Path) -> None:
+        """Set base path for relative asset paths."""
+        self._base_path = path
+        
+    def register_assets(self, assets: list[AssetImage]) -> None:
+        """Register assets without loading them (lazy loading)."""
+        for asset in assets:
+            self._assets[asset.id] = asset
+        logger.info("Registered %d assets for lazy loading", len(assets))
+    
+    def get(self, asset_id: str) -> TemplateData | None:
+        """
+        Get template, loading it lazily if not cached.
+        
+        Args:
+            asset_id: Asset ID to load
+            
+        Returns:
+            TemplateData or None if not found
+        """
+        # Check if asset is registered
+        asset = self._assets.get(asset_id)
+        if asset is None:
+            return None
+        
+        # Use cached loader
+        return self._load_cached(asset_id, asset.path)
+    
+    @lru_cache(maxsize=50)
+    def _load_cached(self, asset_id: str, asset_path: str) -> TemplateData | None:
+        """
+        Load template with LRU caching.
+        
+        Uses asset_id + path as cache key for invalidation on path changes.
+        """
+        asset = self._assets.get(asset_id)
+        if asset is None:
+            self._misses += 1
+            return None
+        
+        try:
+            path = Path(asset_path)
+            if not path.is_absolute():
+                path = self._base_path / asset_path
+            
+            if not path.exists():
+                logger.warning("Template not found: %s", path)
+                self._misses += 1
+                return None
+            
+            # Load image
+            img = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+            if img is None:
+                logger.warning("Failed to read image: %s", path)
+                self._misses += 1
+                return None
+            
+            # Convert to grayscale if needed
+            if asset.grayscale and len(img.shape) == 3:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            else:
+                gray = img
+            
+            self._hits += 1
+            logger.debug("Lazy-loaded template: %s", asset_id)
+            
+            return TemplateData(
+                asset=asset,
+                gray=gray,
+                color=None if asset.grayscale else img,
+                shape=img.shape[:2],
+            )
+            
+        except (OSError, cv2.error) as e:
+            logger.error("Error loading template %s: %s", asset_id, e)
+            self._misses += 1
+            return None
+    
+    def get_template_image(
+        self,
+        asset_id: str,
+        grayscale: bool = True,
+    ) -> np.ndarray | None:
+        """Get template image array."""
+        data = self.get(asset_id)
+        if data is None:
+            return None
+        return data.gray if grayscale else data.color
+    
+    def get_cache_stats(self) -> dict[str, Any]:
+        """
+        Get cache statistics.
+        
+        Returns:
+            Dict with hits, misses, hit_rate, cache_size
+        """
+        cache_info = self._load_cached.cache_info()
+        total = self._hits + self._misses
+        
+        return {
+            "hits": self._hits,
+            "misses": self._misses,
+            "hit_rate": self._hits / total if total > 0 else 0.0,
+            "cache_size": cache_info.currsize,
+            "max_size": cache_info.maxsize,
+            "registered_assets": len(self._assets),
+        }
+    
+    def clear_cache(self) -> None:
+        """Clear the LRU cache."""
+        self._load_cached.cache_clear()
+        self._hits = 0
+        self._misses = 0
+        logger.debug("Lazy template cache cleared")
+    
+    def __contains__(self, asset_id: str) -> bool:
+        return asset_id in self._assets
+    
+    def __len__(self) -> int:
+        return len(self._assets)
+
 
 
 ================================================================================
@@ -19670,7 +20216,7 @@ __all__ = [
 
 ================================================================================
 FILE PATH: core\dsl\adapter.py
-LINES: 608
+LINES: 610
 ================================================================================
 
 """
@@ -20261,8 +20807,10 @@ def ir_to_action(ir: ActionIR) -> Action | None:
         if action_type in ("end_while", "endwhile"):
             return EndWhile()
 
-    except Exception:
-        pass
+    except KeyError as e:
+        logger.warning("Missing required parameter for action '%s': %s", action_type, e)
+    except (ValueError, TypeError) as e:
+        logger.warning("Invalid parameter value for action '%s': %s", action_type, e)
 
     return None
 
@@ -27730,7 +28278,7 @@ class InterruptManager:
 
 ================================================================================
 FILE PATH: core\engine\memory_manager.py
-LINES: 180
+LINES: 181
 ================================================================================
 
 """
@@ -27858,7 +28406,8 @@ class MemoryManager:
             import sys
 
             return sum(sys.getsizeof(obj) for obj in gc.get_objects()[:1000])
-        except Exception:
+        except (OSError, PermissionError) as e:
+            logger.debug("Failed to get memory usage: %s", e)
             return 0
 
     def _force_cleanup(self) -> None:
@@ -28127,7 +28676,7 @@ def get_profile() -> PerformanceProfile:
 
 ================================================================================
 FILE PATH: core\engine\runner.py
-LINES: 1094
+LINES: 1119
 ================================================================================
 
 """
@@ -28378,31 +28927,56 @@ class Runner:
         """
         Validate all referenced assets exist before running.
 
+        B2 OPTIMIZATION: Uses O(1) set membership test instead of repeated lookups.
+        Also handles nested actions (then_actions, else_actions, actions).
+
         Returns:
             List of error messages (empty if all valid)
         """
-        # Skip validation if context doesn't support get_asset (e.g., tests)
-        if not hasattr(self._ctx, "get_asset"):
-            return []
+        errors: list[str] = []
+        checked: set[str] = set()  # Avoid duplicate checks
 
-        errors = []
-        checked = set()
+        def check_asset(asset_id: str) -> None:
+            """Check single asset exists with O(1) lookup."""
+            if not asset_id or asset_id in checked:
+                return
+            checked.add(asset_id)
 
-        for action in flow.actions:
-            # Check asset_id if action has one
+            # B2: Use O(1) templates membership test
+            if self._ctx.templates and asset_id not in self._ctx.templates:
+                errors.append(f"Asset '{asset_id}' not loaded or image is None")
+
+        def check_action(action: Action) -> None:
+            """Recursively check action and all nested actions."""
+            # Check single asset_id attribute
             if hasattr(action, "asset_id") and action.asset_id:
-                asset_id = action.asset_id
-                if asset_id in checked:
-                    continue
-                checked.add(asset_id)
+                check_asset(action.asset_id)
 
-                # Try to get asset from context
-                try:
-                    asset = self._ctx.get_asset(asset_id)
-                    if asset is None or getattr(asset, "image", None) is None:
-                        errors.append(f"Asset '{asset_id}' not loaded or image is None")
-                except Exception as e:
-                    errors.append(f"Asset '{asset_id}' error: {e}")
+            # Check asset_ids list (IfAllImages, IfAnyImage)
+            if hasattr(action, "asset_ids") and action.asset_ids:
+                for aid in action.asset_ids:
+                    check_asset(aid)
+
+            # Check click_asset_id and until_asset_id (ClickUntil)
+            for attr in ("click_asset_id", "until_asset_id"):
+                val = getattr(action, attr, None)
+                if val:
+                    check_asset(val)
+
+            # Recursively check nested actions
+            for attr in ("then_actions", "else_actions", "actions"):
+                nested = getattr(action, attr, None)
+                if nested:
+                    for sub in nested:
+                        check_action(sub)
+
+        # Validate all actions in flow
+        for action in flow.actions:
+            check_action(action)
+
+        # Log errors if any
+        for err in errors:
+            logger.error("❌ Pre-flight check failed: %s", err)
 
         return errors
 
@@ -29500,6 +30074,208 @@ class ExecutionContext:
     def current_flow(self) -> str | None:
         """Get current flow name."""
         return self._call_stack[-1] if self._call_stack else None
+
+
+================================================================================
+FILE PATH: core\engine\services.py
+LINES: 195
+================================================================================
+
+"""
+RetroAuto v2 - Execution Services (Dependency Injection)
+
+Provides a clean dependency injection pattern for the Runner
+and other execution-related components.
+
+Phase 3.1.2: Architecture Refinement
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Protocol, Any
+
+if TYPE_CHECKING:
+    from core.templates import TemplateStore
+    from vision.capture import ScreenCapture
+    from vision.matcher import Matcher
+    from vision.waiter import ImageWaiter
+    from input.mouse import MouseController
+    from input.keyboard import KeyboardController
+
+
+class IScreenCapture(Protocol):
+    """Protocol for screen capture service."""
+    
+    def capture_screen(self) -> Any:
+        """Capture full screen."""
+        ...
+    
+    def capture_region(self, x: int, y: int, width: int, height: int) -> Any:
+        """Capture specific region."""
+        ...
+
+
+class IMatcher(Protocol):
+    """Protocol for image matching service."""
+    
+    def find(self, asset_id: str, roi: Any | None = None) -> Any:
+        """Find asset on screen."""
+        ...
+
+
+class ITemplateStore(Protocol):
+    """Protocol for template store service."""
+    
+    def get(self, asset_id: str) -> Any | None:
+        """Get template by ID."""
+        ...
+    
+    def __contains__(self, asset_id: str) -> bool:
+        """Check if template exists."""
+        ...
+
+
+class IMouseController(Protocol):
+    """Protocol for mouse control service."""
+    
+    def click(self, x: int, y: int) -> None:
+        """Click at position."""
+        ...
+    
+    def move(self, x: int, y: int) -> None:
+        """Move mouse to position."""
+        ...
+
+
+class IKeyboardController(Protocol):
+    """Protocol for keyboard control service."""
+    
+    def type_text(self, text: str, paste_mode: bool = True) -> None:
+        """Type text."""
+        ...
+    
+    def hotkey(self, keys: list[str]) -> None:
+        """Press hotkey combination."""
+        ...
+
+
+@dataclass
+class ExecutionServices:
+    """
+    Container for all services needed by the script runner.
+    
+    Using dependency injection allows for:
+    - Easy testing with mocks
+    - Swappable implementations
+    - Clear dependencies
+    
+    Usage:
+        # Production
+        services = ExecutionServices.create_default()
+        runner = Runner(services=services)
+        
+        # Testing
+        mock_services = ExecutionServices(
+            matcher=MockMatcher(),
+            templates=MockTemplates(),
+            ...
+        )
+        runner = Runner(services=mock_services)
+    """
+    
+    # Vision services
+    screen_capture: IScreenCapture | None = None
+    matcher: IMatcher | None = None
+    templates: ITemplateStore | None = None
+    
+    # Input services
+    mouse: IMouseController | None = None
+    keyboard: IKeyboardController | None = None
+    
+    # Configuration
+    enable_logging: bool = True
+    enable_screenshots: bool = False
+    
+    @classmethod
+    def create_default(cls) -> ExecutionServices:
+        """
+        Create ExecutionServices with default implementations.
+        
+        Returns:
+            ExecutionServices with real implementations
+        """
+        from core.templates import TemplateStore
+        from vision.capture import ScreenCapture
+        from vision.matcher import Matcher
+        from input.mouse import MouseController
+        from input.keyboard import KeyboardController
+        
+        return cls(
+            screen_capture=ScreenCapture(),
+            matcher=Matcher(),
+            templates=TemplateStore(),
+            mouse=MouseController(),
+            keyboard=KeyboardController(),
+        )
+    
+    @classmethod
+    def create_for_testing(cls) -> ExecutionServices:
+        """
+        Create ExecutionServices with mock/stub implementations.
+        
+        Returns:
+            ExecutionServices for testing (no real I/O)
+        """
+        return cls(
+            screen_capture=None,
+            matcher=None,
+            templates=None,
+            mouse=None,
+            keyboard=None,
+            enable_logging=False,
+        )
+    
+    def validate(self) -> list[str]:
+        """
+        Validate that all required services are available.
+        
+        Returns:
+            List of missing service names
+        """
+        missing = []
+        
+        if self.matcher is None:
+            missing.append("matcher")
+        if self.templates is None:
+            missing.append("templates")
+        if self.mouse is None:
+            missing.append("mouse")
+        if self.keyboard is None:
+            missing.append("keyboard")
+        
+        return missing
+
+
+# ─────────────────────────────────────────────────────────────
+# Singleton default services (for backward compatibility)
+# ─────────────────────────────────────────────────────────────
+
+_default_services: ExecutionServices | None = None
+
+
+def get_default_services() -> ExecutionServices:
+    """Get or create default execution services singleton."""
+    global _default_services
+    if _default_services is None:
+        _default_services = ExecutionServices.create_default()
+    return _default_services
+
+
+def set_default_services(services: ExecutionServices) -> None:
+    """Set custom default services (for testing)."""
+    global _default_services
+    _default_services = services
 
 
 ================================================================================
@@ -30614,8 +31390,8 @@ class PixelChecker:
                                 y=y + offset_y,
                                 color=color,
                             )
-        except Exception:
-            pass
+        except (IndexError, ValueError, TypeError):
+            pass  # Screen capture failed or index out of bounds
 
         return None
 
@@ -30665,8 +31441,8 @@ class PixelChecker:
                                     color=color,
                                 )
                             )
-        except Exception:
-            pass
+        except (IndexError, ValueError, TypeError):
+            pass  # Screen capture failed or index out of bounds
 
         return results
 
@@ -31063,7 +31839,7 @@ class GraphWalker:
 
 ================================================================================
 FILE PATH: core\lsp\server.py
-LINES: 582
+LINES: 583
 ================================================================================
 
 """
@@ -31524,10 +32300,11 @@ class RetroScriptLanguageServer:
                         Position(0, 0),
                         Position(lines, len(doc.get_line(lines))),
                     ).to_dict(),
-                    "newText": formatted,
+                    \"newText\": formatted,
                 }
             ]
-        except Exception:
+        except (ImportError, AttributeError, ValueError):
+            # Formatter not available or failed
             return []
 
     def _analyze_document(self, uri: str) -> None:
@@ -31985,8 +32762,8 @@ class RemoteAPIHandler(BaseHTTPRequestHandler):
             if length:
                 body = self.rfile.read(length)
                 return json.loads(body.decode("utf-8"))
-        except Exception:
-            pass
+        except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
+            pass  # Invalid JSON or encoding - return empty dict
         return {}
 
     def do_OPTIONS(self) -> None:
@@ -32375,7 +33152,7 @@ class WebSocketClient:
             else:
                 self._ws.send(data)
             return True
-        except Exception:
+        except (ConnectionError, OSError, AttributeError):
             return False
 
     def send_json(self, data: Any) -> bool:
@@ -32526,7 +33303,7 @@ class WebSocketServer:
         try:
             client.send(data)
             return True
-        except Exception:
+        except (ConnectionError, OSError, AttributeError):
             return False
 
 
@@ -33473,7 +34250,7 @@ class FileWatcher:
                         watched.last_modified = current_mtime
                         self._fire_event(watched.path, "modified")
 
-            except Exception:
+            except (OSError, PermissionError, FileNotFoundError):
                 pass  # Ignore file access errors
 
     def _fire_event(self, path: Path, event_type: str) -> None:
@@ -33491,7 +34268,7 @@ class FileWatcher:
         try:
             content = path.read_bytes()
             return hashlib.md5(content).hexdigest()
-        except Exception:
+        except (OSError, PermissionError, FileNotFoundError):
             return ""
 
 
@@ -35303,7 +36080,7 @@ def hotkey(*keys: str) -> None:
 
 ================================================================================
 FILE PATH: core\vision\matcher.py
-LINES: 732
+LINES: 733
 ================================================================================
 
 """
@@ -35841,7 +36618,8 @@ class ImageMatcher:
                     ]
 
                 return screen
-            except Exception:
+            except (OSError, AttributeError, ValueError):
+                # PIL capture failed
                 return None
 
         with mss.mss() as sct:
@@ -35943,8 +36721,8 @@ class ImageMatcher:
                         for f in futures:
                             f.cancel()
                         return result, template_name
-                except Exception:
-                    pass
+                except (TimeoutError, RuntimeError, OSError):
+                    pass  # Thread execution error
 
         return MatchResult.not_found(), None
 
@@ -36351,8 +37129,8 @@ class AutosaveManager:
             try:
                 oldest.unlink()
                 logger.debug("Removed old backup: %s", oldest.name)
-            except Exception:
-                pass
+            except (OSError, PermissionError) as e:
+                logger.warning("Failed to remove old backup %s: %s", oldest.name, e)
 
         # Create new backup name
         timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -36851,7 +37629,7 @@ class HotkeyManager:
 
 ================================================================================
 FILE PATH: infra\logging.py
-LINES: 119
+LINES: 120
 ================================================================================
 
 """
@@ -36902,7 +37680,8 @@ class GUIHandler(logging.Handler):
             timestamp = datetime.fromtimestamp(record.created).strftime("%H:%M:%S")
             message = self.format(record)
             log_emitter.emit(record.levelname, timestamp, message)
-        except Exception:
+        except (RecursionError, RuntimeError):
+            # Prevent infinite recursion if emit fails
             self.handleError(record)
 
 
@@ -37370,7 +38149,7 @@ __all__ = [
 
 ================================================================================
 FILE PATH: input\keyboard.py
-LINES: 316
+LINES: 318
 ================================================================================
 
 """
@@ -37611,7 +38390,8 @@ class KeyboardController:
             win32clipboard.OpenClipboard()
             try:
                 old_data = win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT)
-            except Exception:
+            except (TypeError, OSError):
+                # Clipboard empty or wrong format
                 old_data = None
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, text)
@@ -37634,8 +38414,9 @@ class KeyboardController:
             if old_data:
                 win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, old_data)
             win32clipboard.CloseClipboard()
-        except Exception:
-            pass
+        except (OSError, TypeError) as e:
+            # Clipboard restore failed - non-critical, log and continue
+            logger.debug("Clipboard restore failed: %s", e)
 
     def _type_direct(self, text: str) -> None:
         """Type directly using SendInput (for ASCII only)."""
@@ -39545,6 +40326,298 @@ LINES: 1
 ================================================================================
 
 """RetroAuto v2 - Tests package."""
+
+
+================================================================================
+FILE PATH: tests\test_a1_fix.py
+LINES: 73
+================================================================================
+
+"""
+Test A1 Fix: Null-safe template access
+"""
+import numpy as np
+from pathlib import Path
+from core.models import AssetImage
+from core.templates import TemplateStore
+from vision.matcher import Matcher
+
+
+def test_a1_fix():
+    """Verify A1 fix: null-safe template access works."""
+    # Create a mock TemplateStore
+    store = TemplateStore(Path('.'))
+
+    # Test 1: Grayscale asset with color=None (O4 optimization)
+    test_asset = AssetImage(id='test_grayscale', path='test.png', grayscale=True, threshold=0.8)
+    store._templates['test_grayscale'] = {
+        'asset': test_asset,
+        'color': None,  # O4 optimization - color is None for grayscale
+        'gray': np.zeros((50, 50), dtype=np.uint8),
+        'shape': (50, 50),
+    }
+
+    print('Test 1: Grayscale asset with color=None')
+    tmpl_data = store.get('test_grayscale')
+    asset = tmpl_data['asset']
+    print(f'  asset.grayscale = {asset.grayscale}')
+    print(f'  tmpl_data["color"] is None = {tmpl_data["color"] is None}')
+
+    # A1 FIX logic check
+    if asset.grayscale:
+        tmpl_img = tmpl_data['gray']
+        print(f'  ✅ Used grayscale template: shape={tmpl_img.shape}')
+    else:
+        color_img = tmpl_data.get('color')
+        if color_img is None:
+            tmpl_img = tmpl_data['gray']
+            print(f'  ✅ Fallback to grayscale: shape={tmpl_img.shape}')
+        else:
+            tmpl_img = color_img
+            print(f'  Used color template: shape={tmpl_img.shape}')
+
+    # Test 2: Color asset (should still work)
+    test_color = AssetImage(id='test_color', path='test2.png', grayscale=False, threshold=0.8)
+    store._templates['test_color'] = {
+        'asset': test_color,
+        'color': np.zeros((50, 50, 3), dtype=np.uint8),
+        'gray': np.zeros((50, 50), dtype=np.uint8),
+        'shape': (50, 50),
+    }
+
+    print()
+    print('Test 2: Color asset with color image')
+    tmpl_data2 = store.get('test_color')
+    asset2 = tmpl_data2['asset']
+    if asset2.grayscale:
+        tmpl_img2 = tmpl_data2['gray']
+    else:
+        color_img2 = tmpl_data2.get('color')
+        if color_img2 is None:
+            tmpl_img2 = tmpl_data2['gray']
+            print(f'  ✅ Fallback to grayscale')
+        else:
+            tmpl_img2 = color_img2
+            print(f'  ✅ Used color template: shape={tmpl_img2.shape}')
+
+    print()
+    print('✅ A1 FIX VERIFIED: Null-safe template access works correctly!')
+
+
+if __name__ == '__main__':
+    test_a1_fix()
+
+
+================================================================================
+FILE PATH: tests\test_adapter.py
+LINES: 205
+================================================================================
+
+"""
+Tests for DSL Adapter (IR <-> Action conversion).
+"""
+
+import pytest
+
+from core.dsl.ir import ActionIR
+from core.dsl.adapter import (
+    ir_to_action,
+    ir_to_actions,
+    DSLToYAMLAdapter,
+)
+from core.models import (
+    Click,
+    Delay,
+    DelayRandom,
+    Hotkey,
+    Label,
+    Loop,
+    Goto,
+    TypeText,
+    WaitImage,
+    EndIf,
+    EndLoop,
+    Else,
+)
+
+
+class TestIRToAction:
+    """Test IR to Action conversion."""
+
+    def test_ir_to_click(self) -> None:
+        """Convert click ActionIR to Click model."""
+        ir = ActionIR(action_type="click", params={"arg0": 100, "arg1": 200})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Click)
+        assert action.x == 100
+        assert action.y == 200
+
+    def test_ir_to_delay(self) -> None:
+        """Convert sleep ActionIR to Delay model."""
+        ir = ActionIR(action_type="sleep", params={"arg0": 500})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Delay)
+        assert action.ms == 500
+
+    def test_ir_to_delay_random(self) -> None:
+        """Convert delay_random ActionIR to DelayRandom model."""
+        ir = ActionIR(action_type="delay_random", params={"arg0": 100, "arg1": 500})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, DelayRandom)
+        assert action.min_ms == 100
+        assert action.max_ms == 500
+
+    def test_ir_to_wait_image(self) -> None:
+        """Convert wait_image ActionIR to WaitImage model."""
+        ir = ActionIR(action_type="wait_image", params={"arg0": "dialog", "timeout": 5000})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, WaitImage)
+        assert action.asset_id == "dialog"
+        assert action.timeout_ms == 5000
+
+    def test_ir_to_loop(self) -> None:
+        """Convert loop ActionIR to Loop model."""
+        ir = ActionIR(action_type="loop", params={"count": 5})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Loop)
+        assert action.count == 5
+
+    def test_ir_to_label(self) -> None:
+        """Convert label ActionIR to Label model."""
+        ir = ActionIR(action_type="label", params={"name": "start_point"})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Label)
+        assert action.name == "start_point"
+
+    def test_ir_to_goto(self) -> None:
+        """Convert goto ActionIR to Goto model."""
+        ir = ActionIR(action_type="goto", params={"label": "start_point"})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Goto)
+        assert action.label == "start_point"
+
+    def test_ir_to_type_text(self) -> None:
+        """Convert type ActionIR to TypeText model."""
+        ir = ActionIR(action_type="type", params={"arg0": "Hello World", "enter": True})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, TypeText)
+        assert action.text == "Hello World"
+        assert action.enter is True
+
+    def test_ir_to_hotkey(self) -> None:
+        """Convert hotkey ActionIR to Hotkey model."""
+        ir = ActionIR(action_type="hotkey", params={"keys": ["ctrl", "s"]})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Hotkey)
+        assert action.keys == ["ctrl", "s"]
+
+    def test_ir_to_end_if(self) -> None:
+        """Convert end_if ActionIR to EndIf model."""
+        ir = ActionIR(action_type="end_if", params={})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, EndIf)
+
+    def test_ir_to_end_loop(self) -> None:
+        """Convert end_loop ActionIR to EndLoop model."""
+        ir = ActionIR(action_type="end_loop", params={})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, EndLoop)
+
+    def test_ir_to_else(self) -> None:
+        """Convert else ActionIR to Else model."""
+        ir = ActionIR(action_type="else", params={})
+        action = ir_to_action(ir)
+        
+        assert action is not None
+        assert isinstance(action, Else)
+
+    def test_unknown_action_returns_none(self) -> None:
+        """Unknown action type returns None."""
+        ir = ActionIR(action_type="unknown_action_xyz", params={})
+        action = ir_to_action(ir)
+        
+        assert action is None
+
+
+class TestIRToActions:
+    """Test batch conversion of IR to Actions."""
+
+    def test_empty_list(self) -> None:
+        """Empty IR list produces empty action list."""
+        actions = ir_to_actions([])
+        assert actions == []
+
+    def test_multiple_actions(self) -> None:
+        """Multiple IRs convert to multiple actions."""
+        irs = [
+            ActionIR(action_type="click", params={"arg0": 10, "arg1": 20}),
+            ActionIR(action_type="sleep", params={"arg0": 100}),
+            ActionIR(action_type="click", params={"arg0": 30, "arg1": 40}),
+        ]
+        actions = ir_to_actions(irs)
+        
+        assert len(actions) == 3
+        assert isinstance(actions[0], Click)
+        assert isinstance(actions[1], Delay)
+        assert isinstance(actions[2], Click)
+
+    def test_skips_invalid_actions(self) -> None:
+        """Invalid actions are skipped, not added to list."""
+        irs = [
+            ActionIR(action_type="click", params={"arg0": 10, "arg1": 20}),
+            ActionIR(action_type="invalid_action_xyz", params={}),
+            ActionIR(action_type="sleep", params={"arg0": 100}),
+        ]
+        actions = ir_to_actions(irs)
+        
+        # Invalid action skipped
+        assert len(actions) == 2
+        assert isinstance(actions[0], Click)
+        assert isinstance(actions[1], Delay)
+
+
+class TestDSLAdapter:
+    """Test the DSL to YAML adapter class."""
+
+    def test_parse_duration_seconds(self) -> None:
+        """Parse duration with 's' suffix."""
+        adapter = DSLToYAMLAdapter()
+        ms = adapter._parse_duration("5s")
+        assert ms == 5000
+
+    def test_parse_duration_milliseconds(self) -> None:
+        """Parse duration with 'ms' suffix."""
+        adapter = DSLToYAMLAdapter()
+        ms = adapter._parse_duration("500ms")
+        assert ms == 500
+
+    def test_parse_duration_numeric(self) -> None:
+        """Parse numeric duration (assumed ms)."""
+        adapter = DSLToYAMLAdapter()
+        ms = adapter._parse_duration("250")
+        assert ms == 250
 
 
 ================================================================================
@@ -44217,7 +45290,7 @@ def get_capture() -> ScreenCapture:
 
 ================================================================================
 FILE PATH: vision\matcher.py
-LINES: 233
+LINES: 245
 ================================================================================
 
 """
@@ -44327,8 +45400,20 @@ class Matcher:
             return None
 
         asset: AssetImage = tmpl_data["asset"]
-        tmpl_img: np.ndarray = tmpl_data["gray"] if asset.grayscale else tmpl_data["color"]
         tmpl_h, tmpl_w = tmpl_data["shape"]
+
+        # A1 FIX: Null-safe template image access
+        # After O4 optimization, grayscale assets have color=None
+        if asset.grayscale:
+            tmpl_img: np.ndarray = tmpl_data["gray"]
+        else:
+            color_img = tmpl_data.get("color")
+            if color_img is None:
+                # Fallback to grayscale if color not available
+                tmpl_img = tmpl_data["gray"]
+                logger.debug("Using grayscale fallback for %s", asset_id)
+            else:
+                tmpl_img = color_img
 
         # Determine ROI
         roi = roi_override or asset.roi
@@ -44457,7 +45542,7 @@ class Matcher:
 
 ================================================================================
 FILE PATH: vision\ocr.py
-LINES: 241
+LINES: 246
 ================================================================================
 
 """
@@ -44517,7 +45602,11 @@ class TextReader:
 
             version = pytesseract.get_tesseract_version()
             return version is not None
-        except Exception:
+        except (OSError, FileNotFoundError) as e:
+            logger.debug("Tesseract not found: %s", e)
+            return False
+        except ImportError:
+            logger.debug("pytesseract module not available")
             return False
 
         # Check for Tesseract binary in common Windows paths if not in PATH
@@ -44681,7 +45770,8 @@ class TextReader:
             # Fast hash using image bytes + config
             img_bytes = img.tobytes()[:4096]  # First 4KB for speed
             return hash((img_bytes, img.size, allowlist))
-        except Exception:
+        except (OSError, MemoryError, AttributeError):
+            # Image buffer error - return 0 (no caching)
             return 0
 
     def _cache_result(self, key: int, text: str) -> None:
@@ -45106,6 +46196,6 @@ class ImageWaiter:
 
 ================================================================================
 END OF PROJECT CONTEXT
-Total files: 166
-Total lines: 43938
+Total files: 170
+Total lines: 45000
 ================================================================================

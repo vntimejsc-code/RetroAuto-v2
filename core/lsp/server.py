@@ -456,7 +456,7 @@ class RetroScriptLanguageServer:
                         Position(0, 0),
                         Position(lines, len(doc.get_line(lines))),
                     ).to_dict(),
-                    \"newText\": formatted,
+                    "newText": formatted,
                 }
             ]
         except (ImportError, AttributeError, ValueError):

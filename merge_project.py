@@ -201,9 +201,9 @@ def main():
     root_dir = args.root.resolve()
     output_file = args.output.resolve()
     
-    print(f"🔍 Scanning: {root_dir}")
-    print(f"📝 Output: {output_file}")
-    print(f"📄 Extensions: {', '.join(sorted(extensions))}")
+    print(f"[*] Scanning: {root_dir}")
+    print(f"[>] Output: {output_file}")
+    print(f"[#] Extensions: {', '.join(sorted(extensions))}")
     print()
     
     stats = merge_project(
@@ -213,14 +213,14 @@ def main():
         include_line_numbers=args.line_numbers,
     )
     
-    print(f"✅ Done!")
+    print(f"[OK] Done!")
     print(f"   Files processed: {stats['files_processed']}")
     print(f"   Files skipped: {stats['files_skipped']}")
     print(f"   Total lines: {stats['total_lines']:,}")
     print(f"   Total chars: {stats['total_chars']:,}")
     
     if stats['errors']:
-        print(f"\n⚠️ Errors ({len(stats['errors'])}):")
+        print(f"\n[!] Errors ({len(stats['errors'])}):")
         for err in stats['errors'][:5]:
             print(f"   - {err}")
         if len(stats['errors']) > 5:
@@ -229,9 +229,9 @@ def main():
     # Hiển thị kích thước file
     size_kb = output_file.stat().st_size / 1024
     if size_kb > 1024:
-        print(f"\n📦 Output size: {size_kb/1024:.2f} MB")
+        print(f"\n[=] Output size: {size_kb/1024:.2f} MB")
     else:
-        print(f"\n📦 Output size: {size_kb:.2f} KB")
+        print(f"\n[=] Output size: {size_kb:.2f} KB")
 
 
 if __name__ == '__main__':
