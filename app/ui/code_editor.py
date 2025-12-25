@@ -125,6 +125,12 @@ class DSLCodeEditor(QPlainTextEdit):
         self.minimap = Minimap(self)
         self.minimap.show()
 
+        # Performance: Tooltip throttle (100ms)
+        self._last_tooltip_time: float = 0.0
+        self._last_tooltip_word: str = ""
+        # Performance: Asset path cache
+        self._asset_cache: dict[str, object] = {}
+
     def set_asset_provider(self, provider) -> None:
         """Set callback to lookup asset path from ID."""
         self._asset_provider = provider
@@ -297,10 +303,16 @@ class DSLCodeEditor(QPlainTextEdit):
     # ─────────────────────────────────────────────────────────────
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        """Handle mouse move for Asset Peek tooltip."""
+        """Handle mouse move for Asset Peek tooltip (throttled)."""
         super().mouseMoveEvent(event)
 
         if not self._asset_provider:
+            return
+
+        # Throttle: 100ms between tooltip updates
+        import time
+        now = time.time()
+        if now - self._last_tooltip_time < 0.1:
             return
 
         # Get cursor under mouse
@@ -313,24 +325,33 @@ class DSLCodeEditor(QPlainTextEdit):
         if not word:
             return
 
+        # Skip if same word as last check
+        if word == self._last_tooltip_word:
+            return
+
+        self._last_tooltip_time = now
+        self._last_tooltip_word = word
+
         # Check if it looks like an asset ID (alphanumeric + underscore)
         if not word.replace("_", "").isalnum():
             return
 
-        # Try to resolve asset
-        image_path = self._asset_provider(word)
-        if image_path and image_path.exists():
-            # Show tooltip with image
-            # Convert path to string using forward slashes for HTML compatibility
-            html_path = str(image_path).replace("\\", "/")
+        # Try cache first
+        if word in self._asset_cache:
+            image_path = self._asset_cache[word]
+        else:
+            image_path = self._asset_provider(word)
+            self._asset_cache[word] = image_path  # Cache result (including None)
 
+        if image_path and hasattr(image_path, 'exists') and image_path.exists():
+            # Show tooltip with image
+            html_path = str(image_path).replace("\\", "/")
             tooltip_html = f"""
             <div style='background-color: #2d2d2d; color: #fff; padding: 4px; border: 1px solid #0078d4;'>
                 <div style='font-weight: bold; margin-bottom: 4px;'>📷 {word}</div>
                 <img src='file:///{html_path}' width='200' />
             </div>
             """
-
             QToolTip.showText(event.globalPosition().toPoint(), tooltip_html, self)
         else:
             QToolTip.hideText()
