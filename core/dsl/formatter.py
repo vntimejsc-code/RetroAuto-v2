@@ -380,7 +380,11 @@ class Formatter:
 
     def _format_unary(self, expr: UnaryExpr) -> None:
         """Format unary expression."""
-        self._write(expr.operator)
+        # 'not' keyword needs trailing space, '!' and '-' do not
+        if expr.operator == "not":
+            self._write("not ")
+        else:
+            self._write(expr.operator)
         self._format_expr(expr.operand)
 
     def _format_call(self, expr: CallExpr) -> None:

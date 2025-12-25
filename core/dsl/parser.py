@@ -1045,13 +1045,24 @@ class Parser:
         return left
 
     def _parse_unary(self) -> ASTNode:
-        """Parse ! - unary expression."""
+        """Parse ! / not / - unary expression."""
+        # Handle '!' (symbol form)
         if self._match(TokenType.NOT):
             start = self.tokens[self.pos - 1]
             operand = self._parse_unary()
             return UnaryExpr(
                 span=self._span_from(start),
                 operator="!",
+                operand=operand,
+            )
+
+        # Handle 'not' (keyword form)
+        if self._match(TokenType.NOT_KW):
+            start = self.tokens[self.pos - 1]
+            operand = self._parse_unary()
+            return UnaryExpr(
+                span=self._span_from(start),
+                operator="not",
                 operand=operand,
             )
 

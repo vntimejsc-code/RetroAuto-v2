@@ -96,15 +96,15 @@ class BinaryExpr(ASTNode):
     """Binary operation: a + b, a == b, etc."""
 
     left: ASTNode
-    operator: str  # "+", "-", "==", "!=", "&&", "||", etc.
+    operator: str  # "+", "-", "==", "!=", "and", "or", etc.
     right: ASTNode
 
 
 @dataclass(kw_only=True)
 class UnaryExpr(ASTNode):
-    """Unary operation: !a, -b."""
+    """Unary operation: !a, not a, -b."""
 
-    operator: str  # "!", "-"
+    operator: str  # "!", "not", "-"
     operand: ASTNode
 
 
