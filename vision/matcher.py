@@ -243,3 +243,90 @@ class Matcher:
     ) -> bool:
         """Quick check if asset exists on screen."""
         return self.find(asset_id, roi_override) is not None
+
+    # ─────────────────────────────────────────────────────────────
+    # Phase 3.2.2: Parallel Multi-Asset Matching
+    # ─────────────────────────────────────────────────────────────
+
+    def find_any_parallel(
+        self,
+        asset_ids: list[str],
+        roi_override: ROI | None = None,
+        max_workers: int = 4,
+    ) -> tuple[str, Match] | None:
+        """
+        Find any of the given assets in parallel.
+        
+        Returns the first match found (fastest) along with asset_id.
+        Useful for interrupt checks or multi-state detection.
+        
+        Args:
+            asset_ids: List of asset IDs to search for
+            roi_override: Optional ROI override for all searches
+            max_workers: Number of parallel threads (default 4)
+            
+        Returns:
+            Tuple of (asset_id, Match) if found, else None
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        if not asset_ids:
+            return None
+
+        def search_one(asset_id: str) -> tuple[str, Match] | None:
+            match = self.find(asset_id, roi_override)
+            if match:
+                return (asset_id, match)
+            return None
+
+        with ThreadPoolExecutor(max_workers=min(max_workers, len(asset_ids))) as executor:
+            futures = {executor.submit(search_one, aid): aid for aid in asset_ids}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    # Cancel remaining futures and return early
+                    for f in futures:
+                        f.cancel()
+                    return result
+
+        return None
+
+    def find_all_parallel(
+        self,
+        asset_ids: list[str],
+        roi_override: ROI | None = None,
+        max_workers: int = 4,
+    ) -> dict[str, Match]:
+        """
+        Find all given assets in parallel.
+        
+        Returns a dict mapping asset_id -> Match for all found assets.
+        
+        Args:
+            asset_ids: List of asset IDs to search for
+            roi_override: Optional ROI override for all searches
+            max_workers: Number of parallel threads (default 4)
+            
+        Returns:
+            Dict of {asset_id: Match} for all found assets
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        if not asset_ids:
+            return {}
+
+        def search_one(asset_id: str) -> tuple[str, Match | None]:
+            return (asset_id, self.find(asset_id, roi_override))
+
+        results: dict[str, Match] = {}
+
+        with ThreadPoolExecutor(max_workers=min(max_workers, len(asset_ids))) as executor:
+            futures = [executor.submit(search_one, aid) for aid in asset_ids]
+            
+            for future in as_completed(futures):
+                asset_id, match = future.result()
+                if match is not None:
+                    results[asset_id] = match
+
+        return results
