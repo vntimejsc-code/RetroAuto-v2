@@ -164,6 +164,7 @@ class ReadText(ActionBase):
     binarize: bool = Field(default=False, description="Apply thresholding")
 
 
+
 class IfText(ActionBase):
     """Conditional branch based on text variable value."""
 
@@ -175,6 +176,19 @@ class IfText(ActionBase):
     value: str = Field(description="Value to compare against")
     then_actions: list[Action] = Field(default_factory=list)
     else_actions: list[Action] = Field(default_factory=list)
+
+
+class WaitText(ActionBase):
+    """Wait for text to appear or vanish using OCR."""
+
+    action: Literal["WaitText"] = "WaitText"
+    text: str = Field(description="Text to wait for")
+    appear: bool = Field(default=True, description="True=wait to appear, False=wait to vanish")
+    timeout_ms: int = Field(default=10000, ge=0, le=300000, description="Timeout in ms")
+    poll_ms: int = Field(default=500, ge=100, description="Polling interval")
+    roi: ROI | None = Field(default=None, description="Region to scan")
+    regex: bool = Field(default=False, description="Treat text as regex pattern")
+    case_sensitive: bool = Field(default=False, description="Case-sensitive matching")
 
 
 class IfImage(ActionBase):
