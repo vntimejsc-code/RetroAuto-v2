@@ -50,7 +50,7 @@ class TestIRToAction:
 
     def test_ir_to_delay_random(self) -> None:
         """Convert delay_random ActionIR to DelayRandom model."""
-        ir = ActionIR(action_type="delay_random", params={"arg0": 100, "arg1": 500})
+        ir = ActionIR(action_type="delay_random", params={"min_ms": 100, "max_ms": 500})
         action = ir_to_action(ir)
         
         assert action is not None
@@ -88,7 +88,8 @@ class TestIRToAction:
 
     def test_ir_to_goto(self) -> None:
         """Convert goto ActionIR to Goto model."""
-        ir = ActionIR(action_type="goto", params={"label": "start_point"})
+        # Goto uses 'target' param in IR
+        ir = ActionIR(action_type="goto", params={"target": "start_point"})
         action = ir_to_action(ir)
         
         assert action is not None
@@ -96,8 +97,8 @@ class TestIRToAction:
         assert action.label == "start_point"
 
     def test_ir_to_type_text(self) -> None:
-        """Convert type ActionIR to TypeText model."""
-        ir = ActionIR(action_type="type", params={"arg0": "Hello World", "enter": True})
+        """Convert type_text ActionIR to TypeText model."""
+        ir = ActionIR(action_type="type_text", params={"arg0": "Hello World", "enter": True})
         action = ir_to_action(ir)
         
         assert action is not None
@@ -107,7 +108,8 @@ class TestIRToAction:
 
     def test_ir_to_hotkey(self) -> None:
         """Convert hotkey ActionIR to Hotkey model."""
-        ir = ActionIR(action_type="hotkey", params={"keys": ["ctrl", "s"]})
+        # Hotkey uses arg0 as string with + separator
+        ir = ActionIR(action_type="hotkey", params={"arg0": "ctrl+s"})
         action = ir_to_action(ir)
         
         assert action is not None
