@@ -597,33 +597,52 @@ class Runner:
             self._execute_action(sub_action, flow, labels)
 
     def _exec_click_image(self, action: ClickImage) -> None:
-        """Execute ClickImage with wait."""
-        result = self._ctx.wait_for_image(
-            action.asset_id,
-            timeout_ms=action.timeout_ms,
-            appear=True,
-            smart_wait=action.smart_wait,
-        )
-        if not result or not result.found:
-            raise RuntimeError(f"Image not found: {action.asset_id}")
+        """Execute ClickImage with wait and retry/backoff."""
+        import time
+        
+        # Retry configuration
+        max_retries = getattr(action, 'max_retries', 3)
+        base_delay_ms = 500  # Start with 500ms backoff
+        
+        last_error = None
+        for attempt in range(max_retries):
+            # Exponential backoff delay (skip on first attempt)
+            if attempt > 0:
+                backoff_delay = base_delay_ms * (2 ** (attempt - 1)) / 1000.0
+                logger.debug(f"ClickImage retry {attempt}/{max_retries} after {backoff_delay:.1f}s")
+                time.sleep(backoff_delay)
+                
+                # Clear matcher cache for fresh capture
+                if self._ctx.matcher:
+                    self._ctx.matcher.clear_cache()
+            
+            result = self._ctx.wait_for_image(
+                action.asset_id,
+                timeout_ms=action.timeout_ms,
+                appear=True,
+                smart_wait=action.smart_wait,
+            )
+            
+            if result and result.found:
+                # Click with offset
+                x = result.location[0] + action.offset_x
+                y = result.location[1] + action.offset_y
 
-        # Click with offset
-        x = result.location[0] + action.offset_x
-        y = result.location[1] + action.offset_y
+                logger.info(
+                    f"ClickImage '{action.asset_id}' at ({x},{y}) button={action.button} clicks={action.clicks}"
+                )
 
-        logger.info(
-            f"ClickImage '{action.asset_id}' at ({x},{y}) button={action.button} clicks={action.clicks}"
-        )
-
-        # Perform clicks
-        for i in range(action.clicks):
-            if i > 0:
-                # Wait interval between clicks
-                import time
-
-                time.sleep(action.interval_ms / 1000.0)
-
-            self._ctx.mouse.click(x, y, button=action.button)
+                # Perform clicks
+                for i in range(action.clicks):
+                    if i > 0:
+                        time.sleep(action.interval_ms / 1000.0)
+                    self._ctx.mouse.click(x, y, button=action.button)
+                return  # Success!
+            
+            last_error = f"Image not found: {action.asset_id}"
+        
+        # All retries exhausted
+        raise RuntimeError(f"{last_error} (after {max_retries} attempts)")
 
     def _exec_wait_image(self, action: WaitImage) -> bool | None:
         """Execute WaitImage action."""
