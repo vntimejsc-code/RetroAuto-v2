@@ -451,46 +451,52 @@ class MainWindow(QMainWindow):
         if not self._is_recording:
             # Start recording
             try:
-                from core.recorder import ActionRecorder
-                self._recorder = ActionRecorder()
+                from core.recorder import EventRecorder
+                self._recorder = EventRecorder()
                 self._recorder.start()
                 self._is_recording = True
                 self.action_record.setText("⏹ Stop Rec")
                 self.action_record.setChecked(True)
                 self.status_bar.showMessage("🔴 Recording... (Ctrl+Shift+R to stop)")
-                self.log_panel.log_info("Macro recording started - perform your actions")
-                logger.info("Macro recording started")
+                logger.info("Macro recording started - perform your actions")
             except Exception as e:
                 logger.error(f"Failed to start recording: {e}")
-                self.log_panel.log_error(f"Recording failed: {e}")
                 QMessageBox.warning(self, "Recording Error", 
                     f"Could not start recording:\n{e}\n\nMake sure pynput is installed:\npip install pynput")
         else:
             # Stop recording and convert to actions
             try:
-                events = self._recorder.stop()
-                actions = self._recorder.to_actions()
+                self._recorder.stop()
+                chunks = self._recorder.get_chunks()
                 
                 self._is_recording = False
                 self.action_record.setText("⏺ Record")
                 self.action_record.setChecked(False)
                 
-                if actions:
-                    # Add recorded actions to the actions panel
-                    for action in actions:
+                if chunks:
+                    # Convert chunks to actions and add to panel
+                    from core.models import Action
+                    actions_added = 0
+                    for chunk in chunks:
+                        action = Action(
+                            type=chunk.action_type,
+                            x=chunk.x,
+                            y=chunk.y,
+                            text=chunk.text or "",
+                            delay_ms=chunk.delay_ms,
+                        )
                         self.actions_panel.add_action(action)
+                        actions_added += 1
                     
-                    self.status_bar.showMessage(f"✅ Recorded {len(actions)} actions")
-                    self.log_panel.log_info(f"Added {len(actions)} recorded actions to script")
-                    logger.info(f"Recording stopped: {len(actions)} actions captured")
+                    self.status_bar.showMessage(f"✅ Recorded {actions_added} actions")
+                    logger.info(f"Recording stopped: {actions_added} actions captured")
                 else:
                     self.status_bar.showMessage("No actions recorded")
-                    self.log_panel.log_warning("Recording stopped - no actions captured")
+                    logger.warning("Recording stopped - no actions captured")
                 
                 self._recorder = None
             except Exception as e:
                 logger.error(f"Failed to stop recording: {e}")
-                self.log_panel.log_error(f"Stop recording failed: {e}")
                 self._is_recording = False
                 self.action_record.setText("⏺ Record")
                 self.action_record.setChecked(False)
