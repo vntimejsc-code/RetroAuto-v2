@@ -452,7 +452,7 @@ class MainWindow(QMainWindow):
             # Start recording
             try:
                 from core.recorder import EventRecorder
-                self._recorder = EventRecorder()
+                self._recorder = EventRecorder(capture_screenshots=False)
                 self._recorder.start()
                 self._is_recording = True
                 self.action_record.setText("⏹ Stop Rec")
@@ -475,24 +475,41 @@ class MainWindow(QMainWindow):
                 self.action_record.setChecked(False)
                 
                 if chunks:
-                    # Convert chunks to actions and add to panel
-                    from core.models import Action
+                    # Import action classes
+                    from core.models import Click, Hotkey, TypeText, Scroll
+                    
                     actions_added = 0
                     for chunk in chunks:
-                        # Get position from first event if available
-                        x = chunk.params.get("x", 0) if chunk.params else 0
-                        y = chunk.params.get("y", 0) if chunk.params else 0
-                        text = chunk.params.get("text", "") if chunk.params else ""
+                        action = None
+                        action_type = chunk.action_type.lower()
                         
-                        action = Action(
-                            type=chunk.action_type,
-                            x=x,
-                            y=y,
-                            text=text,
-                            delay_ms=100,
-                        )
-                        self.actions_panel.add_action(action)
-                        actions_added += 1
+                        if action_type == "click":
+                            # Create Click action
+                            x = chunk.params.get("x", 0)
+                            y = chunk.params.get("y", 0)
+                            action = Click(x=x, y=y)
+                            
+                        elif action_type == "type":
+                            # Create TypeText or Hotkey action
+                            text = chunk.params.get("text", "")
+                            if len(text) == 1 and not text.isalnum():
+                                # Single special key - use Hotkey
+                                action = Hotkey(keys=[text])
+                            elif text:
+                                action = TypeText(text=text)
+                                
+                        elif action_type == "scroll":
+                            # Create Scroll action (if supported)
+                            try:
+                                action = Scroll(direction="down", amount=3)
+                            except Exception:
+                                # Scroll might not exist, skip
+                                logger.warning("Scroll action not supported, skipping")
+                                continue
+                        
+                        if action:
+                            self.actions_panel.add_action(action)
+                            actions_added += 1
                     
                     self.status_bar.showMessage(f"✅ Recorded {actions_added} actions")
                     logger.info(f"Recording stopped: {actions_added} actions from {len(events)} events")
