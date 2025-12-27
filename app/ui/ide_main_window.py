@@ -1160,8 +1160,8 @@ class IDEMainWindow(QMainWindow):
             self.status_bar.showMessage(
                 f"Theme changed to {get_theme_manager().current_theme_name}", 3000
             )
-        except ValueError:
-            pass
+        except ValueError as e:
+            self.output_panel.log_warning(f"Theme change failed: {e}")
 
     # ─────────────────────────────────────────────────────────────
     # Progressive Disclosure Operations
