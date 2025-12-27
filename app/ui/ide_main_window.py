@@ -43,6 +43,7 @@ from app.ui.output_panel import OutputPanel
 from app.ui.project_explorer import ProjectExplorer
 from app.ui.properties_panel import PropertiesPanel
 from app.ui.theme_engine import get_theme_manager, get_available_themes, ThemeType
+from app.ui.progressive_disclosure import get_disclosure_manager, UserLevel
 from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
@@ -307,6 +308,16 @@ class IDEMainWindow(QMainWindow):
                 action.setChecked(True)
             action.triggered.connect(lambda checked, t=theme_value: self._switch_theme(t))
             theme_menu.addAction(action)
+
+        view_menu.addSeparator()
+
+        # Expert Mode toggle
+        self._expert_mode_action = QAction("⚙️ &Expert Mode", self)
+        self._expert_mode_action.setCheckable(True)
+        self._expert_mode_action.setChecked(get_disclosure_manager().is_expert)
+        self._expert_mode_action.setShortcut(QKeySequence("Ctrl+Shift+E"))
+        self._expert_mode_action.triggered.connect(self._toggle_expert_mode)
+        view_menu.addAction(self._expert_mode_action)
 
         # Help menu
         help_menu = menubar.addMenu("&Help")
@@ -1075,4 +1086,49 @@ class IDEMainWindow(QMainWindow):
             )
         except ValueError:
             pass
+
+    # ─────────────────────────────────────────────────────────────
+    # Progressive Disclosure Operations
+    # ─────────────────────────────────────────────────────────────
+
+    def _toggle_expert_mode(self) -> None:
+        """Toggle between Beginner and Expert modes."""
+        manager = get_disclosure_manager()
+        is_expert = manager.toggle_expert_mode()
+        
+        # Update menu action state
+        self._expert_mode_action.setChecked(is_expert)
+        
+        # Update panel visibility
+        self._apply_panel_visibility()
+        
+        # Show status message
+        mode_name = "Expert" if is_expert else "Beginner"
+        self.status_bar.showMessage(
+            f"Switched to {mode_name} mode - "
+            f"{'All panels visible' if is_expert else 'Simplified view'}",
+            3000
+        )
+    
+    def _apply_panel_visibility(self) -> None:
+        """Apply panel visibility based on current user level."""
+        manager = get_disclosure_manager()
+        is_expert = manager.is_expert
+        
+        # Toggle advanced panels visibility
+        # Inspector (Properties Panel)
+        if hasattr(self, 'inspector'):
+            self.inspector.setVisible(is_expert)
+        
+        # Interrupts Panel (in left_tabs)
+        if hasattr(self, 'interrupts_panel'):
+            # Show/hide the tab instead of the widget
+            idx = self.left_tabs.indexOf(self.interrupts_panel)
+            if idx >= 0:
+                self.left_tabs.setTabVisible(idx, is_expert)
+        
+        # Structure Panel (if exists as dock)
+        if hasattr(self, 'structure_dock'):
+            self.structure_dock.setVisible(is_expert)
+
 
