@@ -48,6 +48,7 @@ from app.ui.properties_panel import PropertiesPanel
 from app.ui.code_editor import DSLCodeEditor
 from app.ui.intellisense import IntelliSenseManager
 from app.ui.command_palette import CommandPalette
+from app.ui.flow_editor import FlowEditorWidget
 
 from core.dsl.document import ScriptDocument
 
@@ -185,39 +186,10 @@ class UnifiedStudio(QMainWindow):
         self.mode_stack.addWidget(self.debug_widget)
     
     def _create_visual_mode(self) -> QWidget:
-        """Create Visual mode content widget."""
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Header
-        header = QLabel("🎨 Visual Scripting Mode")
-        header.setStyleSheet("""
-            QLabel {
-                font-size: 16px;
-                font-weight: bold;
-                padding: 12px;
-                background-color: #2d2d30;
-                color: #cccccc;
-                border-bottom: 1px solid #3c3c3c;
-            }
-        """)
-        layout.addWidget(header)
-        
-        # Placeholder for Flow Editor
-        # TODO: Integrate FlowEditorWidget here
-        content = QLabel("Flow Editor will be displayed here\n\nDrag and drop actions to build your script")
-        content.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        content.setStyleSheet("""
-            QLabel {
-                color: #808080;
-                font-size: 14px;
-                background-color: #1e1e1e;
-            }
-        """)
-        layout.addWidget(content)
-        
-        return widget
+        """Create Visual mode content widget with Flow Editor."""
+        # Integrate FlowEditorWidget for visual scripting
+        self.flow_editor = FlowEditorWidget()
+        return self.flow_editor
     
     def _create_code_mode(self) -> QWidget:
         """Create Code mode content widget."""
