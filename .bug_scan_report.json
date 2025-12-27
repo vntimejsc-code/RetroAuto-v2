@@ -1,0 +1,29 @@
+﻿{
+    "duration":  9.4015711,
+    "timestamp":  "2025-12-27T15:39:23.9874449+07:00",
+    "errors":  [
+                   "Mypy"
+               ],
+    "layers":  {
+                   "smoke":  {
+                                 "status":  "pass"
+                             },
+                   "mypy":  {
+                                "errors":  12,
+                                "status":  "fail"
+                            },
+                   "lint":  {
+                                "status":  "pass"
+                            },
+                   "syntax":  {
+                                  "status":  "pass",
+                                  "files":  128
+                              },
+                   "iqds":  {
+                                "status":  "pass"
+                            },
+                   "imports":  {
+                                   "status":  "pass"
+                               }
+               }
+}

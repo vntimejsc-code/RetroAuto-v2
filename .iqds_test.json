@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-12-27T15:39:10.914257",
+  "duration_seconds": 0.357349,
+  "files_scanned": 128,
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 0
+  },
+  "issues": []
+}
