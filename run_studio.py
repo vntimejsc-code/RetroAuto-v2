@@ -43,6 +43,7 @@ def main() -> int:
     from PySide6.QtWidgets import QApplication
     from app.ui.unified_studio import UnifiedStudio
     from app.ui.theme_engine import get_theme_manager
+    from app.ui.onboarding_wizard import show_onboarding_if_needed
     
     # Create app
     app = QApplication.instance() or QApplication(sys.argv)
@@ -53,11 +54,21 @@ def main() -> int:
     # Create studio
     studio = UnifiedStudio()
     
+    # Show onboarding for first-run (unless file/project specified)
+    if not args.file and not args.project:
+        selected_mode = show_onboarding_if_needed(studio)
+        if selected_mode:
+            args.mode = selected_mode
+    
     # Set initial mode
     if args.mode == "code":
         studio.mode_bar.set_code_mode()
     elif args.mode == "debug":
         studio.mode_bar.set_debug_mode()
+    elif args.mode == "tutorial":
+        # Tutorial mode: open visual with demo
+        studio.mode_bar.set_visual_mode()
+        studio.output.log_info("Welcome! Try clicking the nodes in Visual Mode to learn.")
     # else visual is default
     
     # Open project or file
