@@ -42,6 +42,7 @@ from app.ui.interrupts_panel import InterruptsPanel
 from app.ui.output_panel import OutputPanel
 from app.ui.project_explorer import ProjectExplorer
 from app.ui.properties_panel import PropertiesPanel
+from app.ui.theme_engine import get_theme_manager, get_available_themes, ThemeType
 from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
@@ -77,6 +78,7 @@ class IDEMainWindow(QMainWindow):
         self._init_status_bar()
         self._init_shortcuts()  # Keyboard shortcuts
         self._connect_signals()
+        self._init_theme()  # Apply saved theme
         self._restore_state()
 
     def _init_ui(self) -> None:
@@ -293,6 +295,18 @@ class IDEMainWindow(QMainWindow):
         flow_editor_action.setShortcut(QKeySequence("Ctrl+Shift+V"))
         flow_editor_action.triggered.connect(self._show_flow_editor)
         view_menu.addAction(flow_editor_action)
+
+        view_menu.addSeparator()
+
+        # Theme submenu
+        theme_menu = view_menu.addMenu("🎨 &Theme")
+        for theme_value, theme_name in get_available_themes():
+            action = QAction(theme_name, self)
+            action.setCheckable(True)
+            if get_theme_manager().current_theme.value == theme_value:
+                action.setChecked(True)
+            action.triggered.connect(lambda checked, t=theme_value: self._switch_theme(t))
+            theme_menu.addAction(action)
 
         # Help menu
         help_menu = menubar.addMenu("&Help")
@@ -1042,3 +1056,23 @@ class IDEMainWindow(QMainWindow):
                 return path
 
         return None
+
+    # ─────────────────────────────────────────────────────────────
+    # Theme Operations
+    # ─────────────────────────────────────────────────────────────
+
+    def _init_theme(self) -> None:
+        """Apply saved theme on startup."""
+        get_theme_manager().apply_theme()
+
+    def _switch_theme(self, theme_value: str) -> None:
+        """Switch to specified theme."""
+        try:
+            theme = ThemeType(theme_value)
+            get_theme_manager().set_theme(theme)
+            self.status_bar.showMessage(
+                f"Theme changed to {get_theme_manager().current_theme_name}", 3000
+            )
+        except ValueError:
+            pass
+
