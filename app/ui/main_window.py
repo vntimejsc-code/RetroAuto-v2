@@ -467,7 +467,8 @@ class MainWindow(QMainWindow):
             # Stop recording and convert to actions
             try:
                 self._recorder.stop()
-                chunks = self._recorder.get_chunks()
+                events = self._recorder.get_events()
+                chunks = self._recorder.segment_events()
                 
                 self._is_recording = False
                 self.action_record.setText("⏺ Record")
@@ -478,18 +479,23 @@ class MainWindow(QMainWindow):
                     from core.models import Action
                     actions_added = 0
                     for chunk in chunks:
+                        # Get position from first event if available
+                        x = chunk.params.get("x", 0) if chunk.params else 0
+                        y = chunk.params.get("y", 0) if chunk.params else 0
+                        text = chunk.params.get("text", "") if chunk.params else ""
+                        
                         action = Action(
                             type=chunk.action_type,
-                            x=chunk.x,
-                            y=chunk.y,
-                            text=chunk.text or "",
-                            delay_ms=chunk.delay_ms,
+                            x=x,
+                            y=y,
+                            text=text,
+                            delay_ms=100,
                         )
                         self.actions_panel.add_action(action)
                         actions_added += 1
                     
                     self.status_bar.showMessage(f"✅ Recorded {actions_added} actions")
-                    logger.info(f"Recording stopped: {actions_added} actions captured")
+                    logger.info(f"Recording stopped: {actions_added} actions from {len(events)} events")
                 else:
                     self.status_bar.showMessage("No actions recorded")
                     logger.warning("Recording stopped - no actions captured")
