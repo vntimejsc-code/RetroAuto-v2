@@ -14,10 +14,9 @@ Features:
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict
 
-from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, Property
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,

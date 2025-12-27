@@ -13,9 +13,9 @@ Features:
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, List, Set, Callable
+from typing import Dict, List
 from PySide6.QtCore import QSettings, QObject, Signal
-from PySide6.QtWidgets import QDockWidget, QWidget
+from PySide6.QtWidgets import QWidget
 
 
 class UserLevel(Enum):

@@ -13,7 +13,6 @@ Features:
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QSettings, Signal
-from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -23,7 +22,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QFrame,
     QWidget,
-    QStackedWidget,
 )
 
 

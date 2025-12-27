@@ -13,9 +13,9 @@ Themes:
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict
 from PySide6.QtCore import QSettings
-from PySide6.QtGui import QPalette, QColor
+from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QApplication
 
 

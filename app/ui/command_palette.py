@@ -16,12 +16,12 @@ Phase: IDE Next (Enhanced)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional
+from typing import Callable
 from pathlib import Path
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal, QSettings
-from PySide6.QtGui import QKeyEvent, QFont
+from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import (
     QDialog,
     QLabel,

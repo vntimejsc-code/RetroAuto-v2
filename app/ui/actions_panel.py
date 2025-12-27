@@ -335,7 +335,6 @@ class ActionListWidget(QListWidget):
     def keyPressEvent(self, event) -> None:  # type: ignore
         """Handle keyboard shortcuts directly when list has focus."""
         from PySide6.QtCore import Qt
-        from PySide6.QtGui import QKeySequence
 
         # Del key - emit signal to parent to delete
         if event.key() == Qt.Key.Key_Delete:

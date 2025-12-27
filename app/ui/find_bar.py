@@ -12,14 +12,13 @@ Features:
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QKeySequence, QTextCursor, QTextCharFormat, QColor
+from PySide6.QtGui import QTextCursor, QTextCharFormat, QColor
 from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
-    QVBoxLayout,
     QLineEdit,
     QPushButton,
     QLabel,

@@ -14,13 +14,11 @@ Features:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import Qt, QSettings, Signal
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
-    QDockWidget,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -30,15 +28,13 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QStatusBar,
     QTabWidget,
-    QToolBar,
     QVBoxLayout,
     QWidget,
 )
 
-from app.ui.mode_tab_bar import ModeTabBar, StudioMode
+from app.ui.mode_tab_bar import ModeTabBar
 from app.ui.quick_actions import QuickActionsToolbar
 from app.ui.theme_engine import get_theme_manager
-from app.ui.progressive_disclosure import get_disclosure_manager
 
 # Import existing panels
 from app.ui.project_explorer import ProjectExplorer

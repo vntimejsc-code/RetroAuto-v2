@@ -17,11 +17,8 @@ from PySide6.QtCore import (
     QTimer,
     QPropertyAnimation,
     QEasingCurve,
-    Property,
-    QParallelAnimationGroup,
     QSequentialAnimationGroup,
 )
-from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QWidget,
     QGraphicsOpacityEffect,

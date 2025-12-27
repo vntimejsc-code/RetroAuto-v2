@@ -43,7 +43,7 @@ from app.ui.output_panel import OutputPanel
 from app.ui.project_explorer import ProjectExplorer
 from app.ui.properties_panel import PropertiesPanel
 from app.ui.theme_engine import get_theme_manager, get_available_themes, ThemeType
-from app.ui.progressive_disclosure import get_disclosure_manager, UserLevel
+from app.ui.progressive_disclosure import get_disclosure_manager
 from app.ui.quick_actions import QuickActionsToolbar
 from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
@@ -814,7 +814,6 @@ class IDEMainWindow(QMainWindow):
 
     def _find_and_highlight(self, text: str) -> None:
         """Find and highlight text in editor."""
-        from PySide6.QtGui import QTextDocument
 
         # Find first occurrence
         cursor = self.editor.textCursor()
