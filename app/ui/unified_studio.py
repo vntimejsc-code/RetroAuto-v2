@@ -123,9 +123,21 @@ class UnifiedStudio(QMainWindow):
         self._create_mode_widgets()
         self.main_splitter.addWidget(self.mode_stack)
         
-        # Right inspector panel (shared)
+        # Right panel (shared) - Properties + Live Preview tabs
+        self.right_tabs = QTabWidget()
+        self.right_tabs.setTabPosition(QTabWidget.TabPosition.South)
+        
+        # Properties Inspector
         self.inspector = PropertiesPanel()
-        self.main_splitter.addWidget(self.inspector)
+        self.right_tabs.addTab(self.inspector, "🔧 Properties")
+        
+        # Live Preview
+        from app.ui.live_preview import LivePreviewPanel
+        self.live_preview = LivePreviewPanel()
+        self.live_preview.action_clicked.connect(self._on_preview_action_clicked)
+        self.right_tabs.addTab(self.live_preview, "🔍 Preview")
+        
+        self.main_splitter.addWidget(self.right_tabs)
         
         # Set splitter proportions (1:4:1)
         self.main_splitter.setStretchFactor(0, 1)
@@ -306,6 +318,10 @@ class UnifiedStudio(QMainWindow):
         # Run shortcuts
         QShortcut(QKeySequence("F5"), self).activated.connect(self._run_script)
         QShortcut(QKeySequence("Shift+F5"), self).activated.connect(self._stop_script)
+        
+        # Shortcuts overlay (Ctrl+?)
+        from app.ui.shortcuts_overlay import register_shortcuts_overlay
+        self._shortcuts_overlay = register_shortcuts_overlay(self)
     
     def _init_command_palette(self) -> None:
         """Initialize Command Palette."""
@@ -454,6 +470,22 @@ class UnifiedStudio(QMainWindow):
         if not self._is_modified:
             self._is_modified = True
             self._update_title()
+        
+        # Update live preview
+        if hasattr(self, 'live_preview'):
+            self.live_preview.set_code(self.code_editor.get_code())
+    
+    def _on_preview_action_clicked(self, line_number: int) -> None:
+        """Handle click on action in live preview - go to line."""
+        # Switch to code mode and go to line
+        self.mode_bar.set_code_mode()
+        cursor = self.code_editor.textCursor()
+        cursor.movePosition(cursor.MoveOperation.Start)
+        for _ in range(line_number - 1):
+            cursor.movePosition(cursor.MoveOperation.Down)
+        self.code_editor.setTextCursor(cursor)
+        self.code_editor.centerCursor()
+        self.code_editor.setFocus()
     
     def _update_title(self) -> None:
         """Update window title."""
