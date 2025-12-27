@@ -110,9 +110,9 @@ class EventRecorder:
         self._screenshot_dir = screenshot_dir or Path.cwd() / "recordings"
         self._min_move_distance = min_move_distance
 
-        # Listeners
-        self._mouse_listener = None
-        self._keyboard_listener = None
+        # Listeners (typed as Any to avoid pynput type issues)
+        self._mouse_listener: Any = None
+        self._keyboard_listener: Any = None
         self._lock = threading.Lock()
 
         # Last positions for movement filtering
@@ -362,6 +362,12 @@ class EventRecorder:
         """Create an ActionChunk from a group of events."""
         # Determine action type based on events
         event_types = {e.event_type for e in events}
+        
+        # Initialize with proper type annotation
+        action_type: str = "unknown"
+        description: str = "Unknown action"
+        suggested_name: str = f"action_{chunk_id}"
+        params: dict[str, Any] = {}
 
         if EventType.CLICK in event_types or EventType.RIGHT_CLICK in event_types:
             action_type = "click"
@@ -382,12 +388,6 @@ class EventRecorder:
             action_type = "scroll"
             description = "Scroll"
             suggested_name = f"scroll_{chunk_id}"
-            params = {}
-
-        else:
-            action_type = "unknown"
-            description = "Unknown action"
-            suggested_name = f"action_{chunk_id}"
             params = {}
 
         return ActionChunk(
