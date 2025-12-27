@@ -1,6 +1,6 @@
 """
 Auto-generated tests for sync_manager
-Generated: 2025-12-27T10:43:14.670506
+Generated: 2025-12-27T10:47:01.461576
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -13,7 +13,7 @@ try:
         SyncManager,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.sync_manager: {e}")
+    pytest.skip(f"Cannot import from core.dsl.sync_manager: {e}", allow_module_level=True)
 
 # Test for SyncManager.document (complexity: 1, coverage: 0%)
 # Doc: Get the managed document....

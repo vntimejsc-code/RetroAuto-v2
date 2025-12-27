@@ -1,6 +1,6 @@
 """
 Auto-generated tests for formatter
-Generated: 2025-12-27T10:43:14.648935
+Generated: 2025-12-27T10:47:01.444424
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -14,7 +14,7 @@ try:
         format_code,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.formatter: {e}")
+    pytest.skip(f"Cannot import from core.dsl.formatter: {e}", allow_module_level=True)
 
 # Test for Formatter.format (complexity: 7, coverage: 0%)
 # Doc: Format entire program....

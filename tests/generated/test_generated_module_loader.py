@@ -1,6 +1,6 @@
 """
 Auto-generated tests for module_loader
-Generated: 2025-12-27T10:43:14.665458
+Generated: 2025-12-27T10:47:01.450450
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -13,7 +13,7 @@ try:
         ModuleLoader,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.module_loader: {e}")
+    pytest.skip(f"Cannot import from core.dsl.module_loader: {e}", allow_module_level=True)
 
 # Test for ModuleLoader.load (complexity: 7, coverage: 0%)
 # Doc: Load a module by import path.  Args:     import_path: Path f...

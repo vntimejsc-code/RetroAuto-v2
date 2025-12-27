@@ -1,6 +1,6 @@
 """
 Auto-generated tests for adapter
-Generated: 2025-12-27T10:43:14.635698
+Generated: 2025-12-27T10:47:01.431348
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -17,7 +17,7 @@ try:
         ir_to_script,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.adapter: {e}")
+    pytest.skip(f"Cannot import from core.dsl.adapter: {e}", allow_module_level=True)
 
 # Test for action_to_ir (complexity: 27, coverage: 0%)
 # Doc: Convert Action model to ActionIR for GUI → IR sync.  This en...

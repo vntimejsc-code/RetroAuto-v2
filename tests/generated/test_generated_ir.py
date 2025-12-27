@@ -1,6 +1,6 @@
 """
 Auto-generated tests for ir
-Generated: 2025-12-27T10:43:14.656780
+Generated: 2025-12-27T10:47:01.446985
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -16,7 +16,7 @@ try:
         ir_to_code,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.ir: {e}")
+    pytest.skip(f"Cannot import from core.dsl.ir: {e}", allow_module_level=True)
 
 # Test for IRMapper.ir_to_code (complexity: 7, coverage: 0%)
 # Doc: Generate DSL code from IR using parser-compatible syntax....

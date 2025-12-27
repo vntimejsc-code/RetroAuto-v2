@@ -1,6 +1,6 @@
 """
 Auto-generated tests for autocomplete
-Generated: 2025-12-27T10:43:14.640330
+Generated: 2025-12-27T10:47:01.434037
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -13,7 +13,7 @@ try:
         AutocompleteProvider,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.autocomplete: {e}")
+    pytest.skip(f"Cannot import from core.dsl.autocomplete: {e}", allow_module_level=True)
 
 # Test for AutocompleteProvider.complete (complexity: 15, coverage: 0%)
 # Doc: Get completions for a prefix.  Args:     prefix: The text to...

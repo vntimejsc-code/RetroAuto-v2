@@ -1,6 +1,6 @@
 """
 Auto-generated tests for diagnostics
-Generated: 2025-12-27T10:43:14.645406
+Generated: 2025-12-27T10:47:01.438317
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -22,7 +22,7 @@ try:
         missing_argument,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.diagnostics: {e}")
+    pytest.skip(f"Cannot import from core.dsl.diagnostics: {e}", allow_module_level=True)
 
 # Test for unexpected_token (complexity: 1, coverage: 0%)
 # Doc: Create unexpected token error....

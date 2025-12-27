@@ -1,6 +1,6 @@
 """
 Auto-generated tests for tokens
-Generated: 2025-12-27T10:43:14.672009
+Generated: 2025-12-27T10:47:01.462579
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -13,7 +13,7 @@ try:
         Token,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.tokens: {e}")
+    pytest.skip(f"Cannot import from core.dsl.tokens: {e}", allow_module_level=True)
 
 # Test for Token.span (complexity: 1, coverage: 0%)
 # Doc: Return (start_line, start_col, end_line, end_col)....

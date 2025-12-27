@@ -1,6 +1,6 @@
 """
 Auto-generated tests for parser
-Generated: 2025-12-27T10:43:14.665458
+Generated: 2025-12-27T10:47:01.456990
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -14,7 +14,7 @@ try:
         Parser,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.parser: {e}")
+    pytest.skip(f"Cannot import from core.dsl.parser: {e}", allow_module_level=True)
 
 # Test for Parser.parse (complexity: 4, coverage: 0%)
 # Doc: Parse source code and return AST....

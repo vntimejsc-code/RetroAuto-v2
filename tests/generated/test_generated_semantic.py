@@ -1,6 +1,6 @@
 """
 Auto-generated tests for semantic
-Generated: 2025-12-27T10:43:14.668488
+Generated: 2025-12-27T10:47:01.459015
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -15,7 +15,7 @@ try:
         analyze,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.semantic: {e}")
+    pytest.skip(f"Cannot import from core.dsl.semantic: {e}", allow_module_level=True)
 
 # Test for Scope.lookup (complexity: 3, coverage: 0%)
 # Doc: Look up variable in scope chain....

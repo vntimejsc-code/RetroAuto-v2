@@ -1,6 +1,6 @@
 """
 Auto-generated tests for lexer
-Generated: 2025-12-27T10:43:14.659050
+Generated: 2025-12-27T10:47:01.449010
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -14,7 +14,7 @@ try:
         LexerError,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.lexer: {e}")
+    pytest.skip(f"Cannot import from core.dsl.lexer: {e}", allow_module_level=True)
 
 # Test for Lexer.tokenize (complexity: 2, coverage: 0%)
 # Doc: Tokenize the source code and return list of tokens....

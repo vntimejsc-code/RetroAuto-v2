@@ -1,6 +1,6 @@
 """
 Auto-generated tests for debugger
-Generated: 2025-12-27T10:43:14.642834
+Generated: 2025-12-27T10:47:01.437032
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -14,7 +14,7 @@ try:
         Debugger,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.debugger: {e}")
+    pytest.skip(f"Cannot import from core.dsl.debugger: {e}", allow_module_level=True)
 
 # Test for Debugger.before_step (complexity: 10, coverage: 0%)
 # Doc: Called before executing a step.  Returns True if execution s...

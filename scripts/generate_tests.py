@@ -617,7 +617,7 @@ class RetroAutoTestGenerator:
         
         lines.extend([
             'except ImportError as e:',
-            f'    pytest.skip(f"Cannot import from {relative_path}: {{e}}")',
+            f'    pytest.skip(f"Cannot import from {relative_path}: {{e}}", allow_module_level=True)',
             '',
         ])
         

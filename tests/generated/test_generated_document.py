@@ -1,6 +1,6 @@
 """
 Auto-generated tests for document
-Generated: 2025-12-27T10:43:14.653282
+Generated: 2025-12-27T10:47:01.441360
 Generator: RetroAuto AI Test Generator v3.0
 """
 
@@ -13,7 +13,7 @@ try:
         ScriptDocument,
     )
 except ImportError as e:
-    pytest.skip(f"Cannot import from core.dsl.document: {e}")
+    pytest.skip(f"Cannot import from core.dsl.document: {e}", allow_module_level=True)
 
 # Test for ScriptDocument.update_from_code (complexity: 8, coverage: 0%)
 # Doc: Update IR from new code.  Called when the user edits code in...
