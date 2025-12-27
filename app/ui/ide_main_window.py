@@ -190,6 +190,25 @@ class IDEMainWindow(QMainWindow):
         self._command_palette.set_command_handler("run.start", self._run_script)
         self._command_palette.set_command_handler("run.stop", self._stop_script)
         self._command_palette.set_command_handler("build.check", self._check_syntax)
+        
+        # Theme commands
+        self._command_palette.set_command_handler(
+            "settings.theme.dark", lambda: self._switch_theme("modern_dark")
+        )
+        self._command_palette.set_command_handler(
+            "settings.theme.light", lambda: self._switch_theme("modern_light")
+        )
+        self._command_palette.set_command_handler(
+            "settings.theme.retro", lambda: self._switch_theme("retro95")
+        )
+        
+        # Expert mode command
+        self._command_palette.set_command_handler(
+            "settings.expertMode", self._toggle_expert_mode
+        )
+        
+        # Connect file_selected signal for recent files
+        self._command_palette.file_selected.connect(self._open_file_from_path)
 
     def _init_menu(self) -> None:
         """Initialize menu bar."""
@@ -655,10 +674,29 @@ class IDEMainWindow(QMainWindow):
                 self._update_title()
                 self.output.log_info(f"Opened: {path.name}")
 
+                # Track in recent files
+                if hasattr(self, '_command_palette') and self._command_palette:
+                    self._command_palette.add_recent_file(str(path))
+
                 # Check syntax on open
                 self._check_syntax()
             except Exception as e:
                 self.output.log_error(f"Error opening file: {e}")
+
+    def _open_file_from_path(self, file_path: str) -> None:
+        """Open a file from path (used by Command Palette recent files)."""
+        path = Path(file_path)
+        if path.exists():
+            ext = path.suffix.lower()
+            if ext == ".dsl":
+                file_type = "script"
+            elif ext in (".yaml", ".yml"):
+                file_type = "yaml"
+            elif ext == ".json":
+                file_type = "json"
+            else:
+                file_type = "text"
+            self._open_file(str(path), file_type)
 
     def _save_file(self) -> None:
         """Save the current file."""
