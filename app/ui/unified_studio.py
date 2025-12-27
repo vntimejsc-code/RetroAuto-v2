@@ -161,7 +161,7 @@ class UnifiedStudio(QMainWindow):
         
         # Project Explorer
         self.explorer = ProjectExplorer()
-        self.explorer.file_selected.connect(self._on_file_selected)
+        self.explorer.file_opened.connect(self._on_file_opened)
         sidebar.addTab(self.explorer, "📂 Explorer")
         
         # Assets Panel
@@ -463,8 +463,8 @@ class UnifiedStudio(QMainWindow):
         if file_path:
             self._load_file(Path(file_path))
     
-    def _on_file_selected(self, file_path: str) -> None:
-        """Handle file selection from explorer."""
+    def _on_file_opened(self, file_path: str, file_type: str) -> None:
+        """Handle file opened from explorer."""
         self._load_file(Path(file_path))
     
     def _load_file(self, path: Path) -> None:
