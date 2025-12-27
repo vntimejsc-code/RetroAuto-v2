@@ -44,6 +44,7 @@ from app.ui.project_explorer import ProjectExplorer
 from app.ui.properties_panel import PropertiesPanel
 from app.ui.theme_engine import get_theme_manager, get_available_themes, ThemeType
 from app.ui.progressive_disclosure import get_disclosure_manager, UserLevel
+from app.ui.quick_actions import QuickActionsToolbar
 from core.dsl.formatter import format_code
 from core.dsl.parser import Parser
 from core.dsl.semantic import analyze
@@ -164,6 +165,15 @@ class IDEMainWindow(QMainWindow):
         vsplitter.setStretchFactor(0, 3)
         vsplitter.setStretchFactor(1, 1)
         vsplitter.setSizes([500, 200])
+
+        # Quick Actions Toolbar (above main content)
+        self.quick_actions = QuickActionsToolbar()
+        self.quick_actions.run_requested.connect(self._run_script)
+        self.quick_actions.pause_requested.connect(self._pause_script)
+        self.quick_actions.stop_requested.connect(self._stop_script)
+        self.quick_actions.capture_requested.connect(self._show_capture_tool)
+        self.quick_actions.save_requested.connect(self._save_file)
+        main_layout.addWidget(self.quick_actions)
 
         main_layout.addWidget(vsplitter)
 
@@ -884,6 +894,35 @@ class IDEMainWindow(QMainWindow):
         self.run_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.status_bar.showMessage("Stopped")
+        
+        # Update quick actions toolbar
+        if hasattr(self, 'quick_actions'):
+            self.quick_actions.set_idle()
+
+    def _pause_script(self) -> None:
+        """Pause/resume the running script."""
+        if hasattr(self, '_engine') and self._engine and self._engine.context:
+            from core.engine.context import EngineState
+            current_state = self._engine.context._state
+            
+            if current_state == EngineState.RUNNING:
+                self._engine.context.set_state(EngineState.PAUSED)
+                self.output.log_info("Script paused")
+                self.status_bar.showMessage("Paused")
+                if hasattr(self, 'quick_actions'):
+                    self.quick_actions.set_paused()
+            elif current_state == EngineState.PAUSED:
+                self._engine.context.set_state(EngineState.RUNNING)
+                self.output.log_info("Script resumed")
+                self.status_bar.showMessage("Running...")
+                if hasattr(self, 'quick_actions'):
+                    self.quick_actions.set_running()
+
+    def _show_capture_tool(self) -> None:
+        """Show the capture tool for screen capture."""
+        # TODO: Integrate with capture tool when available
+        self.output.log_info("Capture tool requested")
+        self.status_bar.showMessage("Capture tool not available in IDE mode", 3000)
 
     def _on_step_started(self, flow: str, index: int, action_type: str) -> None:
         """Handle step started signal from engine."""
