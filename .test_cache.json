@@ -1,0 +1,637 @@
+{
+  "C:\\Auto\\Newauto\\core\\dsl\\adapter.py::action_to_ir": {
+    "hash": "6293f1d94067e468df73017faae901e5",
+    "test_file": "tests\\generated\\test_generated_adapter.py",
+    "timestamp": "2025-12-27T10:33:37.012054"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\adapter.py::ir_to_action": {
+    "hash": "5ac2b9c2e400691bf5224edd67638f48",
+    "test_file": "tests\\generated\\test_generated_adapter.py",
+    "timestamp": "2025-12-27T10:33:37.012054"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\adapter.py::DSLToYAMLAdapter.convert": {
+    "hash": "c277a10c57455975723de769efd9b4be",
+    "test_file": "tests\\generated\\test_generated_adapter.py",
+    "timestamp": "2025-12-27T10:33:37.012054"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\adapter.py::ir_to_actions": {
+    "hash": "3dd2df29ce571c8a6c5f46f9cd6f3543",
+    "test_file": "tests\\generated\\test_generated_adapter.py",
+    "timestamp": "2025-12-27T10:33:37.012054"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\adapter.py::ir_to_script": {
+    "hash": "aedb4c3c16fb39e6630ece1ae2e291ea",
+    "test_file": "tests\\generated\\test_generated_adapter.py",
+    "timestamp": "2025-12-27T10:33:37.012054"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ast.py::Program.main_flow": {
+    "hash": "3a5767f2f8d3b2ff6c59f5a15c09275b",
+    "test_file": "tests\\generated\\test_generated_ast.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ast.py::Span.from_token": {
+    "hash": "b09af29e46f99160b753698e19d0f193",
+    "test_file": "tests\\generated\\test_generated_ast.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ast.py::Span.merge": {
+    "hash": "6a0ef1a6d61dfcc5eb23cf4e33355204",
+    "test_file": "tests\\generated\\test_generated_ast.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.complete": {
+    "hash": "caf3f8a1a4af6eeef54656e400a0712a",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.set_context": {
+    "hash": "72005a155b8b88fe6e8abaf88f6fba9e",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.get_function_signature": {
+    "hash": "f77e5149d9dcd82c696dc078a5e8e22c",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.__init__": {
+    "hash": "897edf6ec9ad91e0fb65300b5ef55a39",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.get_all_functions": {
+    "hash": "105a745de6318e09cd92785609a9c41e",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.get_all_keywords": {
+    "hash": "76cb4d589251215f86f2e50e2ea4d58b",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\autocomplete.py::AutocompleteProvider.get_all_snippets": {
+    "hash": "fbd7ce75d55babe5cbb063d5eaf831bb",
+    "test_file": "tests\\generated\\test_generated_autocomplete.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.before_step": {
+    "hash": "91ef3a9da3e7a59c9b4bb74c1cce7444",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.state": {
+    "hash": "03cd676f4a7ba6bc8f399152fa38cbaa",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.is_paused": {
+    "hash": "51cd2934d9e4ef87f671d5b8d2eb620d",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.call_stack": {
+    "hash": "6277b3a79f11ab8fa597eddd9a39a3ba",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.get_variables": {
+    "hash": "73e583e27a29b66128b3811eea3a674e",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.continue_execution": {
+    "hash": "f94054a1ea33b0be295b63eb6770f8b9",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.pause": {
+    "hash": "ed042031b48e0e8556e02c1ec1c057f0",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.add": {
+    "hash": "7bd73b34e8486a75f97bc5959ced1273",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.remove": {
+    "hash": "abcc7694d2a1e66bc8e3e9b05bb8313c",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.toggle": {
+    "hash": "3a7fc98033b5b49917c7d59dc8586ee1",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.get_at": {
+    "hash": "29a37bb61f45505cdc989e13352fec6f",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.has_breakpoint": {
+    "hash": "881c6c28b35ed29658749a9b3163bde0",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.stop": {
+    "hash": "922cd57c3d2807d621fe0ffe44e26b11",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.step_over": {
+    "hash": "1a928b6673c651bd097b15404e861b27",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.step_into": {
+    "hash": "081fd00c6d4b939310f7bd3fcf1fa812",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.step_out": {
+    "hash": "88a2359a8bddccec44b50f321b74ae97",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.exit_flow": {
+    "hash": "534e0091af5cd5e1a39cfcb349579735",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.set_variable": {
+    "hash": "0cb35ebd7df720a36a28f478e7afc55a",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.evaluate": {
+    "hash": "eab43e9f8f0f56d30de8b268156a7e0d",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.__init__": {
+    "hash": "06fbba7fe3a25f0ce31bf4518e388fef",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.get": {
+    "hash": "86a39c8f1c250d219cfbf6e600566770",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.get_all": {
+    "hash": "598b2f108f6efa2c66665820d92be3a3",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::BreakpointManager.clear": {
+    "hash": "3e71965ea309b0c2aebabbc7af5f2901",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.__init__": {
+    "hash": "d6bd5fbf40088be11c661de345ca6d2d",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.on_paused": {
+    "hash": "fac7148f76301c5a4fdbb8de2b6271cc",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.on_resumed": {
+    "hash": "221686e2a01f8ad7ee96896fcc359096",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.on_step": {
+    "hash": "e0a024b83ed0d20649c9b8b32aaf2eea",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.on_stopped": {
+    "hash": "2c8c89127e6a1f318f49e06013b995b9",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.start": {
+    "hash": "a526834f81d81ef2b75098076fa0d57c",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\debugger.py::Debugger.enter_flow": {
+    "hash": "e421f4ca09041e981ed1f797002d824c",
+    "test_file": "tests\\generated\\test_generated_debugger.py",
+    "timestamp": "2025-12-27T10:33:37.016494"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::unexpected_token": {
+    "hash": "826dd951418f71c08e459d6d9d49386f",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::expected_token": {
+    "hash": "fd9d9e545b92b642a115784067105bd7",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::unknown_asset": {
+    "hash": "b295e526d45c8ed78e63554c554ee68f",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::unknown_flow": {
+    "hash": "5ec4e3e8bb121a27fa12aed59327659e",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::unknown_label": {
+    "hash": "06e55aed515e9ccaded783e2b3c28b35",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::duplicate_label": {
+    "hash": "093c55a68a614c791cfb8feaca026508",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::duplicate_flow": {
+    "hash": "18f08384bdc663afb8ab2a2bae1cfbbd",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::type_mismatch": {
+    "hash": "b8dca1ada85eb454e90cb5dd90e52c68",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::invalid_argument": {
+    "hash": "957d2a8eadb456933ea8132b2fc1dd4f",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\diagnostics.py::missing_argument": {
+    "hash": "720403fb6348e5b509b229d0953a9652",
+    "test_file": "tests\\generated\\test_generated_diagnostics.py",
+    "timestamp": "2025-12-27T10:33:37.019461"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.update_from_code": {
+    "hash": "9b6db765275e432636f7e2178bdb5081",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.ir": {
+    "hash": "d0cefa7ad0927a5a6ee14aa06cdd1404",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.code": {
+    "hash": "92d52db052ba13b05cbe13f698732b6b",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.file_path": {
+    "hash": "7fc70b44162e949623c33eaefec53048",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.is_dirty": {
+    "hash": "4e833a5c4c4d70bee4375f21b8886274",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.is_valid": {
+    "hash": "8c67b651b1558da00e4fdd6f051f496d",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.state": {
+    "hash": "3bc5433bb0027508eba86a7117cfbe98",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.parse_errors": {
+    "hash": "09971ac635ea784dff83ee07e7473465",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.last_valid_ir": {
+    "hash": "672aef45d1f1cbf07d6bcf037d351200",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.save": {
+    "hash": "c1b304da3655550627ebc39407324146",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.validate": {
+    "hash": "8511ff234aec4dbd672d53551289032b",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.load_from_file": {
+    "hash": "c9dddbecf44dcc9231f677e573626c54",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.update_from_gui": {
+    "hash": "356738fc9a630daf9c13ab0ef885043a",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.add_action_to_flow": {
+    "hash": "66a2436f317d7a9581c6550887d4b2e9",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.__init__": {
+    "hash": "757fd843a5e1ac77cb2dbdef2467ab18",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.on_ir_changed": {
+    "hash": "224344468990131f2424daacaaae57a3",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.on_code_changed": {
+    "hash": "6afc70e86373d3ae2a88f58a2acac073",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.on_error": {
+    "hash": "9aca59425032eaf2b4a67b00b424e299",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.new": {
+    "hash": "d1f4d8e6cece8d22dca9b3d674c98722",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.save_as": {
+    "hash": "a76aa85c2900fa15a5a9062b1b4d7ee2",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.on_state_changed": {
+    "hash": "0823cf483aa9af8d12f955fad66666fa",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.add_flow": {
+    "hash": "92448fea3d64a8601d3c7ec417b0fdaa",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.remove_flow": {
+    "hash": "3cdfd3cfc18f5feeb54541e74cf7f16b",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.add_asset": {
+    "hash": "26b98e4e3239e2f4129c15f69da60235",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\document.py::ScriptDocument.remove_asset": {
+    "hash": "af1c8326b590d67f717686d1a2b4bf5a",
+    "test_file": "tests\\generated\\test_generated_document.py",
+    "timestamp": "2025-12-27T10:33:37.027306"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::IRMapper.ir_to_code": {
+    "hash": "99f895ee4c63cd0c99e1c9a4caadb786",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::IRMapper.ast_to_ir": {
+    "hash": "b504c1712f9306631463169e708b0113",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::parse_to_ir": {
+    "hash": "ec2a3841017221ab55ff667881169914",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.remove_listener": {
+    "hash": "b0f104b3111ea9b45dbad3626b211be1",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.notify_change": {
+    "hash": "d8cba5289f2d659c0c76f84bafbd4c0d",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ir_to_code": {
+    "hash": "cb7dcc06ac8270f5be3d302d920683a1",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.add_listener": {
+    "hash": "0ed9bb69999252dc319e9da881491764",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.get_asset": {
+    "hash": "d9c1aa8bf904b372b63c37b00c9e886e",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.add_asset": {
+    "hash": "c08a2560ce457a3b91531b097b5854b2",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.remove_asset": {
+    "hash": "0dda0c0dfcbe9e250335a4924acdf95c",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.get_flow": {
+    "hash": "3b074a1ce774a23c73eff30ce8ef1683",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.add_flow": {
+    "hash": "c784c02297a0e7495438936c7f7d9d39",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\ir.py::ScriptIR.remove_flow": {
+    "hash": "9f0997cd880289903b068d2314f21e1b",
+    "test_file": "tests\\generated\\test_generated_ir.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\formatter.py::Formatter.format": {
+    "hash": "6cd1ad48344e01c4958528ddd4318e84",
+    "test_file": "tests\\generated\\test_generated_formatter.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\formatter.py::format_code": {
+    "hash": "ad1ab80e71a969eba81c352e4a7045e6",
+    "test_file": "tests\\generated\\test_generated_formatter.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\formatter.py::Formatter.__init__": {
+    "hash": "7fba63c028b487e8dc3ceda2724d701f",
+    "test_file": "tests\\generated\\test_generated_formatter.py",
+    "timestamp": "2025-12-27T10:33:37.033656"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\lexer.py::Lexer.tokenize": {
+    "hash": "9c3b5a6acd9c23c11388c26e49515b2f",
+    "test_file": "tests\\generated\\test_generated_lexer.py",
+    "timestamp": "2025-12-27T10:33:37.034206"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\lexer.py::LexerError.__init__": {
+    "hash": "5964c3a4171cfcb2e64ea72c455f6584",
+    "test_file": "tests\\generated\\test_generated_lexer.py",
+    "timestamp": "2025-12-27T10:33:37.034206"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\lexer.py::Lexer.__init__": {
+    "hash": "9adc602256a43d392943a416c10b068d",
+    "test_file": "tests\\generated\\test_generated_lexer.py",
+    "timestamp": "2025-12-27T10:33:37.034206"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\module_loader.py::ModuleLoader.load": {
+    "hash": "9ae8c41f21d090afa3e9de91a3b59081",
+    "test_file": "tests\\generated\\test_generated_module_loader.py",
+    "timestamp": "2025-12-27T10:33:37.037237"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\module_loader.py::ModuleLoader.resolve_path": {
+    "hash": "89b583a399fdd405aa1c1dee4b5beb5f",
+    "test_file": "tests\\generated\\test_generated_module_loader.py",
+    "timestamp": "2025-12-27T10:33:37.037237"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\module_loader.py::ModuleLoader.__init__": {
+    "hash": "84dafb4a98cc5b63257428dfbaa31d92",
+    "test_file": "tests\\generated\\test_generated_module_loader.py",
+    "timestamp": "2025-12-27T10:33:37.037237"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\module_loader.py::ModuleLoader.add_search_path": {
+    "hash": "de52ce9485d11d8b2de65c745eb88a89",
+    "test_file": "tests\\generated\\test_generated_module_loader.py",
+    "timestamp": "2025-12-27T10:33:37.037237"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\module_loader.py::ModuleLoader.get_cached": {
+    "hash": "b1ed316e1c7e39aa3af72a84a8f30764",
+    "test_file": "tests\\generated\\test_generated_module_loader.py",
+    "timestamp": "2025-12-27T10:33:37.037237"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\module_loader.py::ModuleLoader.clear_cache": {
+    "hash": "37abbcec5e16f19abbc6b1de3cbb828d",
+    "test_file": "tests\\generated\\test_generated_module_loader.py",
+    "timestamp": "2025-12-27T10:33:37.037237"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\parser.py::Parser.parse": {
+    "hash": "674dc9c91369552c1da40366d4957239",
+    "test_file": "tests\\generated\\test_generated_parser.py",
+    "timestamp": "2025-12-27T10:33:37.044351"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\parser.py::ParseError.__init__": {
+    "hash": "4e1dd1d86e59a24ad60c1dc71d5496d6",
+    "test_file": "tests\\generated\\test_generated_parser.py",
+    "timestamp": "2025-12-27T10:33:37.044351"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\parser.py::Parser.__init__": {
+    "hash": "010ac1666dd7965d2cbb3522ada3f3eb",
+    "test_file": "tests\\generated\\test_generated_parser.py",
+    "timestamp": "2025-12-27T10:33:37.044351"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.document": {
+    "hash": "6489d2d9d0a8f9953065ff553471bfad",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.on_action_added": {
+    "hash": "7bfa62e96116acdc4679577e867f8d12",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.on_action_changed": {
+    "hash": "9bcd9803bc97db4abfedc8b8cae76618",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.on_action_removed": {
+    "hash": "a67438978f523d6a3db755775f6fb660",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.on_code_saved": {
+    "hash": "fe49dcf4556e081081e84d6a72a39c07",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.on_actions_reordered": {
+    "hash": "e8b342f2f4d73630692db0e3539f790c",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.on_code_changed": {
+    "hash": "ca152adca891b40340d35be2a270cf21",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.get_flow_actions": {
+    "hash": "1e0e4699bb93148808ae7693179366a9",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.__init__": {
+    "hash": "326cd51413fe5dd119c7bf2c3cbfefa9",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.get_flow_names": {
+    "hash": "a2f1de449b51c7fbaf03fa8b16805dcd",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.force_sync_from_ir": {
+    "hash": "eb69a986533dfca172c79df3215b597f",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\sync_manager.py::SyncManager.cancel_pending_sync": {
+    "hash": "0c4f549a4a67c675c088e832ec55fb09",
+    "test_file": "tests\\generated\\test_generated_sync_manager.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\semantic.py::Scope.lookup": {
+    "hash": "72ec3f3dbbd7d0bdee1575df68b3b464",
+    "test_file": "tests\\generated\\test_generated_semantic.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\semantic.py::SemanticAnalyzer.__init__": {
+    "hash": "4bcc7379c18a1e90e8b670513efc75ff",
+    "test_file": "tests\\generated\\test_generated_semantic.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\semantic.py::analyze": {
+    "hash": "db29b0e159dc57c34ddef48c3465e39e",
+    "test_file": "tests\\generated\\test_generated_semantic.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\semantic.py::Scope.define": {
+    "hash": "1fc91b3f2b7baf7fb0514b98d0f988bc",
+    "test_file": "tests\\generated\\test_generated_semantic.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\semantic.py::SemanticAnalyzer.analyze": {
+    "hash": "77dbe0ec4d06a23619ea8acd846e9afa",
+    "test_file": "tests\\generated\\test_generated_semantic.py",
+    "timestamp": "2025-12-27T10:33:37.047897"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\tokens.py::Token.span": {
+    "hash": "9327191969178b8647bb7d57ded5a064",
+    "test_file": "tests\\generated\\test_generated_tokens.py",
+    "timestamp": "2025-12-27T10:33:37.052883"
+  },
+  "C:\\Auto\\Newauto\\core\\dsl\\tokens.py::Token.__init__": {
+    "hash": "9004d7d110e8c0412e0f8c6b10c568be",
+    "test_file": "tests\\generated\\test_generated_tokens.py",
+    "timestamp": "2025-12-27T10:33:37.052883"
+  }
+}
