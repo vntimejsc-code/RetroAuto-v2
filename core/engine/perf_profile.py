@@ -118,6 +118,7 @@ class ProfileManager:
 
     _instance: "ProfileManager | None" = None
     _lock = None
+    _initialized: bool = False  # Class-level type hint for mypy
 
     def __new__(cls) -> "ProfileManager":
         if cls._instance is None:

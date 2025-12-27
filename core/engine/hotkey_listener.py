@@ -230,6 +230,7 @@ def get_hotkey_listener() -> HotkeyListener:
 
 # Simple test
 if __name__ == "__main__":
+    import logging
     logging.basicConfig(level=logging.DEBUG)
 
     listener = get_hotkey_listener()

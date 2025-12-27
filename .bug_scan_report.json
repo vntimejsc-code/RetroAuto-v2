@@ -1,16 +1,15 @@
 ﻿{
-    "duration":  7.739322,
-    "timestamp":  "2025-12-27T15:44:45.0098593+07:00",
+    "duration":  8.8324156,
+    "timestamp":  "2025-12-27T15:52:39.1534312+07:00",
     "errors":  [
-                   "Mypy"
+
                ],
     "layers":  {
                    "smoke":  {
                                  "status":  "pass"
                              },
                    "mypy":  {
-                                "errors":  9,
-                                "status":  "fail"
+                                "status":  "pass"
                             },
                    "lint":  {
                                 "status":  "pass"

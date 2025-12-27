@@ -19,11 +19,11 @@ if TYPE_CHECKING:
 class IScreenCapture(Protocol):
     """Protocol for screen capture service."""
     
-    def capture_screen(self) -> Any:
+    def capture_full(self, monitor: int = 1, grayscale: bool = False) -> Any:
         """Capture full screen."""
         ...
     
-    def capture_region(self, x: int, y: int, width: int, height: int) -> Any:
+    def capture_roi(self, roi: Any, grayscale: bool = False) -> Any:
         """Capture specific region."""
         ...
 
@@ -51,11 +51,11 @@ class ITemplateStore(Protocol):
 class IMouseController(Protocol):
     """Protocol for mouse control service."""
     
-    def click(self, x: int, y: int) -> None:
+    def click(self, x: int | None = None, y: int | None = None, button: str = "left", clicks: int = 1) -> None:
         """Click at position."""
         ...
     
-    def move(self, x: int, y: int) -> None:
+    def move_to(self, x: int, y: int) -> None:
         """Move mouse to position."""
         ...
 
@@ -123,10 +123,12 @@ class ExecutionServices:
         from input.mouse import MouseController
         from input.keyboard import KeyboardController
         
+        templates = TemplateStore()
+        
         return cls(
             screen_capture=ScreenCapture(),
-            matcher=Matcher(),
-            templates=TemplateStore(),
+            matcher=Matcher(templates=templates),
+            templates=templates,
             mouse=MouseController(),
             keyboard=KeyboardController(),
         )

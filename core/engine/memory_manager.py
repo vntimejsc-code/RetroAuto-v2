@@ -28,6 +28,7 @@ class MemoryManager:
 
     _instance: "MemoryManager | None" = None
     _lock = threading.Lock()
+    _initialized: bool = False  # Class-level type hint for mypy
 
     def __new__(cls) -> "MemoryManager":
         """Singleton pattern for single memory manager."""
