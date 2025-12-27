@@ -258,6 +258,14 @@ class MainWindow(QMainWindow):
         self.action_capture = toolbar.addAction("📷 Capture", self._on_capture)
         self.action_capture.setShortcut("Ctrl+Shift+C")
         self.action_capture.setToolTip("Capture screen region (Ctrl+Shift+C)")
+        
+        # Macro Recording
+        self.action_record = toolbar.addAction("⏺ Record", self._on_record_toggle)
+        self.action_record.setShortcut("Ctrl+Shift+R")
+        self.action_record.setToolTip("Start/Stop macro recording (Ctrl+Shift+R)")
+        self.action_record.setCheckable(True)
+        self._is_recording = False
+        self._recorder = None
         toolbar.addSeparator()
 
         # IDE
@@ -437,6 +445,55 @@ class MainWindow(QMainWindow):
         """Stop script execution."""
         logger.info("Stopping script...")
         self.engine.stop()
+
+    def _on_record_toggle(self) -> None:
+        """Toggle macro recording on/off."""
+        if not self._is_recording:
+            # Start recording
+            try:
+                from core.recorder import ActionRecorder
+                self._recorder = ActionRecorder()
+                self._recorder.start()
+                self._is_recording = True
+                self.action_record.setText("⏹ Stop Rec")
+                self.action_record.setChecked(True)
+                self.status_bar.showMessage("🔴 Recording... (Ctrl+Shift+R to stop)")
+                self.log_panel.log_info("Macro recording started - perform your actions")
+                logger.info("Macro recording started")
+            except Exception as e:
+                logger.error(f"Failed to start recording: {e}")
+                self.log_panel.log_error(f"Recording failed: {e}")
+                QMessageBox.warning(self, "Recording Error", 
+                    f"Could not start recording:\n{e}\n\nMake sure pynput is installed:\npip install pynput")
+        else:
+            # Stop recording and convert to actions
+            try:
+                events = self._recorder.stop()
+                actions = self._recorder.to_actions()
+                
+                self._is_recording = False
+                self.action_record.setText("⏺ Record")
+                self.action_record.setChecked(False)
+                
+                if actions:
+                    # Add recorded actions to the actions panel
+                    for action in actions:
+                        self.actions_panel.add_action(action)
+                    
+                    self.status_bar.showMessage(f"✅ Recorded {len(actions)} actions")
+                    self.log_panel.log_info(f"Added {len(actions)} recorded actions to script")
+                    logger.info(f"Recording stopped: {len(actions)} actions captured")
+                else:
+                    self.status_bar.showMessage("No actions recorded")
+                    self.log_panel.log_warning("Recording stopped - no actions captured")
+                
+                self._recorder = None
+            except Exception as e:
+                logger.error(f"Failed to stop recording: {e}")
+                self.log_panel.log_error(f"Stop recording failed: {e}")
+                self._is_recording = False
+                self.action_record.setText("⏺ Record")
+                self.action_record.setChecked(False)
 
     def _update_title(self) -> None:
         """Update window title with project path and script name."""
