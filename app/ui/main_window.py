@@ -476,7 +476,7 @@ class MainWindow(QMainWindow):
                 
                 if chunks:
                     # Import action classes
-                    from core.models import Click, Hotkey, TypeText, Scroll
+                    from core.models import Click, Hotkey, TypeText, Scroll, Delay
                     
                     actions_added = 0
                     for chunk in chunks:
@@ -506,6 +506,11 @@ class MainWindow(QMainWindow):
                                 # Scroll might not exist, skip
                                 logger.warning("Scroll action not supported, skipping")
                                 continue
+
+                        elif action_type == "delay":
+                            # Create Delay action
+                            ms = chunk.params.get("ms", 1000)
+                            action = Delay(ms=ms)
                         
                         if action:
                             self.actions_panel.add_action(action)

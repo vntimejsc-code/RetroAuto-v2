@@ -326,7 +326,7 @@ class EventRecorder:
         Segment events into logical action chunks.
 
         Groups events by:
-        - Time gaps (>500ms = new chunk)
+        - Time gaps (>500ms = new chunk + delay action)
         - Event type transitions
         - Window changes
 
@@ -343,11 +343,31 @@ class EventRecorder:
         for i, event in enumerate(self._events):
             # Check for time gap
             if current_events:
-                time_gap = event.timestamp - current_events[-1].timestamp
+                # Gap between end of last chunk and start of this new event
+                last_event_time = current_events[-1].timestamp
+                current_event_time = event.timestamp
+                time_gap = current_event_time - last_event_time
+
                 if time_gap > 0.5:  # 500ms gap = new chunk
+                    # 1. Flush current chunk
                     chunks.append(self._create_chunk(chunk_id, current_events))
                     chunk_id += 1
                     current_events = []
+
+                    # 2. Insert Delay chunk
+                    # Round to nearest 100ms to look cleaner
+                    delay_ms = int(round(time_gap * 1000 / 100) * 100)
+                    chunks.append(
+                        ActionChunk(
+                            chunk_id=f"chunk_{chunk_id}",
+                            action_type="delay",
+                            description=f"Wait {delay_ms}ms",
+                            events=[],  # No events for synthetic delay
+                            suggested_name=f"delay_{chunk_id}",
+                            params={"ms": delay_ms},
+                        )
+                    )
+                    chunk_id += 1
 
             current_events.append(event)
 
