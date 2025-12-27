@@ -224,6 +224,14 @@ class HybridActionsPanel(QWidget):
         """Get current actions list."""
         return self.actions_panel.get_actions()
 
+    def add_action(self, action: Action) -> None:
+        """Add a single action to the panel (used by macro recording)."""
+        current_actions = self.actions_panel.get_actions()
+        current_actions.append(action)
+        self.actions_panel.load_actions(current_actions)
+        self._update_code_preview()
+        logger.debug(f"Added action: {type(action).__name__}")
+
     def update_action(self, data: dict) -> None:
         """Update action from properties panel."""
         self.actions_panel.update_action(data)
