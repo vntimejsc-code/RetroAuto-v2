@@ -700,7 +700,7 @@ class ImageMatcher:
                 try:
                     template_name, result = future.result()
                     results[template_name] = result
-                except Exception as e:
+                except Exception:
                     pass
 
         return results

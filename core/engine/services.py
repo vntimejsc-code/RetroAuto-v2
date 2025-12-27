@@ -9,16 +9,11 @@ Phase 3.1.2: Architecture Refinement
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, Any
 
 if TYPE_CHECKING:
-    from core.templates import TemplateStore
-    from vision.capture import ScreenCapture
-    from vision.matcher import Matcher
-    from vision.waiter import ImageWaiter
-    from input.mouse import MouseController
-    from input.keyboard import KeyboardController
+    pass
 
 
 class IScreenCapture(Protocol):

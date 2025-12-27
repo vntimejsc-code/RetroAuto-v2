@@ -173,24 +173,6 @@ class ActionRegistry:
 
 def register_builtin_actions() -> None:
     """Register all built-in actions from core.models."""
-    from core.models import (
-        Click,
-        ClickImage,
-        Delay,
-        DelayRandom,
-        Drag,
-        Goto,
-        Hotkey,
-        IfImage,
-        Label,
-        Loop,
-        Notify,
-        ReadText,
-        RunFlow,
-        Scroll,
-        TypeText,
-        WaitImage,
-    )
 
     # Note: Handlers are registered but delegate to Runner methods
     # This allows gradual migration to plugin-based dispatch

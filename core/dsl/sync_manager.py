@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from core.dsl.adapter import action_to_ir, ir_to_action, ir_to_actions
+from core.dsl.adapter import action_to_ir, ir_to_actions
 from core.dsl.document import ScriptDocument
 from core.models import Action
 from infra import get_logger
