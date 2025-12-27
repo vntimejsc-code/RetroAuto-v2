@@ -209,38 +209,10 @@ class UnifiedStudio(QMainWindow):
         return widget
     
     def _create_debug_mode(self) -> QWidget:
-        """Create Debug mode content widget."""
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Header
-        header = QLabel("🔧 Debug Mode")
-        header.setStyleSheet("""
-            QLabel {
-                font-size: 16px;
-                font-weight: bold;
-                padding: 12px;
-                background-color: #2d2d30;
-                color: #cccccc;
-                border-bottom: 1px solid #3c3c3c;
-            }
-        """)
-        layout.addWidget(header)
-        
-        # Placeholder for Debug View
-        content = QLabel("Debug controls and variable inspection\n\nSet breakpoints and step through execution")
-        content.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        content.setStyleSheet("""
-            QLabel {
-                color: #808080;
-                font-size: 14px;
-                background-color: #1e1e1e;
-            }
-        """)
-        layout.addWidget(content)
-        
-        return widget
+        """Create Debug mode content widget with debug panels."""
+        from app.ui.debug_mode import DebugModeWidget
+        self.debug_mode_widget = DebugModeWidget()
+        return self.debug_mode_widget
     
     def _init_status_bar(self) -> None:
         """Initialize status bar."""
