@@ -1,6 +1,6 @@
 """
 Auto-generated tests for debugger
-Generated: 2025-12-27T10:33:37.015479
+Generated: 2025-12-27T10:43:14.642834
 Generator: RetroAuto AI Test Generator v3.0
 """
 
