@@ -213,6 +213,12 @@ class UnifiedStudio(QMainWindow):
         # Code Editor
         self.code_editor = DSLCodeEditor()
         self.code_editor.textChanged.connect(self._on_code_changed)
+        
+        # FindBar (hidden by default)
+        from app.ui.find_bar import FindBar
+        self.find_bar = FindBar(self.code_editor)
+        layout.addWidget(self.find_bar)
+        
         layout.addWidget(self.code_editor)
         
         # Initialize IntelliSense
@@ -322,6 +328,11 @@ class UnifiedStudio(QMainWindow):
         # Shortcuts overlay (Ctrl+?)
         from app.ui.shortcuts_overlay import register_shortcuts_overlay
         self._shortcuts_overlay = register_shortcuts_overlay(self)
+        
+        # Find shortcuts (Ctrl+F, F3)
+        QShortcut(QKeySequence("Ctrl+F"), self).activated.connect(self._show_find_bar)
+        QShortcut(QKeySequence("F3"), self).activated.connect(self._find_next)
+        QShortcut(QKeySequence("Shift+F3"), self).activated.connect(self._find_previous)
     
     def _init_command_palette(self) -> None:
         """Initialize Command Palette."""
@@ -525,6 +536,22 @@ class UnifiedStudio(QMainWindow):
     def _show_command_palette(self) -> None:
         """Show command palette."""
         self._command_palette.show_palette()
+    
+    def _show_find_bar(self) -> None:
+        """Show find bar in code mode."""
+        self.mode_bar.set_code_mode()
+        if hasattr(self, 'find_bar'):
+            self.find_bar.show_bar()
+    
+    def _find_next(self) -> None:
+        """Find next match."""
+        if hasattr(self, 'find_bar') and self.find_bar.isVisible():
+            self.find_bar.find_next()
+    
+    def _find_previous(self) -> None:
+        """Find previous match."""
+        if hasattr(self, 'find_bar') and self.find_bar.isVisible():
+            self.find_bar.find_previous()
     
     def _show_about(self) -> None:
         """Show about dialog."""

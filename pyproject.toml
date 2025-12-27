@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "retroauto"
-version = "2.27.1"
+version = "2.28.0"
 description = "Windows automation tool with image recognition - Win95 style"
 readme = "README.md"
 requires-python = ">=3.11"
